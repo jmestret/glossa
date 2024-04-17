@@ -6,6 +6,7 @@
 #' @param sf_poly Spatial polygon defining the study area
 #' @param raster_stack  SpatRaster containing covariate data
 #' @param coords Character vector specifying the column names for latitude and longitude
+#' @param digits Number of decimal digits to round for the coordinates
 #' @param attempts Number of attempts to generate exact pseudo-absences
 #'
 #' @return Data frame containing both presence and pseudo-absence points

@@ -19,7 +19,7 @@ library(DT)
 library(svglite)
 library(dbarts)
 
-library(glossa)
+#library(glossa)
 #for (i in list.files("../../R/", full.names = TRUE)){
 #  source(i)
 #}

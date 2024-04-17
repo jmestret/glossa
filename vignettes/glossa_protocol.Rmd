@@ -25,67 +25,7 @@ knitr::opts_chunk$set(
 # Load libraries, functions and supp. data
 
 ```{r}
-# * Load packages ----
-list_of_packages <- c("tidyverse","terra", "tidyterra", "glossa")
-req <- unlist(lapply(list_of_packages,require,character.only=TRUE))
-need <- list_of_packages[req==FALSE]
-if(length(need) > 0) {
-  install.packages(need)
-  lapply(need,require,character.only=TRUE)
-}
 
-# * Load world map ----
-sf::sf_use_s2(FALSE)
-global_land_mask <- rnaturalearth::ne_countries(scale = "medium", returnclass = "sf") %>%
-  sf::st_as_sfc() %>%
-  sf::st_union() %>%
-  sf::st_make_valid() %>%
-  sf::st_wrap_dateline()
-
-global_ocean_mask <- invert_polygon(global_land_mask)
-
-# * Setup ----
-# Input files
-pa_files <- c(
-  "../../glossa_toy_data/pa_data/Natator_depressus.csv",
-  "../../glossa_toy_data/pa_data/Dermochelys_coriacea.csv",
-  "../../glossa_toy_data/pa_data/0090963-240229165702484.csv",
-  "../../glossa_toy_data/pa_data/0090963-240229165702484.csv"
-)
-
-historical_files <- "../../glossa_toy_data/historical_layers.zip"
-
-future_files <- c(
-  "../../glossa_toy_data/future1_layers.zip",
-  "../../glossa_toy_data/future2_layers.zip"
-)
-
-# Verify file paths for input files
-input_files <- c(pa_files, historical_files, future_files)
-
-for (file_path in input_files) {
-  if (!file.exists(file_path)) {
-    stop(paste("Error: File", file_path, "not found. Please verify the file path."))
-  }
-}
-
-# Analysis options
-round_digits <- TRUE
-n_round_digits <- 4
-scale_layers <- TRUE
-
-native_range <- c("historical", "past", "future")
-suitable_habitat <- c("historical", "past", "future")
-other_analysis <- c("functional_responses")
-
-# Initialize empty output
-presence_absence_list <- list(raw_pa = NULL, clean_pa = NULL, model_pa = NULL)
-covariate_list <- list(historical = NULL, past = NULL, future = NULL)
-prediction_results <- list(historical = NULL, past = NULL, future = NULL)
-other_results <- list(variable_importance = NULL, response_curve = NULL, cross_validation = NULL)
-pa_cutoff <- list(native_range = NULL, suitable_habitat = NULL)
-habitat_suitability <- list(historical = NULL, past = NULL, future = NULL)
-design_matrix <- list()
 ```
 
 
