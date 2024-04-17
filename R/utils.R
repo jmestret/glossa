@@ -1,0 +1,818 @@
+#=========================================================#
+# Shiny server utils  ----
+#=========================================================#
+
+#' Function to load presence/absence data from CSV files and perform validation
+#'
+#' @param file_path Path to the CSV file containing presence/absence data.
+#' @return A data frame containing the loaded presence/absence data.
+#' @details This function loads presence/absence data from a CSV file, performs validation to ensure required columns are present, and adds a default value for the presence/absence column if not present.
+#' @keywords internal
+load_presence_absence_data <- function(file_path) {
+  # Assumptions:
+  # - CSV files contain columns: "decimalLongitude", "decimalLatitude", "year", "species"
+  # - Files may or may not have a "pa" column; if not present, a default value of 1 is added for all records
+
+  if (!file.exists(file_path)) {
+    stop(paste("Error: File", file_path, "not found. Please verify the file path."))
+  }
+
+  # Load data
+  data <- read.csv2(file_path, header = TRUE, sep = "\t", dec = ".")
+
+  # Ensure required columns are present
+  required_columns <- c("decimalLongitude", "decimalLatitude", "year", "species")
+  missing_columns <- setdiff(required_columns, colnames(data))
+  if (length(missing_columns) > 0) {
+    stop("Missing columns in the CSV file:", paste(missing_columns, collapse = ", "))
+  }
+
+  # Add "pa" column if not present
+  if (!("pa" %in% colnames(data))) {
+    data$pa <- 1
+  }
+
+  return(data[, c(required_columns, "pa")])
+}
+
+
+#' Function to load covariate layers from ZIP files and perform validation
+#'
+#' @param file_path Path to the ZIP file containing covariate layers.
+#' @return A list containing raster layers for each covariate.
+#' @details This function loads covariate layers from a ZIP file, verifies their spatial characteristics, and returns them as a list of raster layers.
+#' @keywords internal
+load_covariate_layers <- function(file_path) {
+  # Assumptions:
+  # - ZIP files contain subdirectories for each covariate, with raster files stored within these directories
+  # - All covariates have the same number of files and the same spatial characteristics (e.g., CRS, resolution)
+
+  tmpdir <- tempdir()
+
+  # Extract contents of the zip file
+  zip_contents <- unzip(file_path, unzip = getOption("unzip"), exdir = tmpdir)
+
+  # Get unique covariate directories
+  covariates <- unique(dirname(zip_contents))
+
+  # Verify if each covariate has the same number of files
+  n_files <- sapply(covariates, function(x) length(list.files(x)))
+  if (length(unique(n_files)) != 1) {
+    stop("Error: The layers uploaded differ in number between the different covariates.")
+  }
+
+  # Load the first layer of each covariate to check CRS and resolution
+  layers <- lapply(covariates, function(x) {
+    terra::rast(list.files(x, full.names = TRUE)[1])
+  })
+
+  # Check if all layers have the same CRS
+  crs_list <- sapply(layers, function(x) {
+    terra::crs(x, proj = TRUE)
+  })
+  if (length(unique(crs_list)) != 1) {
+    stop("Error: The layers uploaded have different CRS. They must be in WGS84.")
+  }
+
+  # Check if all layers have the same resolution
+  res_list <- sapply(layers, function(x) {
+    terra::res(x)
+  })
+  if (length(unique(paste(res_list[,1], res_list[,2]))) != 1) {
+    stop("Error: The layers uploaded have different resolution.")
+  }
+
+  layers <- list()
+  for (cov_dir in covariates){
+    cov_name <- basename(cov_dir)
+    # Load layers
+    layers[[cov_name]] <- terra::rast(list.files(cov_dir, full.names = TRUE))
+  }
+
+  #unlink(tmpdir, recursive = TRUE)
+
+  return(layers)
+}
+
+
+#' Validate presences/absences CSV file
+#'
+#' This function validates a CSV file containing presences and absences data for species occurrences. It checks if the file has the expected columns and formats.
+#'
+#' @param file_path The file path to the CSV file.
+#' @return TRUE if the file has the expected columns and formats, FALSE otherwise.
+#' @details This function validates the format of a CSV file containing presence/absence data. It checks if the file has the expected columns and formats. If the "pa" column is missing, it assumes the presence/absence column and adds it with default values.
+#' @keywords internal
+validate_presences_absences_csv <- function(file_path) {
+  # Define expected columns and formats
+  expected_columns <- c("decimalLongitude", "decimalLatitude", "year", "species")
+  expected_formats <- c("numeric", "numeric", "numeric", "character")
+
+  # Load the CSV file
+  data <- read.csv2(file_path, sep = "\t", dec = ".", header = TRUE, stringsAsFactors = FALSE)
+
+  # Check if the data has the expected columns
+  if (all(expected_columns %in% colnames(data))) {
+    # Check if "pa" column is present
+    if ("pa" %in% colnames(data)) {
+      expected_columns <- c(expected_columns, "pa")
+    }
+    data <- data[, expected_columns]
+  } else { # If columns are not named correctly, check if positional order matches
+    if (ncol(data) == 4) { # Assuming it doesn't have the "pa" column
+      colnames(data) <- expected_columns
+    } else if (ncol(data) >= 5) { # Assuming it has the "pa" column
+      data <- data[, 1:5]
+      colnames(data) <- c(expected_columns, "pa")
+    } else {
+      warning("The uploaded CSV files do not have the correct format.")
+      return(FALSE)
+    }
+  }
+
+  # Check column formats
+  for (i in seq_along(expected_formats)) {
+    if (expected_formats[i] == "numeric" && !all(sapply(data[[i]], is.numeric))) {
+      warning(paste("Column", i, "is not numeric."))
+      return(FALSE)
+    } else if (expected_formats[i] == "character" && !all(sapply(data[[i]], is.character))) {
+      warning(paste("Column", i, "is not character."))
+      return(FALSE)
+    }
+  }
+
+  if ("pa" %in% colnames(data)) {
+    if (!(all(data[, "pa"]) %in% c(0, 1)))
+      return(FALSE)
+  }
+
+  return(TRUE)
+}
+
+
+#' Validate Layers Zip
+#'
+#' This function validates a zip file containing layers. It checks if the layers have the same number of files, CRS (Coordinate Reference System), and resolution.
+#'
+#' @param file_path Path to the zip file containing layers.
+#' @return TRUE if the layers pass validation criteria, FALSE otherwise.
+#' @details This function expects that each subfolder within the zip file represents a covariate, and each covariate contains one or more raster files. It checks if the layers within each covariate have the same CRS and resolution.
+#'
+#' @importFrom terra rast crs res
+#' @keywords internal
+validate_layers_zip <- function(file_path) {
+  # Extract contents of the zip file
+  tmpdir <- tempdir()
+  zip_contents <- unzip(file_path, unzip = getOption("unzip"), exdir = tmpdir)
+
+  # Get unique covariate directories
+  covariates <- unique(dirname(zip_contents))
+  # Check if each covariate has the same number of files
+  n_files <- sapply(covariates, function(x) length(list.files(x)))
+  if (length(unique(n_files)) != 1) {
+    warning("The layers uploaded differ in number between the different covariates.")
+    return(FALSE)
+  }
+
+  # Load the first layer of each covariate to check CRS and resolution
+  layers <- lapply(covariates, function(x) {
+    terra::rast(list.files(x, full.names = TRUE)[1])
+  })
+
+  # Check if all layers have the same CRS
+  crs_list <- sapply(layers, function(x) {
+    terra::crs(x, proj = TRUE)
+  })
+  if (length(unique(crs_list)) != 1) {
+    warning("The layers uploaded have different CRS. They must be in WGS84.")
+    return(FALSE)
+  }
+
+  # Check if all layers have the same resolution
+  res_list <- sapply(layers, function(x) {
+    paste(terra::res(x), collapse = "")
+  })
+  if (length(unique(res_list)) != 1) {
+    warning("The layers uploaded have different resolution.")
+    return(FALSE)
+  }
+
+  # If all checks passed, return TRUE
+  return(TRUE)
+}
+
+
+#' Validate Historical and Future Layers
+#'
+#' This function validates historical and future layers by checking their CRS, resolution, and covariates.
+#'
+#' @param hist_path Path to the ZIP file containing historical layers.
+#' @param fut_path Path to the ZIP file containing future layers.
+#' @return TRUE if the layers pass validation criteria, FALSE otherwise.
+#' @details This function compares historical and future layers to ensure they have the same CRS, resolution, and covariates.
+#'
+#' @keywords internal
+validate_hist_fut_layers <- function(hist_path, fut_path) {
+  # Extract contents of the zip file
+  tmpdir_hist <- tempdir()
+  tmpdir_fut <- tempdir()
+  hist_contents <- unzip(hist_path, unzip = getOption("unzip"), exdir = tmpdir_hist)
+  fut_contents <- unzip(fut_path, unzip = getOption("unzip"), exdir = tmpdir_fut)
+
+  # Get unique covariate directories
+  hist_covariates <- unique(dirname(hist_contents))
+  fut_covariates <- unique(dirname(fut_contents))
+
+  # Load one layer to check CRS and resolution
+  hist_layer <- terra::rast(list.files(hist_covariates[1], full.names = TRUE)[1])
+  fut_layer <- terra::rast(list.files(fut_covariates[1], full.names = TRUE)[1])
+
+  # Check if they have the same CRS
+  if (!(terra::crs(hist_layer, proj = TRUE) == terra::crs(fut_layer, proj = TRUE))) {
+    warning("The future layers have different CRS from historical layers. They must be in WGS84.")
+    return(FALSE)
+  }
+
+  # Check if they have the same resolution
+  if (!(paste(terra::res(hist_layer), collapse = "") == paste(terra::res(fut_layer), collapse = ""))) {
+    warning("The future layers uploaded have different resolution from the historical layers.")
+    return(FALSE)
+  }
+
+  # Check they have same covariates
+  if (!all(paste(sort(basename(hist_covariates)), collapse = "") == paste(sort(basename(fut_covariates)), collapse = ""))){
+    warning("The future layers uploaded have different covariates from the historical layers.")
+    return(FALSE)
+  }
+
+  # If all checks passed, return TRUE
+  return(TRUE)
+}
+
+
+#' Process Covariate Layers
+#'
+#' This function processes covariate layers by cropping them to the globe extent, extending them to cover the entire globe, and removing land values.
+#'
+#' @param layers A list of raster layers representing covariates.
+#' @param ocean_mask A spatial polygon representing the ocean boundaries.
+#' @return A list containing processed raster layers for each covariate.
+#' @details This function takes a list of raster layers representing covariates and a spatial polygon representing ocean boundaries. It crops each layer to the globe extent, extends it to cover the entire globe, and removes land values using the ocean mask.
+#'
+#' @keywords internal
+process_covariate_layers <- function(layers, ocean_mask) {
+  # Function purpose: Process covariate layers
+  # Assumptions:
+  # - 'layers' is a list of raster layers
+  # - 'land_mask' is a spatial polygon representing the land boundaries
+
+  processed_layers <- list()
+
+  for (cov_name in names(layers)) {
+    # Crop to globe extent
+    cropped_layer <- terra::crop(layers[[cov_name]], ext(-180, 180, -90, 90))
+
+    # Extend to globe extent
+    extended_layer <- terra::extend(cropped_layer, ext(-180, 180, -90, 90))
+
+
+    # Remove land values
+    processed_layers[[cov_name]] <- terra::mask(extended_layer, terra::vect(ocean_mask))
+  }
+  return(processed_layers)
+}
+
+
+#' Extract Covariate Values without NA
+#'
+#' This function extracts covariate values for species occurrences, excluding NA values.
+#'
+#' @param data A data frame containing species occurrence data with columns "decimalLongitude" and "decimalLatitude".
+#' @param covariate_layers A list of raster layers representing covariates.
+#' @return A data frame containing species occurrence data with covariate values, excluding NA values.
+#' @details This function extracts covariate values for each species occurrence location from the provided covariate layers. It returns a data frame containing species occurrence data with covariate values, excluding any NA values.
+#'
+#' @keywords internal
+extract_noNA_cov_values <- function(data, covariate_layers){
+  covariate_values <- terra::extract(
+    covariate_layers,
+    data[, c("decimalLongitude", "decimalLatitude")]
+  )
+
+  covariate_values <- cbind(data, covariate_values) %>%
+    tidyr::drop_na()
+
+  return(covariate_values)
+}
+
+
+
+#' Clean Coordinates of Presence/Absence Data
+#'
+#' This function cleans coordinates of presence/absence data by removing NA coordinates, rounding coordinates if specified, removing duplicated points, and removing points outside specified spatial polygon boundaries.
+#'
+#' @param data A data frame containing presence/absence data with columns "decimalLongitude" and "decimalLatitude".
+#' @param sf_poly A spatial polygon representing the boundaries within which coordinates should be kept.
+#' @param overlapping Logical indicating whether points overlapping the polygon should be kept (TRUE) or removed (FALSE).
+#' @param round_digits Logical indicating whether to round coordinates.
+#' @param n_digits Number of digits to round the coordinates to, if 'round_digits' is TRUE.
+#' @return A cleaned data frame containing presence/absence data with valid coordinates.
+#' @details This function takes a data frame containing presence/absence data with longitude and latitude coordinates, a spatial polygon representing boundaries within which to keep points, and parameters for rounding coordinates and handling duplicated points. It returns a cleaned data frame with valid coordinates within the specified boundaries.
+#'
+#' @keywords internal
+clean_coordinates <- function(data, sf_poly, overlapping = TRUE, round_digits = FALSE, n_digits = 0) {
+  # Assumptions:
+  # - 'data' is a data frame with columns: "decimalLongitude", "decimalLatitude"
+  # - 'land_mask' is a spatial polygon representing the land boundaries
+  # - Coordinates are in WGS84 (EPSG:4326) coordinate system
+
+  # Remove NA coordinates
+  data <- data %>%
+    dplyr::filter(!is.na(decimalLongitude), !is.na(decimalLatitude))
+
+  # Round coordinates
+  if (round_digits) {
+    data <- data %>%
+      mutate(decimalLongitude = round(decimalLongitude, n_digits),
+             decimalLatitude = round(decimalLatitude, n_digits))
+  }
+
+  # Remove duplicated points
+  data <- remove_duplicate_points(data, coords = c("decimalLongitude", "decimalLatitude"))
+
+  # Remove points outside the ocean boundaries
+  data <- remove_points_poly(data, sf_poly, overlapping, c("decimalLongitude", "decimalLatitude"))
+
+  return(data)
+}
+
+
+#' Export Glossa Model Results
+#'
+#' This function exports various types of Glossa model results, including native range predictions, suitable habitat predictions, model data, variable importance, functional response results, and presence/absence probability cutoffs. It generates raster files for prediction results, CSV files for model data and variable importance, and CSV files for functional response results. Additionally, it creates a CSV file for presence/absence probability cutoffs if provided.
+#'
+#' @keywords internal
+glossa_export <- function(sp = NULL, mods = NULL, time = NULL, fields = NULL,
+                          model_data = FALSE, fr = FALSE, prob_cut = FALSE,
+                          varimp = FALSE, layer_format = "tif",
+                          prediction_results = NULL, presence_absence_list = NULL,
+                          other_results = NULL, pa_cutoff = NULL) {
+  # Initialize an empty vector to store file paths of exported files
+  export_files <- c()
+
+  if ("native_range" %in% mods){
+    # Create a temporary directory to store native range files
+    tmp_nr <- file.path(tempdir(), "native_range")
+    dir.create(tmp_nr)
+
+    # Iterate over each time period
+    for (t in time){
+      if (t == "historical"){
+        dir.create(file.path(tmp_nr, "historical"))
+        # Iterate over each field and export raster files
+        for (value in fields) {
+          terra::writeRaster(
+            prediction_results[[t]][["native_range"]][[sp]][[value]],
+            filename = file.path(file.path(tmp_nr, "historical", paste(gsub(" ", "_", sp), "_native_range_", t, "_", value, ".", layer_format, sep = ""))),
+            overwrite = TRUE
+          )
+        }
+      } else if (t == "past"){
+        dir.create(file.path(tmp_nr, "past"))
+        # Iterate over each year and each field to export raster files
+        for (year in seq_along(prediction_results[[t]][["native_range"]][[sp]])){
+          for (value in fields) {
+            terra::writeRaster(
+              prediction_results[[t]][["native_range"]][[sp]][[year]][[value]],
+              filename = file.path(file.path(tmp_nr, "past", paste(gsub(" ", "_", sp), "_native_range_", t, "_", year,  "_", value, ".", layer_format, sep = ""))),
+              overwrite = TRUE
+            )
+          }
+        }
+      } else if (t == "future"){
+        dir.create(file.path(tmp_nr, "future"))
+        # Iterate over each scenario, year, and field to export raster files
+        for (scenario in names(prediction_results[[t]][["native_range"]][[sp]])){
+          dir.create(file.path(tmp_nr, "future", scenario))
+          for (year in seq_along(prediction_results[[t]][["native_range"]][[sp]][[scenario]])){
+            for (value in fields) {
+              terra::writeRaster(
+                prediction_results[[t]][["native_range"]][[sp]][[scenario]][[year]][[value]],
+                filename = file.path(file.path(tmp_nr, "future", scenario, paste(gsub(" ", "_", sp), "_native_range_", t, "_", year, "_", value, ".", layer_format, sep = ""))),
+                overwrite = TRUE
+              )
+            }
+          }
+        }
+      }
+    }
+    # Add the temporary directory to the list of exported files
+    export_files <- c(export_files, tmp_nr)
+  }
+
+
+  if ("suitable_habitat" %in% mods){
+    # Create a temporary directory to store suitable habitat files
+    tmp_sh <- file.path(tempdir(), "suitable_habitat")
+    dir.create(tmp_sh)
+
+    for (t in time){
+      if (t == "historical"){
+        dir.create(file.path(tmp_sh, "historical"))
+        # Iterate over each field and export raster files
+        for (value in fields) {
+          terra::writeRaster(
+            prediction_results[[t]][["suitable_habitat"]][[sp]][[value]],
+            filename = file.path(file.path(tmp_sh, "historical", paste(gsub(" ", "_", sp), "_suitable_habitat_", t, "_", value, ".", layer_format, sep = ""))),
+            overwrite = TRUE
+          )
+        }
+      } else if (t == "past"){
+        dir.create(file.path(tmp_sh, "past"))
+        # Iterate over each year and each field to export raster files
+        for (year in seq_along(prediction_results[[t]][["suitable_habitat"]][[sp]])){
+          for (value in fields) {
+            terra::writeRaster(
+              prediction_results[[t]][["suitable_habitat"]][[sp]][[year]][[value]],
+              filename = file.path(file.path(tmp_sh, "past", paste(gsub(" ", "_", sp), "_suitable_habitat_", t, "_", year,  "_", value, ".", layer_format, sep = ""))),
+              overwrite = TRUE
+            )
+          }
+        }
+      } else if (t == "future"){
+        dir.create(file.path(tmp_sh, "future"))
+        # Iterate over each scenario, year, and field to export raster files
+        for (scenario in names(prediction_results[[t]][["suitable_habitat"]][[sp]])){
+          dir.create(file.path(tmp_sh, "future", scenario))
+          for (year in seq_along(prediction_results[[t]][["suitable_habitat"]][[sp]][[scenario]])){
+            for (value in fields) {
+              terra::writeRaster(
+                prediction_results[[t]][["suitable_habitat"]][[sp]][[scenario]][[year]][[value]],
+                filename = file.path(file.path(tmp_sh, "future", scenario, paste(gsub(" ", "_", sp), "_suitable_habitat_", t, "_", year, "_", value, ".", layer_format, sep = ""))),
+                overwrite = TRUE
+              )
+            }
+          }
+        }
+      }
+    }
+    # Add the temporary directory to the list of exported files
+    export_files <- c(export_files, tmp_sh)
+  }
+
+  # Export model data if requested
+  if (model_data){
+    if (!is.null(presence_absence_list[["model_pa"]])){
+      tmp_model_data <- file.path(tempdir(), paste(gsub(" ", "_", sp), "_model_data.csv", sep = ""))
+      df <- presence_absence_list[["model_pa"]][[sp]]
+      write.table(df, tmp_model_data, quote = FALSE, sep = "\t", dec = ".", row.names = FALSE, col.names = TRUE)
+      export_files <- c(export_files, tmp_model_data)
+    } else {
+      warning("Unable to download model data as it has not been computed.")
+    }
+
+  }
+
+  # Export variable importance if requested
+  if (varimp){
+    if (!is.null(other_results[["variable_importance"]])){
+      tmp_var_imp <- file.path(tempdir(), "variable_importance")
+      dir.create(tmp_var_imp)
+      for (mod in names(other_results[["variable_importance"]])){
+        sp_values <- other_results[["variable_importance"]][[mod]][[sp]]
+        df <- data.frame(covariates = names(sp_values), variable_importance = sp_values, row.names = NULL)
+        write.table(df, file = file.path(tmp_var_imp, paste(gsub(" ", "_", sp), "_variable_importance_", mod, ".csv", sep = "")), quote = FALSE, sep = "\t", dec = ".", row.names = FALSE, col.names = TRUE)
+      }
+      export_files <- c(export_files, tmp_var_imp)
+    } else {
+      warning("Unable to download variable importance as it has not been computed.")
+    }
+
+  }
+
+  # Export functional responses if requested
+  if (fr){
+    if (!is.null(other_results[["response_curve"]])){
+      tmp_fr <- file.path(tempdir(), "functional_responses")
+      dir.create(tmp_fr)
+      for (cov in names(other_results[["response_curve"]][[sp]])){
+        write.table(other_results[["response_curve"]][[sp]][[cov]], file = file.path(tmp_fr, paste(gsub(" ", "_", sp), "_functional_response_", cov, ".csv", sep = "")), quote = FALSE, sep = "\t", dec = ".", row.names = FALSE, col.names = TRUE)
+      }
+      export_files <- c(export_files, tmp_fr)
+    } else {
+      warning("Unable to download functional response results as they have not been computed.")
+    }
+
+  }
+
+  # Export presence/absence probability cutoffs if requested
+  if (prob_cut){
+    if (!all(sapply(pa_cutoff, is.null))){
+      tmp_cutoff <- file.path(tempdir(), paste(gsub(" ", "_", sp), "_presence_probability_cutoff.csv", sep = ""))
+      sp_values <- lapply(pa_cutoff, function(x) x[[sp]])
+      sp_values <- sp_values[!sapply(sp_values,is.null)]
+      df <- data.frame(model = names(sp_values), prob_cutoff = unlist(sp_values), row.names = NULL)
+      write.table(df, tmp_cutoff, quote = FALSE, sep = "\t", dec = ".", row.names = FALSE, col.names = TRUE)
+      export_files <- c(export_files, tmp_cutoff)
+    } else {
+      warning("Unable to download P/A probability cutoff as they have not been computed.")
+    }
+  }
+
+  if (is.null(export_files)) {
+    tmp_empty <- file.path(tempdir(), "glossa_empty")
+    dir.create(tmp_empty)
+    export_files <- tmp_empty
+  }
+
+  return(export_files)
+}
+
+# Cutoff functions----
+# Functions obtained from https://github.com/selva86/InformationValue
+#' @keywords internal
+getFprTpr<- function(actuals, predictedScores, threshold=0.5){
+  return(list(1-specificity(actuals=actuals, predictedScores=predictedScores, threshold=threshold),
+              sensitivity(actuals=actuals, predictedScores=predictedScores, threshold=threshold)))
+}
+
+#' @keywords internal
+specificity <- function(actuals, predictedScores, threshold=0.5){
+  predicted_dir <- ifelse(predictedScores < threshold, 0, 1)
+  actual_dir <- actuals
+  no_without_and_predicted_to_not_have_event <- sum(actual_dir != 1 & predicted_dir != 1, na.rm=T)
+  no_without_event <- sum(actual_dir != 1, na.rm=T)
+  return(no_without_and_predicted_to_not_have_event/no_without_event)
+}
+
+#' @keywords internal
+sensitivity <- function(actuals, predictedScores, threshold=0.5){
+  predicted_dir <- ifelse(predictedScores < threshold, 0, 1)
+  actual_dir <- actuals
+  no_with_and_predicted_to_have_event <- sum(actual_dir == 1 & predicted_dir == 1, na.rm=T)
+  no_with_event <- sum(actual_dir == 1, na.rm=T)
+  return(no_with_and_predicted_to_have_event/no_with_event)
+}
+
+#' @keywords internal
+youdensIndex <- function(actuals, predictedScores, threshold=0.5){
+  Sensitivity <- sensitivity(actuals, predictedScores, threshold = threshold)
+  Specificity <- specificity(actuals, predictedScores, threshold = threshold)
+  return(Sensitivity + Specificity - 1)
+}
+
+#' @keywords internal
+misClassError <- function(actuals, predictedScores, threshold=0.5){
+  predicted_dir <- ifelse(predictedScores < threshold, 0, 1)
+  actual_dir <- actuals
+  return(round(sum(predicted_dir != actual_dir, na.rm=T)/length(actual_dir), 4))
+}
+
+#' @keywords internal
+optimalCutoff <- function(actuals, predictedScores, optimiseFor="misclasserror", returnDiagnostics=FALSE){
+  # initialise the diagnostics dataframe to study the effect of various cutoff values.
+  sequence <- seq(max(predictedScores), min(predictedScores), -0.01)
+  sensMat <- data.frame(CUTOFF=sequence, FPR= numeric(length(sequence)),TPR= numeric(length(sequence)), YOUDENSINDEX=numeric(length(sequence)))
+  sensMat[, c(2:3)] <- as.data.frame(t(mapply(getFprTpr, threshold=sequence, MoreArgs=list(actuals=actuals, predictedScores=predictedScores))))
+  sensMat$YOUDENSINDEX <- mapply(youdensIndex, threshold=sequence, MoreArgs=list(actuals=actuals, predictedScores=predictedScores))
+  sensMat$SPECIFICITY <- (1 - as.numeric(sensMat$FPR))
+  sensMat$MISCLASSERROR <- mapply(misClassError, threshold=sequence, MoreArgs=list(actuals=actuals, predictedScores=predictedScores))
+
+  # Select the cutoff
+  if(optimiseFor=="Both"){
+    rowIndex <- which(sensMat$YOUDENSINDEX == max(as.numeric(sensMat$YOUDENSINDEX)))[1]  # choose the maximum cutoff
+  }else if(optimiseFor=="Ones"){
+    rowIndex <- which(sensMat$TPR == max(as.numeric(sensMat$TPR)))[1]  # choose the maximum cutoff
+  }else if(optimiseFor=="Zeros"){
+    rowIndex <- tail(which(sensMat$SPECIFICITY == max(as.numeric(sensMat$SPECIFICITY))), 1)  # choose the minimum cutoff
+  }else if(optimiseFor=="misclasserror"){
+    rowIndex <- tail(which(sensMat$MISCLASSERROR == min(as.numeric(sensMat$MISCLASSERROR))), 1)  # choose the minimum cutoff
+  }
+
+  # what should the function return
+  if(!returnDiagnostics){
+    return(sensMat$CUTOFF[rowIndex])
+  } else {
+    output <- vector(length=6, mode="list")  # initialise diagnostics output
+    names(output) <- c("optimalCutoff", "sensitivityTable", "misclassificationError", "TPR", "FPR", "Specificity")  # give names
+    output$optimalCutoff <- sensMat$CUTOFF[rowIndex]
+    output$sensitivityTable <- sensMat
+    output$misclassificationError <- misClassError(actuals, predictedScores, threshold=sensMat$CUTOFF[rowIndex])
+    output$TPR <- getFprTpr(actuals, predictedScores, threshold=sensMat$CUTOFF[rowIndex])[[2]]
+    output$FPR <- getFprTpr(actuals, predictedScores, threshold=sensMat$CUTOFF[rowIndex])[[1]]
+    output$Specificity <- sensMat$SPECIFICITY[rowIndex]
+    return(output)
+  }
+}
+# End cutoff functions----
+
+#=========================================================#
+# UI utils ----
+#=========================================================#
+
+#' Create a Sparkline Value Box
+#'
+#' This function creates a custom value box with a sparkline plot embedded in it.
+#'
+#' @param title The title or heading of the value box.
+#' @param sparkline_data The data used to generate the sparkline plot.
+#' @param description A short description or additional information displayed below the value box.
+#' @param type The type of sparkline plot to generate. Default is "line".
+#' @param box_color The background color of the value box.
+#' @param width The width of the value box. Default is 4.
+#' @param elevation The elevation of the value box. Default is 0.
+#' @param ... Additional parameters to be passed to the sparkline function.
+#'
+#' @return Returns a custom value box with the specified parameters.
+#'
+#' @keywords internal
+sparkvalueBox <- function(title, sparkline_data, description, type = "line", box_color = "white", width = 4, elevation = 0, ...) {
+
+  # Generate the sparkline plot
+  if (type == "line"){
+    # Calculate percentage increase and format description accordingly
+    value <- sparkline_data[length(sparkline_data)]
+    value <- ifelse(nchar(value) > 6, format(value, scientific = TRUE, digits = 2), value)
+    perc_inc <- round(((sparkline_data[length(sparkline_data)] - sparkline_data[1]) / sparkline_data[1]) * 100, 1)
+    perc_inc <- ifelse(is.nan(perc_inc), 0, perc_inc)
+    description <- paste0(ifelse(perc_inc >= 0, "+", ""), perc_inc, description)
+    # Determine icon and colors based on percentage increase
+    icon_name <- ifelse(perc_inc >= 0, "arrow-trend-up", "arrow-trend-down")
+    icon_color <- ifelse(perc_inc >= 0, "green", "red")
+    lineColor <- ifelse(perc_inc >= 0, "#4e8eed", "#E38CC0")
+    fillColor <- ifelse(perc_inc >= 0, "#bcd3f5", "#F7D5EB")
+    # Generate sparkline plot
+    sparkline_plot <- sparkline(sparkline_data, type = "line", width = "100%", height = "50px", lineColor = lineColor, fillColor = fillColor, ...)
+  } else if (type == "bar") {
+    # Calculate ratio and format description accordingly
+    value <- paste0(sparkline_data[1], "/", sparkline_data[2])
+    ratio <- round(sparkline_data[1]/sparkline_data[2], 1)
+    ratio <- ifelse(is.nan(ratio), 1, ratio)
+    description <- paste0(ratio, description)
+    # Determine icon color based on ratio
+    icon_name <- "scale-balanced"
+    if (ratio > 1){
+      icon_name <- "scale-unbalanced"
+    }
+    if (ratio < 1) {
+      icon_name <- "scale-unbalanced-flip"
+    }
+    icon_color <-  "#007bff"
+    # No sparkline plot for bar type
+    #sparkline_plot <- sparkline(sparkline_data, type = "bar", barWidth = "100%", height = "50px", chartRangeMin = 0, ...)
+    sparkline_plot <- NULL
+  }
+
+
+  # CSS styling for the value box
+  valueBox_css <- "
+    .spark-value-and-sparkline {
+      display: flex; /* or use display: grid; */
+      align-items: center; /* if using flexbox */
+    }
+
+    .spark-box-number,
+    .spark-box-sparkline {
+      width: 50%; /* Adjust as needed */
+      flex-grow: 1; /* Ensure equal width distribution */
+    }
+
+    .spark-box-number {
+      font-size: 2em; /* Relative font size */
+      font-weight: bold; /* Make the value bold */
+    }
+
+    /* Adjust the alignment or size of the sparkline_plot as needed */
+    .spark-box-sparkline {
+      /* Your styles for sparkline_plot */
+    }
+
+    .spark-box-description {
+      text-align: right; /* Right-align the description */
+      padding-right: 1em; /* Adjust as needed */
+    }
+  "
+
+  # Create the custom value box div
+  valueBoxCl <- paste0("small-box bg-", box_color)
+  valueBoxCl <- paste0(valueBoxCl, " elevation-", elevation) # Add elevation class
+  custom_valueBox <- div(
+    class = valueBoxCl,
+    div(
+      class = "inner",
+      div(
+        class = "info-box-text",
+        title
+      ),
+      div(
+        class = "spark-value-and-sparkline", # Parent div for value and sparkline_plot
+        div(
+          class = "spark-box-number",
+          value
+        ),
+        div(
+          class = "spark-box-sparkline",
+          sparkline_plot
+        )
+      )
+    ),
+    div(
+      class = "spark-box-description",
+      icon(icon_name, style = paste0("color:", icon_color, ";")), # Add an icon (you can choose a different one)
+      description
+    )
+  )
+
+  # Return the value box div
+  div(
+    class = if (!is.null(width)) paste0("col-sm-", width),
+    tags$style(HTML(valueBox_css)), # Include CSS styling
+    custom_valueBox
+  )
+}
+
+
+#' Create Download Action Button
+#'
+#' This function generates a download action button that triggers the download of a file when clicked.
+#'
+#' @param outputId The output ID for the button.
+#' @param label The label text displayed on the button. Default is "Download".
+#' @param icon The icon to be displayed on the button. Default is NULL.
+#' @param width The width of the button. Default is NULL.
+#' @param status The status of the button. Default is NULL.
+#' @param outline Logical indicating whether to use outline style for the button. Default is FALSE.
+#' @param ... Additional parameters to be passed to the actionButton function.
+#'
+#' @return Returns a download action button with the specified parameters.
+#'
+#' @keywords internal
+downloadActionButton <- function(outputId, label = "Download", icon = NULL,
+                                 width = NULL, status = NULL, outline = FALSE, ...){
+  # Generate the action button using actionButton from the bs4Dash package
+  bttn <- bs4Dash::actionButton(
+    inputId = paste0(outputId, "_bttn"),
+    label = tagList(tags$a(id = outputId,
+                           class = "btn shiny-download-link", href = "", target = "_blank",
+                           download = NA), label),
+    icon = icon,
+    width = width,
+    status = status,
+    outline = outline,
+    ...
+  )
+
+  # Append onclick attribute to the button to trigger download when clicked
+  htmltools::tagAppendAttributes(bttn, onclick = sprintf("getElementById('%s').click()",
+                                                         outputId))
+}
+
+#=========================================================#
+# Shiny plots ----
+#=========================================================#
+#' Generate World Prediction Plot
+#'
+#' This function generates a world prediction plot based on prediction raster layers and presence/absence points.
+#'
+#' @param prediction_layer Raster prediction layer.
+#' @param pa_points Presence/absence points.
+#' @param legend_label Label for the legend.
+#' @param global_land_mask Spatial polygon representing global land mask.
+#'
+#' @return Returns a ggplot object representing the world prediction plot.
+#'
+#' @keywords internal
+generate_world_prediction_plot <- function(prediction_layer, pa_points, legend_label, global_land_mask) {
+  p <- ggplot()
+
+  # Add prediction layer if available
+  if (!is.null(prediction_layer)) {
+    p <- p +
+      geom_spatraster(data = prediction_layer) +
+      scale_fill_gradientn(colours = c("#9fe5d7", "#65c4d8", "#39a6d5", "#2b8fc7", "#f67d33", "#f44934", "#ca3a43", "#9e0142"),
+                           limits = c(0,1), name = legend_label)
+  }
+
+  # Add presence/absence points if available
+  if (!is.null(pa_points)) {
+    p <- p +
+      geom_point(data = pa_points, aes(x = decimalLongitude, y = decimalLatitude, color = as.factor(pa)), alpha = 0.5) +
+      scale_color_manual(values = c("0" = "#F6733A","1" = "#4FA3AB"), labels = c("Absences", "Presences"), name = NULL)
+  }
+
+  # Add global land mask
+  p <- p +
+    geom_sf(data = global_land_mask, color = "#353839", fill = "antiquewhite") +
+    theme(
+      panel.grid.major = element_line(
+        color = gray(.5),
+        linetype = "dashed",
+        linewidth = 0.5
+      ),
+      panel.background = element_rect(fill = "white"),
+      axis.title = element_blank(),
+      legend.position = "bottom"
+    )
+
+  return(p)
+}

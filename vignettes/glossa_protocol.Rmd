@@ -1,0 +1,132 @@
+---
+title: "Step by step guide to GLOSSA analysis fitting BART models"
+subtitle: "Version 0.1.0"
+author: "Jorge Mestre Tomás"
+date: "`r Sys.Date()`"
+output: 
+  rmarkdown::html_vignette:
+    toc: TRUE
+    toc_depth: 2
+    number_sections: TRUE
+vignette: >
+  %\VignetteIndexEntry{Step by step guide to GLOSSA analysis}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+# Load libraries, functions and supp. data
+
+```{r}
+# * Load packages ----
+list_of_packages <- c("tidyverse","terra", "tidyterra", "glossa")
+req <- unlist(lapply(list_of_packages,require,character.only=TRUE))
+need <- list_of_packages[req==FALSE]
+if(length(need) > 0) {
+  install.packages(need)
+  lapply(need,require,character.only=TRUE)
+}
+
+# * Load world map ----
+sf::sf_use_s2(FALSE)
+global_land_mask <- rnaturalearth::ne_countries(scale = "medium", returnclass = "sf") %>%
+  sf::st_as_sfc() %>%
+  sf::st_union() %>%
+  sf::st_make_valid() %>%
+  sf::st_wrap_dateline()
+
+global_ocean_mask <- invert_polygon(global_land_mask)
+
+# * Setup ----
+# Input files
+pa_files <- c(
+  "../../glossa_toy_data/pa_data/Natator_depressus.csv",
+  "../../glossa_toy_data/pa_data/Dermochelys_coriacea.csv",
+  "../../glossa_toy_data/pa_data/0090963-240229165702484.csv",
+  "../../glossa_toy_data/pa_data/0090963-240229165702484.csv"
+)
+
+historical_files <- "../../glossa_toy_data/historical_layers.zip"
+
+future_files <- c(
+  "../../glossa_toy_data/future1_layers.zip",
+  "../../glossa_toy_data/future2_layers.zip"
+)
+
+# Verify file paths for input files
+input_files <- c(pa_files, historical_files, future_files)
+
+for (file_path in input_files) {
+  if (!file.exists(file_path)) {
+    stop(paste("Error: File", file_path, "not found. Please verify the file path."))
+  }
+}
+
+# Analysis options
+round_digits <- TRUE
+n_round_digits <- 4
+scale_layers <- TRUE
+
+native_range <- c("historical", "past", "future")
+suitable_habitat <- c("historical", "past", "future")
+other_analysis <- c("functional_responses")
+
+# Initialize empty output
+presence_absence_list <- list(raw_pa = NULL, clean_pa = NULL, model_pa = NULL)
+covariate_list <- list(historical = NULL, past = NULL, future = NULL)
+prediction_results <- list(historical = NULL, past = NULL, future = NULL)
+other_results <- list(variable_importance = NULL, response_curve = NULL, cross_validation = NULL)
+pa_cutoff <- list(native_range = NULL, suitable_habitat = NULL)
+habitat_suitability <- list(historical = NULL, past = NULL, future = NULL)
+design_matrix <- list()
+```
+
+
+## Vignette Info
+
+Note the various macros within the `vignette` section of the metadata block above. These are required in order to instruct R how to build the vignette. Note that you should change the `title` field and the `\VignetteIndexEntry` to match the title of your vignette.
+
+## Styles
+
+The `html_vignette` template includes a basic CSS theme. To override this theme you can specify your own CSS in the document metadata as follows:
+
+    output: 
+      rmarkdown::html_vignette:
+        css: mystyles.css
+
+## Figures
+
+The figure sizes have been customised so that you can easily put two images side-by-side. 
+
+```{r, fig.show='hold'}
+plot(1:10)
+plot(10:1)
+```
+
+You can enable figure captions by `fig_caption: yes` in YAML:
+
+    output:
+      rmarkdown::html_vignette:
+        fig_caption: yes
+
+Then you can use the chunk option `fig.cap = "Your figure caption."` in **knitr**.
+
+## More Examples
+
+You can write math expressions, e.g. $Y = X\beta + \epsilon$, footnotes^[A footnote here.], and tables, e.g. using `knitr::kable()`.
+
+```{r, echo=FALSE, results='asis'}
+knitr::kable(head(mtcars, 10))
+```
+
+Also a quote using `>`:
+
+> "He who gives up [code] safety for [code] speed deserves neither."
+([via](https://twitter.com/hadleywickham/status/504368538874703872))

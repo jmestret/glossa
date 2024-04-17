@@ -1,0 +1,51 @@
+Package: glossa
+Type: Package
+Title: GLobal Ocean Species Spatiotemporal Analysis
+Version: 0.0.1
+Authors@R:
+    c(person(given = "Alba",
+             family = "Fuster-Alonso",
+             role = c("aut"),
+             email = "",
+             comment = c(ORCID = "0000-0002-8983-3417")),
+      person(given = "Jorge",
+             family = "Mestre-Tomás",
+             role = c("aut", "cre"),
+             email = "jorge.mestre.tomas@csic.es",
+             comment = c(ORCID = "0000-0002-8983-3417")))
+Description: More about what it does (maybe more than one line)
+    Use four spaces when indenting paragraphs within the Description.
+License: MIT + file LICENSE
+URL: https://github.com/jmestret/glossa
+BugReports: https://github.com/jmestret/glossa/issues
+Depends: R (>= 3.5.0)
+Imports:
+  bs4Dash,
+  dbarts,
+	dplyr,
+	DT,
+	ggplot2,
+	htmltools,
+	jsonlite,
+	matrixStats,
+	mcp,
+	rnaturalearth,
+	rnaturalearthdata,
+	sf,
+	shiny,
+	shinyWidgets,
+	sparkline,
+	svglite,
+	terra,
+	tidyr,
+	tidyterra,
+	waiter,
+	zip
+Suggests:
+	knitr,
+	rmarkdown,
+	testthat,
+	tidyverse
+Encoding: UTF-8
+Language: en-US
+LazyData: true
