@@ -1,5 +1,5 @@
 ---
-title: "Step by step guide to GLOSSA analysis fitting BART models"
+title: "Introduction to the GLOSSA workflow in R with a toy example"
 subtitle: "Version 0.1.0"
 author: "Jorge Mestre Tomás"
 date: "`r Sys.Date()`"
@@ -9,7 +9,7 @@ output:
     toc_depth: 2
     number_sections: TRUE
 vignette: >
-  %\VignetteIndexEntry{Step by step guide to GLOSSA analysis}
+  %\VignetteIndexEntry{Introduction to the GLOSSA workflow in R with a toy example}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 
@@ -18,55 +18,85 @@ vignette: >
 ```{r setup, include = FALSE}
 knitr::opts_chunk$set(
   collapse = TRUE,
-  comment = "#>"
+  comment = "#>",
+  message = FALSE,
+  warning = FALSE,
+  error = FALSE
 )
 ```
 
-# Load libraries, functions and supp. data
+# Introduction
+
+*Briefly introduce GLOSSA, BART and the simplicity of the toy example*
+
+*Overview of GLOSSA workflow image*
+
+# Load dependencies
 
 ```{r}
+# Load libraries
+library(glossa)
+library(dplyr)
+library(ggplot2)
 
+# Load world map
+sf::sf_use_s2(FALSE)
+global_land_mask <- rnaturalearth::ne_countries(scale = "medium", returnclass = "sf") %>%
+  sf::st_as_sfc() %>%
+  sf::st_union() %>%
+  sf::st_make_valid() %>%
+  sf::st_wrap_dateline()
 ```
 
+# Load presence(/absence) data and environmental layers
 
-## Vignette Info
+In order to run GLOSSA, we need the species occurrences (and optionally, the absences) as well as the covariate layers corresponding to the time points when those presences were recorded.
 
-Note the various macros within the `vignette` section of the metadata block above. These are required in order to instruct R how to build the vignette. Note that you should change the `title` field and the `\VignetteIndexEntry` to match the title of your vignette.
+In this toy example, we are going to predict the distribution of two species (`sp1` and `sp2`) based on two covariates (`x1` and `x2`) across two different future scenarios (`future1_layers.zip` and `future2_layers.zip`). Visit [How to format input data](https://github.com/jmestret/glossa) for a description of the input file formats.
 
-## Styles
+The layers are passed to GLOSSA as a zipped directory, containing one subdirectory for each covariate and one raster layer for each time point. The future layers provided should have the same structure but include as many raster files as there are future time points you wish to predict:
 
-The `html_vignette` template includes a basic CSS theme. To override this theme you can specify your own CSS in the document metadata as follows:
-
-    output: 
-      rmarkdown::html_vignette:
-        css: mystyles.css
-
-## Figures
-
-The figure sizes have been customised so that you can easily put two images side-by-side. 
-
-```{r, fig.show='hold'}
-plot(1:10)
-plot(10:1)
+```
+historical_layers.zip           future1_layers.zip            future2_layers.zip
+|__ x1                          |__ x1                        |__ x1
+|   |__ x1_1.tif                |   |__ x1_3A.tif             |   |__ x1_3B.tif
+|   |__ x1_2.tif                |__ x2                        |__ x2
+|__ x2                              |__ x2_3A.tif                 |__ x2_3B.tif
+    |__ x2_1.tif
+    |__ x2_2.tif
 ```
 
-You can enable figure captions by `fig_caption: yes` in YAML:
+```{r}
+# Load presence(/absence) data
+pa_files <- c("../inst/extdata/sp1.csv", "../inst/extdata/sp2.csv")
+presence_absence_list <- list()
+presence_absence_list$raw_pa <- lapply(pa_files, glossa:::load_presence_absence_data)
 
-    output:
-      rmarkdown::html_vignette:
-        fig_caption: yes
 
-Then you can use the chunk option `fig.cap = "Your figure caption."` in **knitr**.
-
-## More Examples
-
-You can write math expressions, e.g. $Y = X\beta + \epsilon$, footnotes^[A footnote here.], and tables, e.g. using `knitr::kable()`.
-
-```{r, echo=FALSE, results='asis'}
-knitr::kable(head(mtcars, 10))
+historical_files <- "../inst/extdata/historical_layers.zip"
+future_files <- c("../inst/extdata/future1_layers.zip", "../inst/extdata/future2_layers.zip")
+```
+```{r, echo = FALSE}
+rbind(
+  read.table(pa_files[1], sep = "\t", dec = ".", header = TRUE),
+  read.table(pa_files[2], sep = "\t", dec = ".", header = TRUE)
+) %>% 
+  ggplot(data = .) +
+  geom_sf(data = global_land_mask, color = "#353839", fill = "antiquewhite") +
+  geom_point(aes(x = decimalLongitude, y = decimalLatitude, color = species)) +
+  scale_color_manual(values = c("#F6733A", "#4FA3AB"), name = NULL) +
+  theme(
+    panel.grid.major = element_line(
+      color = gray(.5),
+      linetype = "dashed",
+      linewidth = 0.5
+    ),
+    panel.background = element_rect(fill = "white"),
+    axis.title = element_blank(),
+    legend.position = "bottom"
+  )
 ```
 
-Also a quote using `>`:
+# Clean coordinates
 
-> "He who gives up [code] safety for [code] speed deserves neither."
-([via](https://twitter.com/hadleywickham/status/504368538874703872))
+First, we will clean up some unwanted coordinates. This is a straightforward preprocessing step, as we assume the user has already provided the coordinates, whether processed or not, according to their preference. In this step, we focus on removing duplicate coordinates based on a specified coordinate resolution (use `n_digits` to select the number of decimal places in the coordinates). We also remove longitudinal duplicates (duplicated points across time) because we will be fitting the model by aggregating all observations across the years, as if we were creating a single aggregated snapshot of the historical data. Finally, we remove points that fall outside the marine regions according to the `rnaturalearth` world polygon.

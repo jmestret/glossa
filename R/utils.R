@@ -327,14 +327,12 @@ clean_coordinates <- function(data, sf_poly, overlapping = TRUE, round_digits = 
   # - Coordinates are in WGS84 (EPSG:4326) coordinate system
 
   # Remove NA coordinates
-  data <- data %>%
-    dplyr::filter(!is.na(decimalLongitude), !is.na(decimalLatitude))
+  data <- dplyr::filter(data, !is.na(decimalLongitude), !is.na(decimalLatitude))
 
   # Round coordinates
   if (round_digits) {
-    data <- data %>%
-      mutate(decimalLongitude = round(decimalLongitude, n_digits),
-             decimalLatitude = round(decimalLatitude, n_digits))
+    data <- dplyr::mutate(data, decimalLongitude = round(decimalLongitude, n_digits),
+                          decimalLatitude = round(decimalLatitude, n_digits))
   }
 
   # Remove duplicated points
@@ -530,12 +528,19 @@ glossa_export <- function(sp = NULL, mods = NULL, time = NULL, fields = NULL,
 
 # Cutoff functions----
 # Functions obtained from https://github.com/selva86/InformationValue
+
+#' Compute specificity and sensitivity
+#'
+#' @details This function was obtained from the InformationValue R package (https://github.com/selva86/InformationValue).
 #' @keywords internal
 getFprTpr<- function(actuals, predictedScores, threshold=0.5){
   return(list(1-specificity(actuals=actuals, predictedScores=predictedScores, threshold=threshold),
               sensitivity(actuals=actuals, predictedScores=predictedScores, threshold=threshold)))
 }
 
+#' Calculate the specificity for a given logit model
+#'
+#' @details This function was obtained from the InformationValue R package (https://github.com/selva86/InformationValue).
 #' @keywords internal
 specificity <- function(actuals, predictedScores, threshold=0.5){
   predicted_dir <- ifelse(predictedScores < threshold, 0, 1)
@@ -545,6 +550,9 @@ specificity <- function(actuals, predictedScores, threshold=0.5){
   return(no_without_and_predicted_to_not_have_event/no_without_event)
 }
 
+#' Calculate the sensitivity for a given logit model
+#'
+#' @details This function was obtained from the InformationValue R package (https://github.com/selva86/InformationValue).
 #' @keywords internal
 sensitivity <- function(actuals, predictedScores, threshold=0.5){
   predicted_dir <- ifelse(predictedScores < threshold, 0, 1)
@@ -554,6 +562,9 @@ sensitivity <- function(actuals, predictedScores, threshold=0.5){
   return(no_with_and_predicted_to_have_event/no_with_event)
 }
 
+#' Calculate Youden's index
+#'
+#' @details This function was obtained from the InformationValue R package (https://github.com/selva86/InformationValue).
 #' @keywords internal
 youdensIndex <- function(actuals, predictedScores, threshold=0.5){
   Sensitivity <- sensitivity(actuals, predictedScores, threshold = threshold)
@@ -561,6 +572,9 @@ youdensIndex <- function(actuals, predictedScores, threshold=0.5){
   return(Sensitivity + Specificity - 1)
 }
 
+#' Misclassification Error
+#'
+#' @details This function was obtained from the InformationValue R package (https://github.com/selva86/InformationValue).
 #' @keywords internal
 misClassError <- function(actuals, predictedScores, threshold=0.5){
   predicted_dir <- ifelse(predictedScores < threshold, 0, 1)
@@ -568,6 +582,9 @@ misClassError <- function(actuals, predictedScores, threshold=0.5){
   return(round(sum(predicted_dir != actual_dir, na.rm=T)/length(actual_dir), 4))
 }
 
+#' Compute the optimal probability cutoff score
+#'
+#' @details This function was obtained from the InformationValue R package (https://github.com/selva86/InformationValue).
 #' @keywords internal
 optimalCutoff <- function(actuals, predictedScores, optimiseFor="misclasserror", returnDiagnostics=FALSE){
   # initialise the diagnostics dataframe to study the effect of various cutoff values.
@@ -783,21 +800,21 @@ downloadActionButton <- function(outputId, label = "Download", icon = NULL,
 #'
 #' @keywords internal
 generate_world_prediction_plot <- function(prediction_layer, pa_points, legend_label, global_land_mask) {
-  p <- ggplot()
+  p <- ggplot2::ggplot()
 
   # Add prediction layer if available
   if (!is.null(prediction_layer)) {
     p <- p +
-      geom_spatraster(data = prediction_layer) +
-      scale_fill_gradientn(colours = c("#9fe5d7", "#65c4d8", "#39a6d5", "#2b8fc7", "#f67d33", "#f44934", "#ca3a43", "#9e0142"),
-                           limits = c(0,1), name = legend_label)
+      tidyterra::geom_spatraster(data = prediction_layer) +
+      ggplot2::scale_fill_gradientn(colours = c("#9fe5d7", "#65c4d8", "#39a6d5", "#2b8fc7", "#f67d33", "#f44934", "#ca3a43", "#9e0142"),
+                                    limits = c(0,1), name = legend_label)
   }
 
   # Add presence/absence points if available
   if (!is.null(pa_points)) {
     p <- p +
-      geom_point(data = pa_points, aes(x = decimalLongitude, y = decimalLatitude, color = as.factor(pa)), alpha = 0.5) +
-      scale_color_manual(values = c("0" = "#F6733A","1" = "#4FA3AB"), labels = c("Absences", "Presences"), name = NULL)
+      ggplot2::geom_point(data = pa_points, aes(x = decimalLongitude, y = decimalLatitude, color = as.factor(pa)), alpha = 0.5) +
+      ggplot2::scale_color_manual(values = c("0" = "#F6733A","1" = "#4FA3AB"), labels = c("Absences", "Presences"), name = NULL)
   }
 
   # Add global land mask

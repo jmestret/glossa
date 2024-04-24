@@ -1,3 +1,25 @@
+#' Main Analysis Function for Glossa Package
+#'
+#' This function wraps all the analysis that the Glossa package performs. It processes presence-absence data,
+#' environmental covariates, and performs species distribution modeling and prediction under historical, past, and future scenarios.
+#'
+#' @param pa_files A list of file paths containing presence-absence data.
+#' @param historical_files A list of file paths containing historical environmental layers.
+#' @param future_files A list of file paths containing future scenario environmental layers.
+#' @param future_scenario_names A vector of names corresponding to future scenarios.
+#' @param round_digits Logical; if TRUE, coordinates will be rounded to a specified number of digits.
+#' @param n_round_digits Integer; number of digits to round coordinates to if `round_digits` is TRUE.
+#' @param scale_layers Logical; if TRUE, covariate layers will be scaled based on historical data.
+#' @param native_range A vector of scenarios ('historical', 'past', 'future') where native range modeling should be performed.
+#' @param suitable_habitat A vector of scenarios ('historical', 'past', 'future') where habitat suitability modeling should be performed.
+#' @param other_analysis A vector of additional analyses to perform (e.g., 'variable_importance', 'response_curve', 'cross_validation').
+#' @param seed Optional; an integer seed for reproducibility of results.
+#' @param waiter Optional; a waiter instance to update progress in a Shiny application.
+#'
+#' @return A list containing structured outputs from each major section of the analysis including model data, predictions,
+#' variable importance scores, and habitat suitability assessments.
+#'
+#' @export
 run_glossa_analysis <- function(
     pa_files = NULL, historical_files = NULL, future_files = NULL, future_scenario_names = NULL,
     round_digits = FALSE, n_round_digits = 1, scale_layers = FALSE,

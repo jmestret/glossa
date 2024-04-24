@@ -1,3 +1,10 @@
+#' Custom File Input UI
+#'
+#' Creates a customized file input area in a Shiny application. The file input is designed to be visually distinct and supports features such as multiple file selection and file type restrictions.
+#'
+#' @return A Shiny UI object that can be added to a Shiny application.
+#'
+#' @keywords internal
 file_input_area_ui <- function(id, label = "Input text: ", multiple = FALSE, accept = NULL,
                                width = NULL, button_label = "Browse...", icon_name = NULL) {
   ns <- NS(id)
@@ -70,7 +77,13 @@ file_input_area_ui <- function(id, label = "Input text: ", multiple = FALSE, acc
   return(input_structure)
 }
 
-
+#' Server-side Logic for Custom File Input
+#'
+#' Processes the file input from the UI component created by \code{\link{file_input_area_ui}} and provides access to the uploaded file data.
+#'
+#' @return A reactive expression that returns a data frame containing information about the uploaded files, or NULL if no files have been uploaded.
+#'
+#' @keywords internal
 file_input_area_server <- function(id) {
   moduleServer(id, function(input, output, session){
     # Reactive expression for uploaded file data
