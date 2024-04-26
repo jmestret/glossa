@@ -4,10 +4,10 @@
 \alias{fit_bart_model}
 \title{Fit a BART model using environmental covariates}
 \usage{
-fit_bart_model(raster_stack, layers, seed = NULL)
+fit_bart_model(pa_coords, layers, seed = NULL)
 }
 \arguments{
-\item{raster_stack}{A SpatRaster object containing environmental covariate layers.}
+\item{pa_coords}{Dataframe with coordinates of presences and absences and column indicating if presence or absence.}
 
 \item{layers}{A list of layer names to extract from the raster stack.}
 

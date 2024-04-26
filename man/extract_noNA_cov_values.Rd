@@ -20,4 +20,3 @@ This function extracts covariate values for species occurrences, excluding NA va
 \details{
 This function extracts covariate values for each species occurrence location from the provided covariate layers. It returns a data frame containing species occurrence data with covariate values, excluding any NA values.
 }
-\keyword{internal}

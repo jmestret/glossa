@@ -4,7 +4,7 @@
 \alias{run_glossa_app}
 \title{Run Glossa Shiny App}
 \usage{
-run_glossa_app()
+run_glossa_app(maxRequestSize = NULL)
 }
 \description{
 This function launches the Glossa Shiny web application.

@@ -18,20 +18,37 @@ function(input, output, session) {
   pa_files <- reactive({
     data <- pa_files_input()
     if (!is.null(data)) {
+      w <- waiter::Waiter$new(id = "data_upload",
+        html = tagList(
+          img(src = "logo_glossa.gif", height = "200px")
+        ),
+        color = waiter::transparent(0.8)
+      )
+      w$show()
       data$name <- paste(as.character(icon("map-location-dot",style = "font-size:2rem; color:#007bff;")), data$name)
       for (i in 1:nrow(data)){
         data[i, "validation"] <- validate_presences_absences_csv(data[i, 4])
       }
+      w$hide()
       data
     } else{
       NULL
     }
   })
+
   hist_layers <- reactive({
     data <- hist_layers_input()
     if (!is.null(data)) {
+      w <- waiter::Waiter$new(id = "data_upload",
+                              html = tagList(
+                                img(src = "logo_glossa.gif", height = "200px")
+                              ),
+                              color = waiter::transparent(0.8)
+      )
+      w$show()
       data$name <- paste(as.character(icon("layer-group",style = "font-size:2rem; color:#007bff;")), data$name)
       data$validation <- validate_layers_zip(data[1, 4])
+      w$hide()
       data
     } else{
       NULL
@@ -41,6 +58,13 @@ function(input, output, session) {
   fut_layers <- reactive({
     data <- fut_layers_input()
     if (!is.null(data)) {
+      w <- waiter::Waiter$new(id = "data_upload",
+                              html = tagList(
+                                img(src = "logo_glossa.gif", height = "200px")
+                              ),
+                              color = waiter::transparent(0.8)
+      )
+      w$show()
       data$name <- paste(as.character(icon("forward",style = "font-size:2rem; color:#007bff;")), data$name)
       data$validation <- FALSE
       for (i in 1:nrow(data)){
@@ -54,10 +78,39 @@ function(input, output, session) {
           }
         }
       }
+      w$hide()
       data
     } else{
       NULL
     }
+  })
+
+  species_files_names <- reactive({
+    data <- pa_files_input()
+    if (!is.null(data)) {
+      data$name
+    } else{
+      NULL
+    }
+  })
+
+  predictor_variables <- reactive({
+    data <- hist_layers_input()
+    if (!is.null(data)) {
+      get_covariate_names(data[1, 4])
+    } else{
+      NULL
+    }
+  })
+
+  # Select predictor variable for each species
+  output$predictor_selector <- renderUI({
+    req(species_files_names())
+    req(predictor_variables())
+
+    lapply(1:length(species_files_names()), function(i){
+      selectInput(inputId = paste0("pred_vars_", i), label = species_files_names()[i], choices = predictor_variables(), selected = predictor_variables(), multiple = TRUE)
+    })
   })
 
   # Render uploaded files as a DT table
@@ -159,14 +212,19 @@ function(input, output, session) {
       )
     )
     w$show()
+    # Get predictor variables for each sp
+    predictor_variables <- lapply(1:length(species_files_names()), function(i){
+      input[[paste0("pred_vars_", i)]]
+    })
+
     # Run GLOSSA analysis
-    glossa_analysis <- run_glossa_analysis(
+    glossa_results <- glossa_analysis(
       pa_files = pa_files_input()[,"datapath"],
       historical_files = hist_layers_input()[,"datapath"],
       future_files = fut_layers_input()[,"datapath"],
-      future_scenario_names <- sub("\\.zip$", "", fut_layers_input()[,"name"]),
-      round_digits = input$round_digits,
-      n_round_digits = input$n_round_digits,
+      future_scenario_names = sub("\\.zip$", "", fut_layers_input()[,"name"]),
+      predictor_variables = predictor_variables,
+      decimal_digits = switch(input$round_digits + 1, NULL, input$decimal_digits),
       scale_layers = input$scale_layers,
       native_range = input$analysis_options_nr,
       suitable_habitat = input$analysis_options_sh,
@@ -176,14 +234,12 @@ function(input, output, session) {
     )
     w$hide()
 
-    save(glossa_analysis, file = "C:/Users/jorge/Desktop/prueba.RData")
-
-    presence_absence_list(glossa_analysis$presence_absence_list)
-    covariate_list(glossa_analysis$covariate_list)
-    prediction_results(glossa_analysis$prediction_results)
-    other_results(glossa_analysis$other_results)
-    pa_cutoff(glossa_analysis$pa_cutoff)
-    habitat_suitability(glossa_analysis$habitat_suitability)
+    presence_absence_list(glossa_results$presence_absence_list)
+    covariate_list(glossa_results$covariate_list)
+    prediction_results(glossa_results$prediction_results)
+    other_results(glossa_results$other_results)
+    pa_cutoff(glossa_results$pa_cutoff)
+    habitat_suitability(glossa_results$habitat_suitability)
   })
 
   # reports server ----
@@ -468,14 +524,15 @@ function(input, output, session) {
 
     if (!is.null(input$varimp_plot_mode)) {
       x <- other_results()[["variable_importance"]][[input$varimp_plot_mode]][[input$sp]]
-      p <- ggplot(data.frame(x = names(x), y = x), aes(x = x, y = y))
+      p <- ggplot(data.frame(x = factor(names(x), levels = names(x)), y = x), aes(x = x, y = y))
     }
 
     p +
       geom_bar(stat = "identity", fill="#007bff") +
       ylab("Variable importance") +
       xlab("") +
-      theme_minimal()
+      theme_minimal() +
+      theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1))
   })
   output$varimp_plot <-renderPlot({
     varimp_plot()
@@ -506,6 +563,13 @@ function(input, output, session) {
   output$export_button <- downloadHandler(
     filename = function() { paste("glossa_", format(Sys.time(), "%D_%X"), ".zip", sep="") },
     content = function(file) {
+      w <- waiter::Waiter$new(id = "export_details",
+                              html = tagList(
+                                img(src = "logo_glossa.gif", height = "200px")
+                              ),
+                              color = waiter::transparent(0.8)
+      )
+      w$show()
       export_files <- glossa_export(sp = input$export_sp, mods = input$export_mods,
                                     time = input$export_time, fields = input$export_fields,
                                     model_data = input$export_model_data, fr = input$export_fr,
@@ -515,6 +579,7 @@ function(input, output, session) {
                                     presence_absence_list = presence_absence_list(),
                                     other_results = other_results(), pa_cutoff = pa_cutoff())
 
+      w$hide()
       zip::zip(zipfile = file, files = export_files, mode = "cherry-pick")
     }
   )

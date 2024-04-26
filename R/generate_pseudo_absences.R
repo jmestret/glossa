@@ -21,6 +21,7 @@ generate_pseudo_absences <- function(presences, sf_poly, raster_stack, coords = 
   # Initialize variables
   n_presences <- nrow(presences)
   absences <- data.frame(X = numeric(), Y = numeric())
+  colnames(absences) <- coords
   crs <- sf::st_crs(sf_poly)
   bounding_box <- sf::st_bbox(sf_poly)
   bounding_box_poly <- sf::st_polygon(list(

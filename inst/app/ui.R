@@ -386,7 +386,7 @@ body <- dashboardBody(
         # Upload data files
         bs4Dash::column(
           width = 6,
-          box(
+          box(id = "data_upload",
             title = strong("Data Upload"),
             status = NULL,
             width = 12,
@@ -477,7 +477,7 @@ body <- dashboardBody(
                     # Only show this panel if the round_digits is selected
                     conditionalPanel(
                       condition = "input['round_digits']",
-                      numericInput("n_round_digits", NULL, 4, min = 0, max = 100, width = "50%"),
+                      numericInput("decimal_digits", NULL, 4, min = 0, max = 100, width = "50%"),
                     ),
                     style = 'display: inline-block; vertical-align: middle;'
                   )
@@ -565,6 +565,30 @@ body <- dashboardBody(
         bs4Dash::column(
           width = 12,
           box(
+            title = strong("Predictor variables"),
+            status = NULL,
+            width = 12,
+            solidHeader = FALSE,
+            background = NULL,
+            collapsible = TRUE,
+            collapsed = FALSE,
+            headerBorder = FALSE,
+            elevation = 2,
+            label = NULL,
+
+            bs4Dash::column(
+              width = 12,
+              uiOutput(outputId = "predictor_selector")
+            )
+          )
+        )
+      ), # End second row
+
+      # Start third row
+      fluidRow(
+        bs4Dash::column(
+          width = 12,
+          box(
             title = strong("Uploaded files"),
             status = NULL,
             width = 12,
@@ -581,7 +605,7 @@ body <- dashboardBody(
             )
           )
         )
-      ) # End second row
+      ) # End third row
     ),
 
     # * reports tab ----
@@ -661,7 +685,8 @@ body <- dashboardBody(
                   inputId = "world_plot_value",
                   label = NULL,
                   choices = NULL,
-                  width = "90%"
+                  width = "90%",
+                  options = list(size = 5)
                 ),
 
                 uiOutput("world_plot_scenario_picker"), # Only shows for future prediction
@@ -715,7 +740,8 @@ body <- dashboardBody(
                   inputId = "layers_plot_cov",
                   label = NULL,
                   choices = NULL,
-                  width = "90%"
+                  width = "90%",
+                  options = list(size = 5)
                 ),
 
                 uiOutput("layers_plot_scaled_picker"), # Only shows for historical prediction
@@ -753,7 +779,8 @@ body <- dashboardBody(
                   inputId = "fr_plot_cov",
                   label = NULL,
                   choices = NULL,
-                  width = "90%"
+                  width = "90%",
+                  options = list(size = 5)
                 )
               ),
 
@@ -831,7 +858,7 @@ body <- dashboardBody(
       fluidRow(
         bs4Dash::column(
           width = 6, offset = 3,
-          box(
+          box(id = "export_details",
             title = strong("Export details"),
             status = NULL,
             width = 12,

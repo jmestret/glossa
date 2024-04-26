@@ -1,99 +1,6 @@
 #=========================================================#
-# Shiny server utils  ----
+# glossa utils  ----
 #=========================================================#
-
-#' Function to load presence/absence data from CSV files and perform validation
-#'
-#' @param file_path Path to the CSV file containing presence/absence data.
-#' @return A data frame containing the loaded presence/absence data.
-#' @details This function loads presence/absence data from a CSV file, performs validation to ensure required columns are present, and adds a default value for the presence/absence column if not present.
-#' @keywords internal
-load_presence_absence_data <- function(file_path) {
-  # Assumptions:
-  # - CSV files contain columns: "decimalLongitude", "decimalLatitude", "year", "species"
-  # - Files may or may not have a "pa" column; if not present, a default value of 1 is added for all records
-
-  if (!file.exists(file_path)) {
-    stop(paste("Error: File", file_path, "not found. Please verify the file path."))
-  }
-
-  # Load data
-  data <- read.csv2(file_path, header = TRUE, sep = "\t", dec = ".")
-
-  # Ensure required columns are present
-  required_columns <- c("decimalLongitude", "decimalLatitude", "year", "species")
-  missing_columns <- setdiff(required_columns, colnames(data))
-  if (length(missing_columns) > 0) {
-    stop("Missing columns in the CSV file:", paste(missing_columns, collapse = ", "))
-  }
-
-  # Add "pa" column if not present
-  if (!("pa" %in% colnames(data))) {
-    data$pa <- 1
-  }
-
-  return(data[, c(required_columns, "pa")])
-}
-
-
-#' Function to load covariate layers from ZIP files and perform validation
-#'
-#' @param file_path Path to the ZIP file containing covariate layers.
-#' @return A list containing raster layers for each covariate.
-#' @details This function loads covariate layers from a ZIP file, verifies their spatial characteristics, and returns them as a list of raster layers.
-#' @keywords internal
-load_covariate_layers <- function(file_path) {
-  # Assumptions:
-  # - ZIP files contain subdirectories for each covariate, with raster files stored within these directories
-  # - All covariates have the same number of files and the same spatial characteristics (e.g., CRS, resolution)
-
-  tmpdir <- tempdir()
-
-  # Extract contents of the zip file
-  zip_contents <- unzip(file_path, unzip = getOption("unzip"), exdir = tmpdir)
-
-  # Get unique covariate directories
-  covariates <- unique(dirname(zip_contents))
-
-  # Verify if each covariate has the same number of files
-  n_files <- sapply(covariates, function(x) length(list.files(x)))
-  if (length(unique(n_files)) != 1) {
-    stop("Error: The layers uploaded differ in number between the different covariates.")
-  }
-
-  # Load the first layer of each covariate to check CRS and resolution
-  layers <- lapply(covariates, function(x) {
-    terra::rast(list.files(x, full.names = TRUE)[1])
-  })
-
-  # Check if all layers have the same CRS
-  crs_list <- sapply(layers, function(x) {
-    terra::crs(x, proj = TRUE)
-  })
-  if (length(unique(crs_list)) != 1) {
-    stop("Error: The layers uploaded have different CRS. They must be in WGS84.")
-  }
-
-  # Check if all layers have the same resolution
-  res_list <- sapply(layers, function(x) {
-    terra::res(x)
-  })
-  if (length(unique(paste(res_list[,1], res_list[,2]))) != 1) {
-    stop("Error: The layers uploaded have different resolution.")
-  }
-
-  layers <- list()
-  for (cov_dir in covariates){
-    cov_name <- basename(cov_dir)
-    # Load layers
-    layers[[cov_name]] <- terra::rast(list.files(cov_dir, full.names = TRUE))
-  }
-
-  #unlink(tmpdir, recursive = TRUE)
-
-  return(layers)
-}
-
 
 #' Validate presences/absences CSV file
 #'
@@ -249,6 +156,17 @@ validate_hist_fut_layers <- function(hist_path, fut_path) {
   return(TRUE)
 }
 
+get_covariate_names <- function(file_path){
+  # Extract contents of the zip file
+  tmpdir <- tempdir()
+  zip_contents <- unzip(file_path, unzip = getOption("unzip"), exdir = tmpdir)
+
+  # Get unique covariate directories
+  covariates <- basename(unique(dirname(zip_contents)))
+
+  return(covariates)
+}
+
 
 #' Process Covariate Layers
 #'
@@ -292,7 +210,7 @@ process_covariate_layers <- function(layers, ocean_mask) {
 #' @return A data frame containing species occurrence data with covariate values, excluding NA values.
 #' @details This function extracts covariate values for each species occurrence location from the provided covariate layers. It returns a data frame containing species occurrence data with covariate values, excluding any NA values.
 #'
-#' @keywords internal
+#' @export
 extract_noNA_cov_values <- function(data, covariate_layers){
   covariate_values <- terra::extract(
     covariate_layers,
@@ -305,45 +223,47 @@ extract_noNA_cov_values <- function(data, covariate_layers){
   return(covariate_values)
 }
 
-
-
-#' Clean Coordinates of Presence/Absence Data
+#' Create Geographic Coordinate Layers
 #'
-#' This function cleans coordinates of presence/absence data by removing NA coordinates, rounding coordinates if specified, removing duplicated points, and removing points outside specified spatial polygon boundaries.
+#' Generates raster layers for longitude and latitude from given raster data,
+#' applies optional scaling, and restricts the output to a specified spatial mask.
 #'
-#' @param data A data frame containing presence/absence data with columns "decimalLongitude" and "decimalLatitude".
-#' @param sf_poly A spatial polygon representing the boundaries within which coordinates should be kept.
-#' @param overlapping Logical indicating whether points overlapping the polygon should be kept (TRUE) or removed (FALSE).
-#' @param round_digits Logical indicating whether to round coordinates.
-#' @param n_digits Number of digits to round the coordinates to, if 'round_digits' is TRUE.
-#' @return A cleaned data frame containing presence/absence data with valid coordinates.
-#' @details This function takes a data frame containing presence/absence data with longitude and latitude coordinates, a spatial polygon representing boundaries within which to keep points, and parameters for rounding coordinates and handling duplicated points. It returns a cleaned data frame with valid coordinates within the specified boundaries.
+#' @param layers Raster or stack of raster layers to derive geographic extent and resolution.
+#' @param sf_poly Spatial object for masking output layers.
+#' @param scale_layers Logical indicating if scaling is applied. Default is FALSE.
 #'
-#' @keywords internal
-clean_coordinates <- function(data, sf_poly, overlapping = TRUE, round_digits = FALSE, n_digits = 0) {
-  # Assumptions:
-  # - 'data' is a data frame with columns: "decimalLongitude", "decimalLatitude"
-  # - 'land_mask' is a spatial polygon representing the land boundaries
-  # - Coordinates are in WGS84 (EPSG:4326) coordinate system
+#' @return Raster stack with layers 'decimalLongitude' and 'decimalLatitude'.
+#'
+#' @export
+create_coords_layer <- function(layers, sf_poly, scale_layers = FALSE){
+  # Create layer with longitude and latitude values
+  world_coords_layer <- terra::rast(terra::ext(layers), resolution = terra::res(layers))
+  terra::crs(world_coords_layer) <- terra::crs(layers)
+  df_longlat <- terra::crds(world_coords_layer, df = TRUE)
 
-  # Remove NA coordinates
-  data <- dplyr::filter(data, !is.na(decimalLongitude), !is.na(decimalLatitude))
+  # Create longitude raster
+  raster_long <- terra::rast(cbind(df_longlat, df_longlat$x))
+  raster_long <- terra::extend(raster_long, world_coords_layer)
+  terra::crs(raster_long) <- terra::crs(world_coords_layer)
 
-  # Round coordinates
-  if (round_digits) {
-    data <- dplyr::mutate(data, decimalLongitude = round(decimalLongitude, n_digits),
-                          decimalLatitude = round(decimalLatitude, n_digits))
+  # Create latitude raster
+  raster_lat <- terra::rast(cbind(df_longlat, df_longlat$y))
+  raster_lat <- terra::extend(raster_lat, world_coords_layer)
+  terra::crs(raster_lat) <- terra::crs(world_coords_layer)
+
+  # Optionally scale the longitude and latitude rasters
+  if (scale_layers) {
+    raster_long <- terra::scale(raster_long)
+    raster_lat <- terra::scale(raster_lat)
   }
 
-  # Remove duplicated points
-  data <- remove_duplicate_points(data, coords = c("decimalLongitude", "decimalLatitude"))
+  # Apply a mask to combined layers
+  coords_layer <- c(raster_long, raster_lat)
+  coords_layer <- terra::mask(coords_layer, terra::vect(global_ocean_mask))
+  names(coords_layer) <- c("decimalLongitude", "decimalLatitude")
 
-  # Remove points outside the ocean boundaries
-  data <- remove_points_poly(data, sf_poly, overlapping, c("decimalLongitude", "decimalLatitude"))
-
-  return(data)
+  return(coords_layer)
 }
-
 
 #' Export Glossa Model Results
 #'
@@ -366,37 +286,40 @@ glossa_export <- function(sp = NULL, mods = NULL, time = NULL, fields = NULL,
     # Iterate over each time period
     for (t in time){
       if (t == "historical"){
-        dir.create(file.path(tmp_nr, "historical"))
+        dir.create(file.path(tmp_nr, t))
         # Iterate over each field and export raster files
         for (value in fields) {
+          dir.create(file.path(tmp_nr, t, value))
           terra::writeRaster(
             prediction_results[[t]][["native_range"]][[sp]][[value]],
-            filename = file.path(file.path(tmp_nr, "historical", paste(gsub(" ", "_", sp), "_native_range_", t, "_", value, ".", layer_format, sep = ""))),
+            filename = file.path(file.path(tmp_nr, t, value, paste(gsub(" ", "_", sp), "_native_range_", t, "_", value, ".", layer_format, sep = ""))),
             overwrite = TRUE
           )
         }
       } else if (t == "past"){
-        dir.create(file.path(tmp_nr, "past"))
+        dir.create(file.path(tmp_nr, t))
         # Iterate over each year and each field to export raster files
-        for (year in seq_along(prediction_results[[t]][["native_range"]][[sp]])){
-          for (value in fields) {
+        for (value in fields) {
+          dir.create(file.path(tmp_nr, t, value))
+          for (year in seq_along(prediction_results[[t]][["native_range"]][[sp]])){
             terra::writeRaster(
               prediction_results[[t]][["native_range"]][[sp]][[year]][[value]],
-              filename = file.path(file.path(tmp_nr, "past", paste(gsub(" ", "_", sp), "_native_range_", t, "_", year,  "_", value, ".", layer_format, sep = ""))),
+              filename = file.path(file.path(tmp_nr, t, value, paste(gsub(" ", "_", sp), "_native_range_", t, "_", year,  "_", value, ".", layer_format, sep = ""))),
               overwrite = TRUE
             )
           }
         }
       } else if (t == "future"){
-        dir.create(file.path(tmp_nr, "future"))
+        dir.create(file.path(tmp_nr, t))
         # Iterate over each scenario, year, and field to export raster files
         for (scenario in names(prediction_results[[t]][["native_range"]][[sp]])){
-          dir.create(file.path(tmp_nr, "future", scenario))
-          for (year in seq_along(prediction_results[[t]][["native_range"]][[sp]][[scenario]])){
-            for (value in fields) {
+          dir.create(file.path(tmp_nr, t, scenario))
+          for (value in fields) {
+            dir.create(file.path(tmp_nr, t, scenario, value))
+            for (year in seq_along(prediction_results[[t]][["native_range"]][[sp]][[scenario]])){
               terra::writeRaster(
                 prediction_results[[t]][["native_range"]][[sp]][[scenario]][[year]][[value]],
-                filename = file.path(file.path(tmp_nr, "future", scenario, paste(gsub(" ", "_", sp), "_native_range_", t, "_", year, "_", value, ".", layer_format, sep = ""))),
+                filename = file.path(file.path(tmp_nr, t, scenario, value, paste(gsub(" ", "_", sp), "_native_range_", t, "_", year, "_", value, ".", layer_format, sep = ""))),
                 overwrite = TRUE
               )
             }
@@ -416,37 +339,40 @@ glossa_export <- function(sp = NULL, mods = NULL, time = NULL, fields = NULL,
 
     for (t in time){
       if (t == "historical"){
-        dir.create(file.path(tmp_sh, "historical"))
+        dir.create(file.path(tmp_sh, t))
         # Iterate over each field and export raster files
         for (value in fields) {
+          dir.create(file.path(tmp_sh, t, value))
           terra::writeRaster(
             prediction_results[[t]][["suitable_habitat"]][[sp]][[value]],
-            filename = file.path(file.path(tmp_sh, "historical", paste(gsub(" ", "_", sp), "_suitable_habitat_", t, "_", value, ".", layer_format, sep = ""))),
+            filename = file.path(file.path(tmp_sh, t, value, paste(gsub(" ", "_", sp), "_suitable_habitat_", t, "_", value, ".", layer_format, sep = ""))),
             overwrite = TRUE
           )
         }
       } else if (t == "past"){
-        dir.create(file.path(tmp_sh, "past"))
+        dir.create(file.path(tmp_sh, t))
         # Iterate over each year and each field to export raster files
-        for (year in seq_along(prediction_results[[t]][["suitable_habitat"]][[sp]])){
-          for (value in fields) {
+        for (value in fields) {
+          dir.create(file.path(tmp_sh, t, value))
+          for (year in seq_along(prediction_results[[t]][["suitable_habitat"]][[sp]])){
             terra::writeRaster(
               prediction_results[[t]][["suitable_habitat"]][[sp]][[year]][[value]],
-              filename = file.path(file.path(tmp_sh, "past", paste(gsub(" ", "_", sp), "_suitable_habitat_", t, "_", year,  "_", value, ".", layer_format, sep = ""))),
+              filename = file.path(file.path(tmp_sh, t, value, paste(gsub(" ", "_", sp), "_suitable_habitat_", t, "_", year,  "_", value, ".", layer_format, sep = ""))),
               overwrite = TRUE
             )
           }
         }
       } else if (t == "future"){
-        dir.create(file.path(tmp_sh, "future"))
+        dir.create(file.path(tmp_sh, t))
         # Iterate over each scenario, year, and field to export raster files
         for (scenario in names(prediction_results[[t]][["suitable_habitat"]][[sp]])){
-          dir.create(file.path(tmp_sh, "future", scenario))
-          for (year in seq_along(prediction_results[[t]][["suitable_habitat"]][[sp]][[scenario]])){
-            for (value in fields) {
+          dir.create(file.path(tmp_sh, t, scenario))
+          for (value in fields) {
+            dir.create(file.path(tmp_sh, t, scenario, value))
+            for (year in seq_along(prediction_results[[t]][["suitable_habitat"]][[sp]][[scenario]])){
               terra::writeRaster(
                 prediction_results[[t]][["suitable_habitat"]][[sp]][[scenario]][[year]][[value]],
-                filename = file.path(file.path(tmp_sh, "future", scenario, paste(gsub(" ", "_", sp), "_suitable_habitat_", t, "_", year, "_", value, ".", layer_format, sep = ""))),
+                filename = file.path(file.path(tmp_sh, t, scenario, value, paste(gsub(" ", "_", sp), "_suitable_habitat_", t, "_", year, "_", value, ".", layer_format, sep = ""))),
                 overwrite = TRUE
               )
             }
@@ -526,7 +452,7 @@ glossa_export <- function(sp = NULL, mods = NULL, time = NULL, fields = NULL,
   return(export_files)
 }
 
-# Cutoff functions----
+# cutoff functions----
 # Functions obtained from https://github.com/selva86/InformationValue
 
 #' Compute specificity and sensitivity
@@ -785,7 +711,7 @@ downloadActionButton <- function(outputId, label = "Download", icon = NULL,
 }
 
 #=========================================================#
-# Shiny plots ----
+# Plots ----
 #=========================================================#
 #' Generate World Prediction Plot
 #'

@@ -72,3 +72,43 @@ remove_points_poly <- function(x, sf_poly, overlapping = TRUE, coords = c("decim
 
   return(filtered_points)
 }
+
+#' Clean Coordinates of Presence/Absence Data
+#'
+#' This function cleans coordinates of presence/absence data by removing NA coordinates, rounding coordinates if specified, removing duplicated points, and removing points outside specified spatial polygon boundaries.
+#'
+#' @param data A data frame containing presence/absence data with columns "decimalLongitude" and "decimalLatitude".
+#' @param sf_poly A spatial polygon representing the boundaries within which coordinates should be kept.
+#' @param overlapping Logical indicating whether points overlapping the polygon should be kept (TRUE) or removed (FALSE).
+#' @param decimal_digits Number of digits to round the coordinates to, if it is not NULL.
+#' @param coords Character vector specifying the column names for longitude and latitude.
+#'
+#' @return A cleaned data frame containing presence/absence data with valid coordinates.
+#' @details This function takes a data frame containing presence/absence data with longitude and latitude coordinates, a spatial polygon representing boundaries within which to keep points, and parameters for rounding coordinates and handling duplicated points. It returns a cleaned data frame with valid coordinates within the specified boundaries.
+#'
+#' @export
+clean_coordinates <- function(data, sf_poly, overlapping = TRUE, decimal_digits = NULL, coords = c("decimalLongitude", "decimalLatitude")) {
+  # Assumptions:
+  # - 'land_mask' is a spatial polygon representing the land boundaries
+  # - Coordinates are in WGS84 (EPSG:4326) coordinate system
+
+  # Remove NA coordinates
+  data <- data[complete.cases(data[, coords]), ]
+
+  # Round coordinates
+  if (!is.null(decimal_digits)) {
+    data[, coords[1]] <- round(data[, coords[1]], decimal_digits)
+    data[, coords[2]] <- round(data[, coords[2]], decimal_digits)
+  }
+
+  # Remove duplicated points
+  data <- remove_duplicate_points(data, coords = coords)
+
+  # Remove points outside the ocean boundaries
+  data <- remove_points_poly(data,
+                             sf_poly = sf_poly,
+                             overlapping = overlapping,
+                             coords = coords)
+
+  return(data)
+}

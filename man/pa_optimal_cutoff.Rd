@@ -4,10 +4,10 @@
 \alias{pa_optimal_cutoff}
 \title{Optimal cutoff for presence-absence prediction}
 \usage{
-pa_optimal_cutoff(raster_stack, layers, model, seed = NULL)
+pa_optimal_cutoff(pa_coords, layers, model, seed = NULL)
 }
 \arguments{
-\item{raster_stack}{A SpatRaster object containing environmental covariate layers.}
+\item{pa_coords}{Dataframe with coordinates of presences and absences and column indicating if presence or absence.}
 
 \item{layers}{A list of layer names to extract from the raster stack.}
 

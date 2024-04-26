@@ -10,6 +10,10 @@
 #' \dontrun{
 #' run_glossa_app()
 #' }
-run_glossa_app <- function() {
+run_glossa_app <- function(maxRequestSize = NULL) {
+  if (!is.null(maxRequestSize)){
+    options(shiny.maxRequestSize = maxRequestSize)
+  }
+
   shiny::runApp(appDir = system.file("app", package = "glossa"))
 }

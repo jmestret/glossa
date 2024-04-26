@@ -3,20 +3,20 @@
 #' This function fits a Bayesian Additive Regression Trees (BART) model using
 #' environmental covariate layers.
 #'
-#' @param raster_stack A SpatRaster object containing environmental covariate layers.
+#' @param pa_coords Dataframe with coordinates of presences and absences and column indicating if presence or absence.
 #' @param layers A list of layer names to extract from the raster stack.
 #' @param seed Random seed for reproducibility.
 #'
 #' @return A BART model object.
 #'
 #' @export
-fit_bart_model <- function(raster_stack, layers, seed = NULL) {
-  fit_data <- extract_noNA_cov_values(raster_stack, layers)
+fit_bart_model <- function(pa_coords, layers, seed = NULL) {
+  fit_data <- extract_noNA_cov_values(pa_coords, layers)
   fit_data <- fit_data %>%
-    dplyr::select(pa, !names(raster_stack))
+    dplyr::select(pa, !names(pa_coords))
 
   set.seed(seed)
-  bart_model <- dbarts::bart(x.train = fit_data[, names(layers)],
+  bart_model <- dbarts::bart(x.train = fit_data[, names(layers), drop = FALSE],
                              y.train = fit_data[,"pa"],
                              keeptrees = TRUE)
 
@@ -50,13 +50,13 @@ predict_bart <- function(bart_model, raster_stack, cutoff = NULL) {
 
     # Create a blank data frame to store predictions
     blank_output <- data.frame(matrix(ncol = (4 + length(quantiles) + ifelse(!is.null(cutoff), 1, 0)),
-                                      nrow = ncell(raster_stack[[1]])))
+                                      nrow = terra::ncell(raster_stack[[1]])))
 
     # Get indices of non-NA values in the input matrix
     which_vals <- which(complete.cases(input_matrix))
 
     # Remove NA values from the input matrix
-    input_matrix <- input_matrix[complete.cases(input_matrix),]
+    input_matrix <- input_matrix[complete.cases(input_matrix), , drop = FALSE]
 
     # Make predictions using the BART model
     pred <- dbarts:::predict.bart(bart_model, input_matrix)
@@ -169,7 +169,7 @@ variable_importance <- function(bart_model) {
 #'
 #' This function calculates the optimal cutoff for presence-absence prediction using a BART model.
 #'
-#' @param raster_stack A SpatRaster object containing environmental covariate layers.
+#' @param pa_coords Dataframe with coordinates of presences and absences and column indicating if presence or absence.
 #' @param layers A list of layer names to extract from the raster stack.
 #' @param model A BART model object.
 #' @param seed Random seed for reproducibility.
@@ -177,15 +177,15 @@ variable_importance <- function(bart_model) {
 #' @return The optimal cutoff value for presence-absence prediction.
 #'
 #' @export
-pa_optimal_cutoff <- function(raster_stack, layers, model, seed = NULL) {
-  data <- terra::extract(layers, raster_stack[, c("decimalLongitude", "decimalLatitude")])
+pa_optimal_cutoff <- function(pa_coords, layers, model, seed = NULL) {
+  data <- terra::extract(layers, pa_coords[, c("decimalLongitude", "decimalLatitude")])
 
   set.seed(seed)
-  pred_data <- dbarts:::predict.bart(model, newdata = data[, names(layers)])
+  pred_data <- dbarts:::predict.bart(model, newdata = data[, names(layers), drop = FALSE])
   pred_mean <- colMeans(pred_data)
 
   pa_cutoff <- optimalCutoff(
-    actuals = raster_stack[, "pa"],
+    actuals = pa_coords[, "pa"],
     predictedScores = pred_mean
   )
 
