@@ -1,21 +1,4 @@
----
-title: "Introduction to the GLOSSA workflow in R with a toy example"
-subtitle: "Version 0.1.0"
-author: "Jorge Mestre Tomás"
-date: "`r Sys.Date()`"
-output: 
-  rmarkdown::html_document:
-    toc: TRUE
-    toc_depth: 2
-    number_sections: TRUE
-vignette: >
-  %\VignetteIndexEntry{Introduction to the GLOSSA workflow in R with a toy example}
-  %\VignetteEngine{knitr::rmarkdown}
-  %\VignetteEncoding{UTF-8}
-
----
-
-```{r setup, include = FALSE}
+## ----setup, include = FALSE---------------------------------------------------
 knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>",
@@ -23,55 +6,28 @@ knitr::opts_chunk$set(
   warning = FALSE,
   error = FALSE
 )
-```
 
-# Introduction
-
-*Briefly introduce GLOSSA, BART and the simplicity of the toy example*
-
-*Overview of GLOSSA workflow image*
-
-# Load dependencies
-
-```{r}
+## -----------------------------------------------------------------------------
 # Load libraries
 library(glossa)
 library(dplyr)
 library(ggplot2)
 
-# Load world map
+## -----------------------------------------------------------------------------
 sf::sf_use_s2(FALSE)
-study_area_poly <- rnaturalearth::ne_countries(scale = "medium", returnclass = "sf") %>% 
+study_area_poly <- rnaturalearth::ne_countries(continent = "Oceania", scale = "medium", returnclass = "sf") %>% 
   sf::st_as_sfc() %>%
   sf::st_union() %>%
   sf::st_make_valid() %>%
   sf::st_wrap_dateline() %>% 
-  glossa::invert_polygon(bbox = c(xmin = -180, ymin =-90, xmax = 180, ymax = 90))
+  sf::st_crop(c(xmin = 112.90820, ymin =-54.74922, xmax = 180.00000, ymax = 18.80679)) %>% 
+  glossa::invert_polygon()
 
 non_study_area_poly <- glossa::invert_polygon(study_area_poly)
-```
 
-# Load presence(/absence) data and environmental layers
-
-In order to run GLOSSA, we need the species occurrences (and optionally, the absences) as well as the covariate layers corresponding to the time points when those presences were recorded.
-
-In this toy example, we are going to predict the distribution of two species (`sp1` and `sp2`) based on two covariates (`x1` and `x2`) across two different future scenarios (`future1_layers.zip` and `future2_layers.zip`). Visit [How to format input data](https://github.com/jmestret/glossa) for a description of the input file formats.
-
-The layers are passed to GLOSSA as a zipped directory, containing one subdirectory for each covariate and one raster layer for each time point. The future layers provided should have the same structure but include as many raster files as there are future time points you wish to predict:
-
-```
-historical_layers.zip           future1_layers.zip            future2_layers.zip
-|__ x1                          |__ x1                        |__ x1
-|   |__ x1_1.tif                |   |__ x1_3A.tif             |   |__ x1_3B.tif
-|   |__ x1_2.tif                |__ x2                        |__ x2
-|__ x2                              |__ x2_3A.tif                 |__ x2_3B.tif
-    |__ x2_1.tif
-    |__ x2_2.tif
-```
-
-```{r}
+## -----------------------------------------------------------------------------
 # Load presence(/absence) data
-pa_file <- "../inst/extdata/sp2.csv"
+pa_file <- "../inst/extdata/sp1.csv"
 raw_pa <- glossa::read_glossa_pa(pa_file)
 
 # Load historical layers
@@ -81,9 +37,8 @@ past_layers <- glossa::read_glossa_layers(historical_files)
 # Load future layers
 future_files <- "../inst/extdata/future1_layers.zip"
 future_layers <- glossa::read_glossa_layers(future_files)
-```
 
-```{r, echo = FALSE}
+## ----echo = FALSE-------------------------------------------------------------
 ggplot() +
   geom_sf(data = non_study_area_poly, color = "#353839", fill = "antiquewhite") +
   geom_point(data = raw_pa, aes(x = decimalLongitude, y = decimalLatitude, color = "#F6733A")) +
@@ -97,13 +52,8 @@ ggplot() +
     axis.title = element_blank(),
     legend.position = "bottom"
   )
-```
 
-# Clean coordinates
-
-First, we will clean up some unwanted coordinates. This is a straightforward preprocessing step, as we assume the user has already provided the coordinates, whether processed or not, according to their preference. In this step, we focus on removing duplicate coordinates based on a specified coordinate resolution (use `n_digits` to select the number of decimal places in the coordinates). We also remove longitudinal duplicates (duplicated points across time) because we will be fitting the model by aggregating all observations across the years, as if we were creating a single aggregated snapshot of the historical data. Finally, we remove points that fall outside the marine regions according to the `rnaturalearth` world polygon.
-
-```{r}
+## -----------------------------------------------------------------------------
 coords <- c("decimalLongitude", "decimalLatitude")
 
 # Remove NA coordinates
@@ -122,11 +72,8 @@ clean_pa <- glossa::remove_points_poly(clean_pa,
                                        sf_poly = study_area_poly,
                                        overlapping = FALSE,
                                        coords = coords)
-```
 
-You can summarize all these steps by just running the `glossa::clean_coordinates()` function:
-
-```{r}
+## -----------------------------------------------------------------------------
 clean_pa <- glossa::clean_coordinates(
   data = raw_pa,
   sf_poly = study_area_poly,
@@ -134,13 +81,8 @@ clean_pa <- glossa::clean_coordinates(
   decimal_digits = decimal_digits,
   coords = coords
 )
-```
 
-# Covariate layer processing
-
-First, we will standardize the environmental layers to a global scale using a predefined ocean mask. This step involves cropping and extending the raster layers to align them properly:
-
-```{r}
+## -----------------------------------------------------------------------------
 past_layers <- lapply(past_layers, function(x){
   glossa::layer_mask(layers = x, sf_poly = study_area_poly)
 })
@@ -148,11 +90,8 @@ past_layers <- lapply(past_layers, function(x){
 future_layers <- lapply(future_layers, function(x){
   glossa::layer_mask(layers = x, sf_poly = study_area_poly)
 })
-```
 
-Before fitting the model and making predictions, we are going to standardize the variables. We achieve this by calculating the mean and standard deviation of all past variables and using these statistics to scale both past and future layers:
-
-```{r}
+## -----------------------------------------------------------------------------
 # Compute mean and sd of the historical time series for each environmental variable
 past_mean <- lapply(past_layers, function(x){
   mean(as.vector(x), na.rm = TRUE)
@@ -174,71 +113,66 @@ future_layers <- lapply(seq_along(future_layers), function(x, n, i){
   x = future_layers,
   n = names(future_layers))
 names(future_layers) <- names(past_mean)
-```
 
-Next, we want to create a single snapshot by averaging all the scaled past layers. This combined layer will be used to fit the model:
-
-```{r}
+## -----------------------------------------------------------------------------
 # Get mean of scaled past layers for model fitting
 historical_layers <- lapply(past_layers, function(x){
   terra::mean(x, na.rm = TRUE)
 })
 historical_layers <- terra::rast(historical_layers)
-```
 
-# Build model matrix and pseudoabsences
-
-First, we need to ensure that there are no NA values in the covariates associated with our presence/absence data:
-
-```{r}
+## -----------------------------------------------------------------------------
 y_resp <- cbind(clean_pa,
                   terra::extract(historical_layers, clean_pa[, coords])) %>%
   tidyr::drop_na()  %>%
   dplyr::select(colnames(clean_pa))
-```
 
-Since only occurrences (presences) are provided, we must generate pseudoabsences (random and balanced):
-
-```{r}
+## -----------------------------------------------------------------------------
 # Generate balanced random pseudoabsences
 if (all(y_resp[, "pa"] == 1)){
   set.seed(1234)
   y_resp <- glossa::generate_pseudo_absences(y_resp, study_area_poly, historical_layers)
 }
-```
 
-# Fit native range and suitable habitat model
+## -----------------------------------------------------------------------------
+ggplot2::ggplot() +
+  tidyterra::geom_spatraster(data = historical_layers$x1) +
+  ggplot2::scale_fill_gradientn(colours = c("#9fe5d7", "#65c4d8", "#39a6d5", "#2b8fc7", "#f67d33", "#f44934", "#ca3a43", "#9e0142")) +
+  geom_sf(data = non_study_area_poly, color = "#353839", fill = "antiquewhite") +
+  geom_point(data = y_resp, aes(x = decimalLongitude, y = decimalLatitude, color = as.factor(pa)), alpha = 1) +
+  scale_color_manual(values = c("0" = "black","1" = "green"), labels = c("Absences", "Presences"), name = NULL) +
+  theme(
+    panel.grid.major = element_line(
+      color = gray(.5),
+      linetype = "dashed",
+      linewidth = 0.5
+    ),
+    panel.background = element_rect(fill = "white"),
+    axis.title = element_blank(),
+    legend.position = "bottom"
+  )
 
-To fit the native ranges we are going to add longitude and latitude as covariates to constrain the suitability in the space. For so we must create a layer with the coordinate values:
-
-```{r}
+## -----------------------------------------------------------------------------
 coords_layer <- glossa::create_coords_layer(historical_layers, study_area_poly, scale_layers = TRUE)
-```
 
-Now we can fit the model for the native range and the suitable habitat
-
-```{r}
-model_native_range <- fit_bart_model(
+## -----------------------------------------------------------------------------
+model_native_range <- glossa::fit_bart_model(
   y_resp,
   c(historical_layers, coords_layer),
   seed = 1234
 )
 
-model_suitable_habitat <- fit_bart_model(
+model_suitable_habitat <- glossa::fit_bart_model(
   y_resp,
   historical_layers,
   seed = 1234
 )
-```
 
-# Predict past, historical and future
-
-```{r}
+## -----------------------------------------------------------------------------
 historical_native_range <- glossa::predict_bart(model_suitable_habitat, c(historical_layers, coords_layer))
 historical_suitable_habitat <- glossa::predict_bart(model_suitable_habitat, historical_layers)
-```
 
-```{r}
+## -----------------------------------------------------------------------------
 # Past prediction
 past_suitable_habitat <- lapply(1:terra::nlyr(past_layers[[1]]), function(i){
   # Stack covariates by year
@@ -259,11 +193,4 @@ future_suitable_habitat <- lapply(1:terra::nlyr(future_layers[[1]]), function(i)
   
   glossa::predict_bart(model_suitable_habitat, pred_layers)
 })
-```
-
-
-
-
-
-
 

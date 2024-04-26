@@ -15,12 +15,14 @@ library(ggplot2)
 
 # Load world map
 sf::sf_use_s2(FALSE)
-global_land_mask <- rnaturalearth::ne_countries(scale = "medium", returnclass = "sf") %>%
+study_area_poly <- rnaturalearth::ne_countries(scale = "medium", returnclass = "sf") %>% 
   sf::st_as_sfc() %>%
   sf::st_union() %>%
   sf::st_make_valid() %>%
-  sf::st_wrap_dateline()
-global_ocean_mask <- glossa::invert_polygon(global_land_mask)
+  sf::st_wrap_dateline() %>% 
+  glossa::invert_polygon(bbox = c(xmin = -180, ymin =-90, xmax = 180, ymax = 90))
+
+non_study_area_poly <- glossa::invert_polygon(study_area_poly)
 
 ## -----------------------------------------------------------------------------
 # Load presence(/absence) data
@@ -37,7 +39,7 @@ future_layers <- glossa::read_glossa_layers(future_files)
 
 ## ----echo = FALSE-------------------------------------------------------------
 ggplot() +
-  geom_sf(data = global_land_mask, color = "#353839", fill = "antiquewhite") +
+  geom_sf(data = non_study_area_poly, color = "#353839", fill = "antiquewhite") +
   geom_point(data = raw_pa, aes(x = decimalLongitude, y = decimalLatitude, color = "#F6733A")) +
   theme(
     panel.grid.major = element_line(
@@ -66,26 +68,26 @@ clean_pa <- glossa::remove_duplicate_points(clean_pa, coords = coords)
 
 # Remove points outside the ocean boundaries (overlapping land)
 clean_pa <- glossa::remove_points_poly(clean_pa,
-                                       sf_poly = global_land_mask,
-                                       overlapping = TRUE,
+                                       sf_poly = study_area_poly,
+                                       overlapping = FALSE,
                                        coords = coords)
 
 ## -----------------------------------------------------------------------------
 clean_pa <- glossa::clean_coordinates(
   data = raw_pa,
-  sf_poly = global_land_mask,
-  overlapping = TRUE,
+  sf_poly = study_area_poly,
+  overlapping = FALSE,
   decimal_digits = decimal_digits,
   coords = coords
 )
 
 ## -----------------------------------------------------------------------------
 past_layers <- lapply(past_layers, function(x){
-  glossa::global_mask(layers = x, sf_poly = global_ocean_mask)
+  glossa::layer_mask(layers = x, sf_poly = study_area_poly)
 })
 
 future_layers <- lapply(future_layers, function(x){
-  glossa::global_mask(layers = x, sf_poly = global_ocean_mask)
+  glossa::layer_mask(layers = x, sf_poly = study_area_poly)
 })
 
 ## -----------------------------------------------------------------------------
@@ -128,11 +130,11 @@ y_resp <- cbind(clean_pa,
 # Generate balanced random pseudoabsences
 if (all(y_resp[, "pa"] == 1)){
   set.seed(1234)
-  y_resp <- glossa::generate_pseudo_absences(y_resp, global_ocean_mask, historical_layers)
+  y_resp <- glossa::generate_pseudo_absences(y_resp, study_area_poly, historical_layers)
 }
 
 ## -----------------------------------------------------------------------------
-coords_layer <- glossa::create_coords_layer(historical_layers, global_ocean_mask, scale_layers = TRUE)
+coords_layer <- glossa::create_coords_layer(historical_layers, study_area_poly, scale_layers = TRUE)
 
 ## -----------------------------------------------------------------------------
 model_native_range <- fit_bart_model(

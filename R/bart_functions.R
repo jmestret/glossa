@@ -86,7 +86,7 @@ predict_bart <- function(bart_model, raster_stack, cutoff = NULL) {
       output_matrix <- t(matrix(blank_output[, x],
                                 nrow = ncol(raster_stack),
                                 ncol = nrow(raster_stack)))
-      return(terra::rast(output_matrix, extent = c(-180, 180, -90, 90)))
+      return(terra::rast(output_matrix, extent = terra::ext(raster_stack)))
     })
 
     # Convert list of matrices to raster stack

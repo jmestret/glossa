@@ -563,25 +563,49 @@ body <- dashboardBody(
       # Start second row
       fluidRow(
         bs4Dash::column(
-          width = 12,
+          width = 6,
           box(
             title = strong("Predictor variables"),
             status = NULL,
             width = 12,
+            height = 250,
             solidHeader = FALSE,
             background = NULL,
-            collapsible = TRUE,
-            collapsed = FALSE,
+            collapsible = FALSE,
             headerBorder = FALSE,
             elevation = 2,
             label = NULL,
 
             bs4Dash::column(
               width = 12,
-              uiOutput(outputId = "predictor_selector")
+              uiOutput(outputId = "predictor_selector"),
+              style = "overflow-y: scroll;height:210px"
             )
           )
-        )
+        ),
+
+        # Start study area poly  options
+        bs4Dash::column(
+          width = 6,
+          box(
+            title = strong("Study area"),
+            status = NULL,
+            width = 12,
+            height = 225,
+            solidHeader = FALSE,
+            background = NULL,
+            collapsible = FALSE,
+            headerBorder = FALSE,
+            elevation = 2,
+            label = customFileInput(
+              "study_area_file",
+              buttonLabel = "Upload polygon",
+              accept = ".gpkg"
+            ),
+
+            plotOutput("study_area_plot", height = "100%")
+          )
+        ) # End study area poly column
       ), # End second row
 
       # Start third row
@@ -647,10 +671,10 @@ body <- dashboardBody(
         bs4Dash::column(
           width = 8,
 
-          # Prediction world map
+          # Prediction map
           fluidRow(
             box(
-              title = strong("Globe predictions"),
+              title = strong("GLOSSA predictions"),
               status = NULL,
               width = 12,
               height = 465,
@@ -660,39 +684,39 @@ body <- dashboardBody(
               collapsible = FALSE,
               headerBorder = FALSE,
               elevation = 2,
-              label = export_plot_ui("export_world_plot"),
+              label = export_plot_ui("export_pred_plot"),
 
               sidebar = boxSidebar(
                 startOpen = FALSE,
-                id = "world_plot_sidebar",
+                id = "pred_plot_sidebar",
                 background = "#A97D87",
                 icon = icon("ellipsis", class = "fa-solid fa-ellipsis", style = "color:#3b444b;"),
                 pickerInput(
-                  inputId = "world_plot_time",
+                  inputId = "pred_plot_time",
                   label = NULL,
                   choices = NULL,
                   width = "90%"
                 ),
 
                 pickerInput(
-                  inputId = "world_plot_mode",
+                  inputId = "pred_plot_mode",
                   label = NULL,
                   choices = NULL,
                   width = "90%"
                 ),
 
                 pickerInput(
-                  inputId = "world_plot_value",
+                  inputId = "pred_plot_value",
                   label = NULL,
                   choices = NULL,
                   width = "90%",
                   options = list(size = 5)
                 ),
 
-                uiOutput("world_plot_scenario_picker"), # Only shows for future prediction
+                uiOutput("pred_plot_scenario_picker"), # Only shows for future prediction
 
-                uiOutput("world_plot_year_past_slider"), # Only shows for past prediction
-                uiOutput("world_plot_year_future_slider"), # Only shows for future prediction
+                uiOutput("pred_plot_year_past_slider"), # Only shows for past prediction
+                uiOutput("pred_plot_year_future_slider"), # Only shows for future prediction
 
 
                 prettySwitch(
@@ -703,7 +727,7 @@ body <- dashboardBody(
                 )
               ),
 
-              plotOutput("worl_prediction_plot", height = "100%")
+              plotOutput("prediction_plot", height = "100%")
             )
           )
         ),

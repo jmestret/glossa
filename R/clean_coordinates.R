@@ -87,7 +87,7 @@ remove_points_poly <- function(x, sf_poly, overlapping = TRUE, coords = c("decim
 #' @details This function takes a data frame containing presence/absence data with longitude and latitude coordinates, a spatial polygon representing boundaries within which to keep points, and parameters for rounding coordinates and handling duplicated points. It returns a cleaned data frame with valid coordinates within the specified boundaries.
 #'
 #' @export
-clean_coordinates <- function(data, sf_poly, overlapping = TRUE, decimal_digits = NULL, coords = c("decimalLongitude", "decimalLatitude")) {
+clean_coordinates <- function(data, sf_poly, overlapping = FALSE, decimal_digits = NULL, coords = c("decimalLongitude", "decimalLatitude")) {
   # Assumptions:
   # - 'land_mask' is a spatial polygon representing the land boundaries
   # - Coordinates are in WGS84 (EPSG:4326) coordinate system

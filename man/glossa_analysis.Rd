@@ -9,6 +9,7 @@ glossa_analysis(
   historical_files = NULL,
   future_files = NULL,
   future_scenario_names = NULL,
+  study_area_poly = NULL,
   predictor_variables = NULL,
   decimal_digits = NULL,
   scale_layers = FALSE,

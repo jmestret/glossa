@@ -23,13 +23,10 @@ generate_pseudo_absences <- function(presences, sf_poly, raster_stack, coords = 
   absences <- data.frame(X = numeric(), Y = numeric())
   colnames(absences) <- coords
   crs <- sf::st_crs(sf_poly)
+  convex_hull <- sf::st_convex_hull(sf::st_union(sf_poly))
+  bbox_hull <- sf::st_bbox(convex_hull)
   bounding_box <- sf::st_bbox(sf_poly)
-  bounding_box_poly <- sf::st_polygon(list(
-    matrix(c(bounding_box$xmin, bounding_box$ymin, bounding_box$xmax, bounding_box$ymin,
-             bounding_box$xmax, bounding_box$ymax, bounding_box$xmin, bounding_box$ymax,
-             bounding_box$xmin, bounding_box$ymin),
-           ncol = 2, byrow = TRUE))) %>%
-    sf::st_sfc() %>%
+  bbox_hull_poly <- sf::st_as_sfc(bounding_box) %>%
     sf::st_set_crs(crs)
 
   sf::sf_use_s2(FALSE)
@@ -39,7 +36,7 @@ generate_pseudo_absences <- function(presences, sf_poly, raster_stack, coords = 
   while (nrow(absences) < n_presences & curr_attempt < attempts) {
     # Sample points from the bounding box
     sf::st_crs(sf_poly) <-crs # Set crs for sampling
-    new_abs <- sf::st_sample(bounding_box_poly, size = n_presences - nrow(absences), type = "random", exact = TRUE, oriented=TRUE)
+    new_abs <- sf::st_sample(bbox_hull_poly, size = n_presences - nrow(absences), type = "random", exact = TRUE, oriented=TRUE)
 
     # Remove points outside the study area polygon
     # Set CRS to NA to avoid sf annoying messages

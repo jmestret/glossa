@@ -27,10 +27,5 @@ library(dbarts)
 #=========================================================#
 # Data preparation ----
 #=========================================================#
+# Load world map
 sf::sf_use_s2(FALSE)
-global_land_mask <- rnaturalearth::ne_countries(scale = "medium", returnclass = "sf") %>%
-  sf::st_as_sfc() %>%
-  sf::st_union() %>%
-  sf::st_make_valid() %>%
-  sf::st_wrap_dateline()
-global_ocean_mask <- invert_polygon(global_land_mask)

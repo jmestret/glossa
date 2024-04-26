@@ -6,6 +6,9 @@
 \usage{
 run_glossa_app(maxRequestSize = NULL)
 }
+\arguments{
+\item{maxRequestSize}{To increase the maximum file size allowed for uploading in Shiny (default 5Mb)}
+}
 \description{
 This function launches the Glossa Shiny web application.
 }

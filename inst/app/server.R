@@ -1,4 +1,18 @@
 function(input, output, session) {
+  # load polygon
+  default_polygon <- rnaturalearth::ne_countries(scale = "medium", returnclass = "sf") %>%
+    sf::st_as_sfc() %>%
+    sf::st_union() %>%
+    sf::st_make_valid() %>%
+    sf::st_wrap_dateline() %>%
+    glossa::invert_polygon(bbox = c(xmin = -180, ymin =-90, xmax = 180, ymax = 90))
+  study_area_poly <- reactiveVal(value = default_polygon)
+  non_study_area_poly <- reactiveVal(value = glossa::invert_polygon(default_polygon))
+
+  observeEvent(input$study_area_file, {
+    study_area_poly(sf::st_read(input$study_area_file[["datapath"]]))
+    non_study_area_poly(glossa::invert_polygon(study_area_poly()))
+  })
 
   # header server ----
   observeEvent(input$new_analysis_header, {
@@ -19,10 +33,10 @@ function(input, output, session) {
     data <- pa_files_input()
     if (!is.null(data)) {
       w <- waiter::Waiter$new(id = "data_upload",
-        html = tagList(
-          img(src = "logo_glossa.gif", height = "200px")
-        ),
-        color = waiter::transparent(0.8)
+                              html = tagList(
+                                img(src = "logo_glossa.gif", height = "200px")
+                              ),
+                              color = waiter::transparent(0.8)
       )
       w$show()
       data$name <- paste(as.character(icon("map-location-dot",style = "font-size:2rem; color:#007bff;")), data$name)
@@ -111,6 +125,18 @@ function(input, output, session) {
     lapply(1:length(species_files_names()), function(i){
       selectInput(inputId = paste0("pred_vars_", i), label = species_files_names()[i], choices = predictor_variables(), selected = predictor_variables(), multiple = TRUE)
     })
+  })
+
+  study_area_plot <- reactive({
+    ggplot() +
+      geom_sf(data = study_area_poly(), color = "#353839", fill = "#39a6d5") +
+      theme(
+        panel.background = element_rect(fill = "white"),
+        axis.title = element_blank()
+      )
+  })
+  output$study_area_plot <- renderPlot({
+    study_area_plot()
   })
 
   # Render uploaded files as a DT table
@@ -223,6 +249,7 @@ function(input, output, session) {
       historical_files = hist_layers_input()[,"datapath"],
       future_files = fut_layers_input()[,"datapath"],
       future_scenario_names = sub("\\.zip$", "", fut_layers_input()[,"name"]),
+      study_area_poly = study_area_poly(),
       predictor_variables = predictor_variables,
       decimal_digits = switch(input$round_digits + 1, NULL, input$decimal_digits),
       scale_layers = input$scale_layers,
@@ -249,54 +276,54 @@ function(input, output, session) {
     updatePickerInput(session, "sp", label = NULL, choices = names(presence_absence_list()$model_pa), choicesOpt = list(icon = rep("fa-solid fa-globe", length(names(presence_absence_list()$model_pa)))))
   })
 
-  # * World prediction plot selectizers ----
-  # Update world_plot_time picker
+  # * Prediction plot selectizers ----
+  # Update pred_plot_time picker
   observe({
     req(prediction_results())
-    updatePickerInput(session, "world_plot_time", choices = names(prediction_results()[!unlist(lapply(prediction_results(),is.null))]))
+    updatePickerInput(session, "pred_plot_time", choices = names(prediction_results()[!unlist(lapply(prediction_results(),is.null))]))
   })
 
-  # Update world_plot_mode picker
+  # Update pred_plot_mode picker
   observe({
-    req(input$world_plot_time)
-    display_choices <- names(prediction_results()[[input$world_plot_time]])
-    display_val <- input$world_plot_mode
+    req(input$pred_plot_time)
+    display_choices <- names(prediction_results()[[input$pred_plot_time]])
+    display_val <- input$pred_plot_mode
     if (!is.null(display_val)){
       if (!(display_val %in% display_choices)) {
         display_val <- NULL
       }
     }
-    updatePickerInput(session, "world_plot_mode", choices = display_choices, selected = display_val)
+    updatePickerInput(session, "pred_plot_mode", choices = display_choices, selected = display_val)
   })
 
-  # Update world_plot_value picker
+  # Update pred_plot_value picker
   observe({
-    req(input$world_plot_mode)
-    if (input$world_plot_time != "future") {
-      updatePickerInput(session, "world_plot_value", choices = names(prediction_results()[[input$world_plot_time]][[input$world_plot_mode]][[input$sp]]))
+    req(input$pred_plot_mode)
+    if (input$pred_plot_time != "future") {
+      updatePickerInput(session, "pred_plot_value", choices = names(prediction_results()[[input$pred_plot_time]][[input$pred_plot_mode]][[input$sp]]))
     } else {
-      req(input$world_plot_scenario_future)
-      updatePickerInput(session, "world_plot_value", choices = names(prediction_results()[[input$world_plot_time]][[input$world_plot_mode]][[input$sp]][[input$world_plot_scenario_future]]))
+      req(input$pred_plot_scenario_future)
+      updatePickerInput(session, "pred_plot_value", choices = names(prediction_results()[[input$pred_plot_time]][[input$pred_plot_mode]][[input$sp]][[input$pred_plot_scenario_future]]))
     }
   })
 
-  # Update world_plot_scenario_future picker
-  output$world_plot_scenario_picker <- renderUI({
-    req(input$world_plot_time == "future")
-    pickerInput("world_plot_scenario_future", label = NULL, width = "90%", choices = names(prediction_results()[[input$world_plot_time]][[input$world_plot_mode]][[input$sp]]))
+  # Update pred_plot_scenario_future picker
+  output$pred_plot_scenario_picker <- renderUI({
+    req(input$pred_plot_time == "future")
+    pickerInput("pred_plot_scenario_future", label = NULL, width = "90%", choices = names(prediction_results()[[input$pred_plot_time]][[input$pred_plot_mode]][[input$sp]]))
   })
 
-  # Update world_plot_year_past picker
-  output$world_plot_year_past_slider <- renderUI({
-    req(input$world_plot_time == "past")
-    sliderInput(inputId = "world_plot_year_past", label = "Year", round = TRUE, step = 1, width = "90%", value = 1, min = 1, max = length(prediction_results()[[input$world_plot_time]][[input$world_plot_mode]][[input$sp]]))
+  # Update pred_plot_year_past picker
+  output$pred_plot_year_past_slider <- renderUI({
+    req(input$pred_plot_time == "past")
+    sliderInput(inputId = "pred_plot_year_past", label = "Year", round = TRUE, step = 1, width = "90%", value = 1, min = 1, max = length(prediction_results()[[input$pred_plot_time]][[input$pred_plot_mode]][[input$sp]]))
   })
 
-  # Update world_plot_year_future picker
-  output$world_plot_year_future_slider <- renderUI({
-    req(input$world_plot_time == "future")
-    req(input$world_plot_scenario_future)
-    sliderInput(inputId = "world_plot_year_future", label = "Year", value = 1, min = 1, max = length(prediction_results()[[input$world_plot_time]][[input$world_plot_mode]][[input$sp]][[input$world_plot_scenario_future]]))
+  # Update pred_plot_year_future picker
+  output$pred_plot_year_future_slider <- renderUI({
+    req(input$pred_plot_time == "future")
+    req(input$pred_plot_scenario_future)
+    sliderInput(inputId = "pred_plot_year_future", label = "Year", value = 1, min = 1, max = length(prediction_results()[[input$pred_plot_time]][[input$pred_plot_mode]][[input$sp]][[input$pred_plot_scenario_future]]))
   })
 
   # * Layers plot selectizer ----
@@ -367,17 +394,17 @@ function(input, output, session) {
       sparkline_data2 <- rep(0, 30)
       description1_2 <- "%"
 
-      if (!is.null(habitat_suitability()[["past"]]) &  !is.null(habitat_suitability()[["future"]]) & !is.null(input$world_plot_scenario_future)) {
+      if (!is.null(habitat_suitability()[["past"]]) &  !is.null(habitat_suitability()[["future"]]) & !is.null(input$pred_plot_scenario_future)) {
         # Check if past and future data along with input scenario are available
         sparkline_data1 <- c(
           habitat_suitability()[["past"]][["covered_area"]][[input$sp]],
-          habitat_suitability()[["future"]][["covered_area"]][[input$sp]][[input$world_plot_scenario_future]]
+          habitat_suitability()[["future"]][["covered_area"]][[input$sp]][[input$pred_plot_scenario_future]]
         )
         sparkline_data2 <- c(
           habitat_suitability()[["past"]][["suit_prob"]][[input$sp]],
-          habitat_suitability()[["future"]][["suit_prob"]][[input$sp]][[input$world_plot_scenario_future]]
+          habitat_suitability()[["future"]][["suit_prob"]][[input$sp]][[input$pred_plot_scenario_future]]
         )
-        description1_2 <- paste("% vs", input$world_plot_scenario_future)
+        description1_2 <- paste("% vs", input$pred_plot_scenario_future)
 
       } else if (!is.null(habitat_suitability()[["past"]])) {
         # Check if only past data is available
@@ -385,11 +412,11 @@ function(input, output, session) {
         sparkline_data2 <- habitat_suitability()[["past"]][["suit_prob"]][[input$sp]]
         description1_2 <- paste("% vs last year")
 
-      } else if (!is.null(habitat_suitability()[["future"]]) & !is.null(input$world_plot_scenario_future)) {
+      } else if (!is.null(habitat_suitability()[["future"]]) & !is.null(input$pred_plot_scenario_future)) {
         # Check if only future data and input scenario are available
-        sparkline_data1 <- habitat_suitability()[["future"]][["covered_area"]][[input$sp]][[input$world_plot_scenario_future]]
-        sparkline_data2 <- habitat_suitability()[["future"]][["suit_prob"]][[input$sp]][[input$world_plot_scenario_future]]
-        description1_2 <- paste("% vs", input$world_plot_scenario_future)
+        sparkline_data1 <- habitat_suitability()[["future"]][["covered_area"]][[input$sp]][[input$pred_plot_scenario_future]]
+        sparkline_data2 <- habitat_suitability()[["future"]][["suit_prob"]][[input$sp]][[input$pred_plot_scenario_future]]
+        description1_2 <- paste("% vs", input$pred_plot_scenario_future)
 
       } else if (!is.null(habitat_suitability()[["historical"]])) {
         # Check if only future data and input scenario are available
@@ -430,33 +457,33 @@ function(input, output, session) {
   })
 
   # Plot reports
-  # * world prediction plot ----
-  worl_prediction_plot <- reactive({
+  # * Prediction plot ----
+  prediction_plot <- reactive({
     prediction_layer <- NULL
     pa_points <- NULL
     legend_label <- NULL
 
-    if (!is.null(input$world_plot_value)) {
-      if (input$world_plot_time == "historical") {
-        prediction_layer <- prediction_results()[[input$world_plot_time]][[input$world_plot_mode]][[input$sp]][[input$world_plot_value]]
-      } else if (input$world_plot_time == "past") {
-        req(input$world_plot_year_past)
-        prediction_layer <- prediction_results()[[input$world_plot_time]][[input$world_plot_mode]][[input$sp]][[input$world_plot_year_past]][[input$world_plot_value]]
-      } else if (input$world_plot_time == "future") {
-        req(input$world_plot_year_future)
-        prediction_layer <- prediction_results()[[input$world_plot_time]][[input$world_plot_mode]][[input$sp]][[input$world_plot_scenario_future]][[input$world_plot_year_future]][[input$world_plot_value]]
+    if (!is.null(input$pred_plot_value)) {
+      if (input$pred_plot_time == "historical") {
+        prediction_layer <- prediction_results()[[input$pred_plot_time]][[input$pred_plot_mode]][[input$sp]][[input$pred_plot_value]]
+      } else if (input$pred_plot_time == "past") {
+        req(input$pred_plot_year_past)
+        prediction_layer <- prediction_results()[[input$pred_plot_time]][[input$pred_plot_mode]][[input$sp]][[input$pred_plot_year_past]][[input$pred_plot_value]]
+      } else if (input$pred_plot_time == "future") {
+        req(input$pred_plot_year_future)
+        prediction_layer <- prediction_results()[[input$pred_plot_time]][[input$pred_plot_mode]][[input$sp]][[input$pred_plot_scenario_future]][[input$pred_plot_year_future]][[input$pred_plot_value]]
       }
-      legend_label <- input$world_plot_value
+      legend_label <- input$pred_plot_value
     }
 
     if (!is.null(input$sp) & input$pa_points) {
       pa_points <- presence_absence_list()$model_pa[[input$sp]]
     }
 
-    generate_world_prediction_plot(prediction_layer, pa_points, legend_label, global_land_mask)
+    generate_prediction_plot(prediction_layer, pa_points, legend_label, non_study_area_poly())
   })
-  output$worl_prediction_plot <- renderPlot({
-    worl_prediction_plot()
+  output$prediction_plot <- renderPlot({
+    prediction_plot()
   })
 
   # * Layers plot ----
@@ -484,7 +511,7 @@ function(input, output, session) {
     }
 
     p +
-      geom_sf(data = global_land_mask, color = "#353839", fill = "antiquewhite") +
+      geom_sf(data = non_study_area_poly(), color = "#353839", fill = "antiquewhite") +
       theme(
         panel.grid.major = element_line(
           color = gray(.5),
@@ -541,7 +568,7 @@ function(input, output, session) {
 
   # * Export plots ----
   # Export layers plot
-  export_plot_server("export_world_plot", worl_prediction_plot())
+  export_plot_server("export_pred_plot", prediction_plot())
   export_plot_server("export_layers_plot", cov_layers_plot())
   export_plot_server("export_fr_plot", fr_plot())
   export_plot_server("export_varimp_plot", varimp_plot())

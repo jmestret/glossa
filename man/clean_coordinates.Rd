@@ -7,7 +7,7 @@
 clean_coordinates(
   data,
   sf_poly,
-  overlapping = TRUE,
+  overlapping = FALSE,
   decimal_digits = NULL,
   coords = c("decimalLongitude", "decimalLatitude")
 )

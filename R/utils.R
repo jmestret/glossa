@@ -168,39 +168,6 @@ get_covariate_names <- function(file_path){
 }
 
 
-#' Process Covariate Layers
-#'
-#' This function processes covariate layers by cropping them to the globe extent, extending them to cover the entire globe, and removing land values.
-#'
-#' @param layers A list of raster layers representing covariates.
-#' @param ocean_mask A spatial polygon representing the ocean boundaries.
-#' @return A list containing processed raster layers for each covariate.
-#' @details This function takes a list of raster layers representing covariates and a spatial polygon representing ocean boundaries. It crops each layer to the globe extent, extends it to cover the entire globe, and removes land values using the ocean mask.
-#'
-#' @keywords internal
-process_covariate_layers <- function(layers, ocean_mask) {
-  # Function purpose: Process covariate layers
-  # Assumptions:
-  # - 'layers' is a list of raster layers
-  # - 'land_mask' is a spatial polygon representing the land boundaries
-
-  processed_layers <- list()
-
-  for (cov_name in names(layers)) {
-    # Crop to globe extent
-    cropped_layer <- terra::crop(layers[[cov_name]], ext(-180, 180, -90, 90))
-
-    # Extend to globe extent
-    extended_layer <- terra::extend(cropped_layer, ext(-180, 180, -90, 90))
-
-
-    # Remove land values
-    processed_layers[[cov_name]] <- terra::mask(extended_layer, terra::vect(ocean_mask))
-  }
-  return(processed_layers)
-}
-
-
 #' Extract Covariate Values without NA
 #'
 #' This function extracts covariate values for species occurrences, excluding NA values.
@@ -237,19 +204,19 @@ extract_noNA_cov_values <- function(data, covariate_layers){
 #' @export
 create_coords_layer <- function(layers, sf_poly, scale_layers = FALSE){
   # Create layer with longitude and latitude values
-  world_coords_layer <- terra::rast(terra::ext(layers), resolution = terra::res(layers))
-  terra::crs(world_coords_layer) <- terra::crs(layers)
-  df_longlat <- terra::crds(world_coords_layer, df = TRUE)
+  coords_layer <- terra::rast(terra::ext(layers), resolution = terra::res(layers))
+  terra::crs(coords_layer) <- terra::crs(layers)
+  df_longlat <- terra::crds(coords_layer, df = TRUE)
 
   # Create longitude raster
   raster_long <- terra::rast(cbind(df_longlat, df_longlat$x))
-  raster_long <- terra::extend(raster_long, world_coords_layer)
-  terra::crs(raster_long) <- terra::crs(world_coords_layer)
+  raster_long <- terra::extend(raster_long, coords_layer)
+  terra::crs(raster_long) <- terra::crs(coords_layer)
 
   # Create latitude raster
   raster_lat <- terra::rast(cbind(df_longlat, df_longlat$y))
-  raster_lat <- terra::extend(raster_lat, world_coords_layer)
-  terra::crs(raster_lat) <- terra::crs(world_coords_layer)
+  raster_lat <- terra::extend(raster_lat, coords_layer)
+  terra::crs(raster_lat) <- terra::crs(coords_layer)
 
   # Optionally scale the longitude and latitude rasters
   if (scale_layers) {
@@ -259,7 +226,7 @@ create_coords_layer <- function(layers, sf_poly, scale_layers = FALSE){
 
   # Apply a mask to combined layers
   coords_layer <- c(raster_long, raster_lat)
-  coords_layer <- terra::mask(coords_layer, terra::vect(global_ocean_mask))
+  coords_layer <- terra::mask(coords_layer, terra::vect(sf_poly))
   names(coords_layer) <- c("decimalLongitude", "decimalLatitude")
 
   return(coords_layer)
@@ -674,6 +641,34 @@ sparkvalueBox <- function(title, sparkline_data, description, type = "line", box
   )
 }
 
+customFileInput <- function(inputId, multiple = FALSE, accept = NULL, width = NULL,
+                            buttonLabel = "Browse...", capture = NULL)
+{
+  restoredValue <- shiny::restoreInput(id = inputId, default = NULL)
+  if (!is.null(restoredValue) && !is.data.frame(restoredValue)) {
+    warning("Restored value for ", inputId, " has incorrect format.")
+    restoredValue <- NULL
+  }
+  if (!is.null(restoredValue)) {
+    restoredValue <- jsonlite::toJSON(restoredValue, strict_atomic = FALSE)
+  }
+  inputTag <- tags$input(id = inputId, class = "shiny-input-file",
+                         name = inputId, type = "file",
+                         style = "position: absolute !important; top: -99999px !important; left: -99999px !important;",
+                         `data-restore` = restoredValue)
+  if (multiple)
+    inputTag$attribs$multiple <- "multiple"
+  if (length(accept) > 0)
+    inputTag$attribs$accept <- paste(accept, collapse = ",")
+  if (!is.null(capture)) {
+    inputTag$attribs$capture <- capture
+  }
+  tags$label(class = "btn btn-file",
+             style = "background-color: white; border: 1px solid #007bff; padding: 5px 10px; font-size: 12px; border-radius: 5px !important;",
+             buttonLabel, inputTag)
+}
+
+
 
 #' Create Download Action Button
 #'
@@ -713,19 +708,19 @@ downloadActionButton <- function(outputId, label = "Download", icon = NULL,
 #=========================================================#
 # Plots ----
 #=========================================================#
-#' Generate World Prediction Plot
+#' Generate Prediction Plot
 #'
-#' This function generates a world prediction plot based on prediction raster layers and presence/absence points.
+#' This function generates a plot based on prediction raster layers and presence/absence points.
 #'
 #' @param prediction_layer Raster prediction layer.
 #' @param pa_points Presence/absence points.
 #' @param legend_label Label for the legend.
-#' @param global_land_mask Spatial polygon representing global land mask.
+#' @param non_study_area_mask Spatial polygon representing the non study areas.
 #'
 #' @return Returns a ggplot object representing the world prediction plot.
 #'
 #' @keywords internal
-generate_world_prediction_plot <- function(prediction_layer, pa_points, legend_label, global_land_mask) {
+generate_prediction_plot <- function(prediction_layer, pa_points, legend_label, non_study_area_mask) {
   p <- ggplot2::ggplot()
 
   # Add prediction layer if available
@@ -739,13 +734,13 @@ generate_world_prediction_plot <- function(prediction_layer, pa_points, legend_l
   # Add presence/absence points if available
   if (!is.null(pa_points)) {
     p <- p +
-      ggplot2::geom_point(data = pa_points, aes(x = decimalLongitude, y = decimalLatitude, color = as.factor(pa)), alpha = 0.5) +
-      ggplot2::scale_color_manual(values = c("0" = "#F6733A","1" = "#4FA3AB"), labels = c("Absences", "Presences"), name = NULL)
+      ggplot2::geom_point(data = pa_points, aes(x = decimalLongitude, y = decimalLatitude, color = as.factor(pa)), alpha = 1) +
+      ggplot2::scale_color_manual(values = c("0" = "black","1" = "green"), labels = c("Absences", "Presences"), name = NULL)
   }
 
-  # Add global land mask
+  # Add non study area mask
   p <- p +
-    geom_sf(data = global_land_mask, color = "#353839", fill = "antiquewhite") +
+    geom_sf(data = non_study_area_mask, color = "#353839", fill = "antiquewhite") +
     theme(
       panel.grid.major = element_line(
         color = gray(.5),

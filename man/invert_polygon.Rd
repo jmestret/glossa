@@ -2,18 +2,20 @@
 % Please edit documentation in R/invert_polygon.R
 \name{invert_polygon}
 \alias{invert_polygon}
-\title{Invert a polygon with respect to the world.
-This function inverts a polygon with respect to the entire world.}
+\title{Invert a polygon
+This function inverts a polygon.}
 \usage{
-invert_polygon(sf_poly)
+invert_polygon(sf_poly, bbox = NULL)
 }
 \arguments{
 \item{sf_poly}{An sf polygon to be inverted.}
+
+\item{bbox}{Optionally provide yourself the resulting bounding box.}
 }
 \value{
 An sf polygon representing the inverted area.
 }
 \description{
-Invert a polygon with respect to the world.
-This function inverts a polygon with respect to the entire world.
+Invert a polygon
+This function inverts a polygon.
 }

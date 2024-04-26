@@ -21,7 +21,7 @@
 #' @export
 glossa_analysis <- function(
     pa_files = NULL, historical_files = NULL, future_files = NULL, future_scenario_names = NULL,
-    predictor_variables = NULL, decimal_digits = NULL, scale_layers = FALSE,
+    study_area_poly = NULL, predictor_variables = NULL, decimal_digits = NULL, scale_layers = FALSE,
     native_range = NULL, suitable_habitat = NULL, other_analysis = NULL,
     seed = NA, waiter = NULL) {
 
@@ -36,15 +36,19 @@ glossa_analysis <- function(
     seed <- NULL
   }
 
-  # Load global mask
+  # Load study area mask
   sf::sf_use_s2(FALSE)
-  global_land_mask <- rnaturalearth::ne_countries(scale = "medium", returnclass = "sf") %>%
-    sf::st_as_sfc() %>%
-    sf::st_union() %>%
-    sf::st_make_valid() %>%
-    sf::st_wrap_dateline()
-
-  global_ocean_mask <- invert_polygon(global_land_mask)
+  if (is.null(study_area_poly)){
+    study_area_poly <- rnaturalearth::ne_countries(scale = "medium", returnclass = "sf") %>%
+      sf::st_as_sfc() %>%
+      sf::st_union() %>%
+      sf::st_make_valid() %>%
+      sf::st_wrap_dateline() %>%
+      invert_polygon(bbox = c(xmin = -180, ymin =-90, xmax = 180, ymax = 90))
+  } else {
+    stopifnot(inherits(study_area_poly, "sf") || inherits(study_area_poly, "sfc"))
+  }
+  non_study_area_poly <- invert_polygon(study_area_poly)
 
   # Initialize empty output
   presence_absence_list <- list(raw_pa = NULL, clean_pa = NULL, model_pa = NULL)
@@ -114,8 +118,8 @@ glossa_analysis <- function(
   presence_absence_list$clean_pa <- lapply(presence_absence_list$raw_pa, function(x){
     clean_coordinates(
       data = x,
-      sf_poly = global_land_mask,
-      overlapping = TRUE,
+      sf_poly = study_area_poly,
+      overlapping = FALSE,
       decimal_digits = decimal_digits,
       coords = c("decimalLongitude", "decimalLatitude")
     )
@@ -129,7 +133,7 @@ glossa_analysis <- function(
 
   # * Process historical covariate layers ----
   covariate_list$past <- lapply(covariate_list$past, function(x){
-    global_mask(layers = x, sf_poly = global_ocean_mask)
+    layer_mask(layers = x, sf_poly = study_area_poly)
   })
 
   # Get mean historical layer for model fitting or functional responses
@@ -171,12 +175,8 @@ glossa_analysis <- function(
   if ("future" %in% native_range | "future" %in% suitable_habitat) {
     covariate_list$future <- lapply(covariate_list$future, function(scenario){
       scenario <- lapply(scenario, function(x){
-        global_mask(layers = x, sf_poly = global_ocean_mask)
+        layer_mask(layers = x, sf_poly = study_area_poly)
       })
-    })
-
-    covariate_list$past <- lapply(covariate_list$past, function(x){
-      global_mask(layers = x, sf_poly = global_ocean_mask)
     })
 
     if (scale_layers){
@@ -222,7 +222,7 @@ glossa_analysis <- function(
   presence_absence_list$model_pa <- lapply(seq_along(presence_absence_list$model_pa), function(i) {
     x <- presence_absence_list$model_pa[[i]]
     if (all(x[, "pa"] == 1)){
-      x <- generate_pseudo_absences(x, global_ocean_mask, layers[[predictor_variables[[i]]]])
+      x <- generate_pseudo_absences(x, study_area_poly, layers[[predictor_variables[[i]]]])
     }
     return(x)
   })
@@ -245,7 +245,7 @@ glossa_analysis <- function(
   # If Native Ranges include longitude and latitude for native ranges modeling
   if (!is.null(native_range)){
     # Create layer with longitude and latitude values
-    coords_layer <- glossa::create_coords_layer(layers, global_ocean_mask, scale_layers = scale_layers)
+    coords_layer <- create_coords_layer(layers, study_area_poly, scale_layers = scale_layers)
 
     # * Fit bart ----
     if (!is.null(waiter)){waiter$update(html = tagList(img(src = "logo_glossa.gif", height = "200px"), h4("Fitting native range models...")))}
