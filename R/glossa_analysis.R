@@ -25,11 +25,15 @@ glossa_analysis <- function(
     native_range = NULL, suitable_habitat = NULL, other_analysis = NULL,
     seed = NA, waiter = NULL) {
 
+  start_time <- Sys.time()
+  print(paste("Start time:", start_time))
+
   #=========================================================#
   # 0. Check inputs and load necessary data ----
   #=========================================================#
 
   if (!is.null(waiter)){waiter$update(html = tagList(img(src = "logo_glossa.gif", height = "200px"), h4("Initializing objects...")))}
+  print("Initializing objects...")
 
   # Set seed
   if (is.na(seed)){
@@ -64,7 +68,7 @@ glossa_analysis <- function(
   #=========================================================#
 
   if (!is.null(waiter)){waiter$update(html = tagList(img(src = "logo_glossa.gif", height = "200px"), h4("Loading input data...")))}
-
+  print("Loading input data...")
 
   # * Load presence(/absence) data ----
   presence_absence_list$raw_pa <- lapply(pa_files, read_glossa_pa)
@@ -109,11 +113,15 @@ glossa_analysis <- function(
   }
   names(predictor_variables) <- names(presence_absence_list$raw_pa)
 
+  load_data_time <- Sys.time()
+  print(paste("Load data execution time:", difftime(load_data_time, start_time, units = "secs"), "secs"))
+
   #=========================================================#
   # 2. Clean coordinates ----
   #=========================================================#
 
   if (!is.null(waiter)){waiter$update(html = tagList(img(src = "logo_glossa.gif", height = "200px"), h4("Processing P/A coordinates...")))}
+  print("Processing P/A coordinates...")
 
   presence_absence_list$clean_pa <- lapply(presence_absence_list$raw_pa, function(x){
     clean_coordinates(
@@ -125,11 +133,15 @@ glossa_analysis <- function(
     )
   })
 
+  clean_coords_time <- Sys.time()
+  print(paste("Clean coordinates execution time:", difftime(clean_coords_time, load_data_time, units = "secs"), "secs"))
+
   #=========================================================#
   # 3. Covariate layer processing ----
   #=========================================================#
 
   if (!is.null(waiter)){waiter$update(html = tagList(img(src = "logo_glossa.gif", height = "200px"), h4("Processing covariate layers...")))}
+  print("Processing covariate layers...")
 
   # * Process historical covariate layers ----
   covariate_list$past <- lapply(covariate_list$past, function(x){
@@ -198,11 +210,15 @@ glossa_analysis <- function(
     layers <- terra::rast(covariate_list$historical$not_scaled)
   }
 
+  process_layers_time <- Sys.time()
+  print(paste("Layer processing execution time:", difftime(process_layers_time, clean_coords_time, units = "secs"), "secs"))
+
   #=========================================================#
   # 4. Remove presences/absences with NA values in covariates ----
   #=========================================================#
 
   if (!is.null(waiter)){waiter$update(html = tagList(img(src = "logo_glossa.gif", height = "200px"), h4("Building model matrix...")))}
+  print("Building model matrix...")
 
   # Remove points with NA values in any environmental variable
   presence_absence_list$model_pa <- lapply(seq_along(presence_absence_list$clean_pa), function(i){
@@ -238,17 +254,23 @@ glossa_analysis <- function(
   })
   names(design_matrix) <- names(presence_absence_list$model_pa)
 
+  model_matrix_time <- Sys.time()
+  print(paste("Build model matrix execution time:", difftime(model_matrix_time, process_layers_time, units = "secs"), "secs"))
+
   #=========================================================#
   # 6. Native range  ----
   #=========================================================#
 
   # If Native Ranges include longitude and latitude for native ranges modeling
   if (!is.null(native_range)){
+    start_nr_time <- Sys.time()
+
     # Create layer with longitude and latitude values
     coords_layer <- create_coords_layer(layers, study_area_poly, scale_layers = scale_layers)
 
     # * Fit bart ----
     if (!is.null(waiter)){waiter$update(html = tagList(img(src = "logo_glossa.gif", height = "200px"), h4("Fitting native range models...")))}
+    print("Fitting native range models...")
 
     models_native_range <- lapply(seq_along(presence_absence_list$model_pa), function(i){
       fit_bart_model(
@@ -259,8 +281,16 @@ glossa_analysis <- function(
     })
     names(models_native_range) <- names(presence_absence_list$model_pa)
 
+    fit_nr_time <- Sys.time()
+    print(paste("Fit native range model execution time:", difftime(fit_nr_time, start_nr_time, units = "mins"), "mins"))
+
+
     # * Variable importance ----
     other_results$variable_importance$native_range <- lapply(models_native_range, variable_importance)
+
+    var_imp_nr_time <- Sys.time()
+    print(paste("Variable importance execution time:", difftime(var_imp_nr_time, fit_nr_time, units = "mins"), "mins"))
+
 
     # * Optimal cutoff ----
     pa_cutoff$native_range <- lapply(names(models_native_range), function(sp) {
@@ -271,6 +301,10 @@ glossa_analysis <- function(
       )
     })
     names(pa_cutoff$native_range) <- names(models_native_range)
+
+    pa_cutoff_nr_time <- Sys.time()
+    print(paste("P/A cutoff execution time:", difftime(pa_cutoff_nr_time, var_imp_nr_time, units = "mins"), "mins"))
+
 
     # * Historical prediction ----
     if ("historical" %in% native_range) {
@@ -284,6 +318,9 @@ glossa_analysis <- function(
       })
       names(prediction_results$historical$native_range) <- names(models_native_range)
     }
+
+    hist_nr_time <- Sys.time()
+    print(paste("Historical prediction execution time:", difftime(hist_nr_time, pa_cutoff_nr_time, units = "mins"), "mins"))
 
     # * Past prediction ----
     if ("past" %in% native_range) {
@@ -303,6 +340,9 @@ glossa_analysis <- function(
       })
       names(prediction_results$past$native_range) <- names(models_native_range)
     }
+
+    past_nr_time <- Sys.time()
+    print(paste("Past prediction execution time:", difftime(past_nr_time, hist_nr_time, units = "mins"), "mins"))
 
     # * Future prediction ----
     if ("future" %in% native_range){
@@ -325,8 +365,14 @@ glossa_analysis <- function(
       names(prediction_results$future$native_range) <- names(models_native_range)
     }
 
+    fut_nr_time <- Sys.time()
+    print(paste("Future prediction execution time:", difftime(fut_nr_time, past_nr_time, units = "mins"), "mins"))
+
     # Free memory by removing fitted models
     rm(models_native_range)
+
+    end_nr_time <- Sys.time()
+    print(paste("Native range execution time:", difftime(end_nr_time, start_nr_time, units = "mins"), "mins"))
   }
 
   #=========================================================#
@@ -334,8 +380,11 @@ glossa_analysis <- function(
   #=========================================================#
 
   if (!is.null(suitable_habitat)){
+    start_sh_time <- Sys.time()
+
     # * Fit bart ----
     if (!is.null(waiter)){waiter$update(html = tagList(img(src = "logo_glossa.gif", height = "200px"), h4("Fitting suitable habitat models...")))}
+    print("Fitting suitable habitat models...")
 
     models_suitable_habitat <- lapply(seq_along(presence_absence_list$model_pa), function(i){
       fit_bart_model(
@@ -346,8 +395,14 @@ glossa_analysis <- function(
     })
     names(models_suitable_habitat) <- names(presence_absence_list$model_pa)
 
+    fit_sh_time <- Sys.time()
+    print(paste("Fit suitable habitat model execution time:", difftime(fit_sh_time, start_sh_time, units = "mins"), "mins"))
+
     # * Variable importance ----
     other_results$variable_importance$suitable_habitat <- lapply(models_suitable_habitat, variable_importance)
+
+    var_imp_sh_time <- Sys.time()
+    print(paste("Variable importance execution time:", difftime(var_imp_sh_time, fit_sh_time, units = "mins"), "mins"))
 
     # * Optimal cutoff ----
     pa_cutoff$suitable_habitat <- lapply(names(models_suitable_habitat), function(sp) {
@@ -358,6 +413,9 @@ glossa_analysis <- function(
       )
     })
     names(pa_cutoff$suitable_habitat) <- names(models_suitable_habitat)
+
+    pa_cutoff_sh_time <- Sys.time()
+    print(paste("P/A cutoff execution time:", difftime(pa_cutoff_sh_time, var_imp_sh_time, units = "mins"), "mins"))
 
     # * Historical prediction ----
     if ("historical" %in% suitable_habitat) {
@@ -371,6 +429,9 @@ glossa_analysis <- function(
       })
       names(prediction_results$historical$suitable_habitat) <- names(models_suitable_habitat)
     }
+
+    hist_sh_time <- Sys.time()
+    print(paste("Historical prediction execution time:", difftime(hist_sh_time, pa_cutoff_sh_time, units = "mins"), "mins"))
 
     # * Past prediction ----
     if ("past" %in% suitable_habitat) {
@@ -390,6 +451,9 @@ glossa_analysis <- function(
       })
       names(prediction_results$past$suitable_habitat) <- names(models_suitable_habitat)
     }
+
+    past_sh_time <- Sys.time()
+    print(paste("Past prediction execution time:", difftime(past_sh_time, hist_sh_time, units = "mins"), "mins"))
 
     # * Future prediction ----
     if ("future" %in% suitable_habitat){
@@ -411,6 +475,9 @@ glossa_analysis <- function(
       })
       names(prediction_results$future$suitable_habitat) <- names(models_suitable_habitat)
     }
+
+    fut_sh_time <- Sys.time()
+    print(paste("Future prediction execution time:", difftime(fut_sh_time, past_sh_time, units = "mins"), "mins"))
 
     # * Habitat suitability change ----
     if (!is.null(waiter)){waiter$update(html = tagList(img(src = "logo_glossa.gif", height = "200px"), h4("Computing habitat suitability change...")))}
@@ -481,10 +548,16 @@ glossa_analysis <- function(
       names(habitat_suitability$future$suit_prob) <- names(models_suitable_habitat)
     }
 
+    hab_sh_time <- Sys.time()
+    print(paste("Habitat suitability execution time:", difftime(hab_sh_time, fut_sh_time, units = "mins"), "mins"))
+
     # Free memory by removing fitted models
     if (scale_layers | !"functional_responses" %in% other_analysis){
       rm(models_suitable_habitat)
     }
+
+    end_sh_time <- Sys.time()
+    print(paste("Suitable habitat execution time:", difftime(end_sh_time, start_sh_time, units = "mins"), "mins"))
   }
 
   #=========================================================#
@@ -492,7 +565,10 @@ glossa_analysis <- function(
   #=========================================================#
 
   if ("functional_responses" %in% other_analysis){
+    start_fr_time <- Sys.time()
     if (!is.null(waiter)){waiter$update(html = tagList(img(src = "logo_glossa.gif", height = "200px"), h4("Computing functional responses...")))}
+    print("Computing functional responses...")
+
     layers <- terra::rast(covariate_list$historical$not_scaled)
     other_results$response_curve <- lapply(names(presence_absence_list$model_pa), function(i){
       x <- presence_absence_list$model_pa[[i]]
@@ -524,7 +600,12 @@ glossa_analysis <- function(
     if (!scale_layers){
       rm(models_suitable_habitat)
     }
+
+    end_fr_time <- Sys.time()
+    print(paste("Functional responses execution time:", difftime(end_fr_time, start_fr_time, units = "mins"), "mins"))
   }
+
+
 
   #=========================================================#
   # 9. Finalizing -----
@@ -534,6 +615,9 @@ glossa_analysis <- function(
   for (sp in names(presence_absence_list$model_pa)){
     presence_absence_list$model_pa[[sp]] <- cbind(presence_absence_list$model_pa[[sp]], design_matrix[[sp]])
   }
+
+  end_time <- Sys.time()
+  print(paste("GLOSSA analysis execution time:", difftime(end_time, start_time, units = "mins"), "mins"))
 
   # Return results to Shiny server
   return(list(
