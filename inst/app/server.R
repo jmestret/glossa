@@ -119,8 +119,9 @@ function(input, output, session) {
 
   # Select predictor variable for each species
   output$predictor_selector <- renderUI({
-    req(species_files_names())
-    req(predictor_variables())
+    if (is.null(species_files_names()) | is.null(predictor_variables())) {
+      validate("Upload species ocurrences and historical layers")
+    }
 
     lapply(1:length(species_files_names()), function(i){
       selectInput(inputId = paste0("pred_vars_", i), label = species_files_names()[i], choices = predictor_variables(), selected = predictor_variables(), multiple = TRUE)
@@ -260,6 +261,8 @@ function(input, output, session) {
       waiter = w
     )
     w$hide()
+
+    showNotification("GLOSSA analysis done!", duration = NULL, closeButton = TRUE, type = "message")
 
     presence_absence_list(glossa_results$presence_absence_list)
     covariate_list(glossa_results$covariate_list)
@@ -597,7 +600,7 @@ function(input, output, session) {
                               color = waiter::transparent(0.8)
       )
       w$show()
-      export_files <- glossa_export(sp = input$export_sp, mods = input$export_mods,
+      export_files <- glossa_export(species = input$export_sp, mods = input$export_mods,
                                     time = input$export_time, fields = input$export_fields,
                                     model_data = input$export_model_data, fr = input$export_fr,
                                     prob_cut = input$export_pa_cutoff, varimp = input$export_var_imp,

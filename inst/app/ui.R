@@ -898,7 +898,7 @@ body <- dashboardBody(
               label = "Species name",
               choices = NULL,
               selected = NULL,
-              multiple = FALSE
+              multiple = TRUE
             ),
 
             selectInput(

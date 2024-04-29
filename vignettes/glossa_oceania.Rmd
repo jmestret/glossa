@@ -223,7 +223,7 @@ model_suitable_habitat <- glossa::fit_bart_model(
 # Predict past, historical and future
 
 ```{r}
-historical_native_range <- glossa::predict_bart(model_suitable_habitat, c(historical_layers, coords_layer))
+historical_native_range <- glossa::predict_bart(model_native_range, c(historical_layers, coords_layer))
 historical_suitable_habitat <- glossa::predict_bart(model_suitable_habitat, historical_layers)
 ```
 

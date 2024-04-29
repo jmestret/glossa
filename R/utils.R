@@ -237,7 +237,7 @@ create_coords_layer <- function(layers, sf_poly, scale_layers = FALSE){
 #' This function exports various types of Glossa model results, including native range predictions, suitable habitat predictions, model data, variable importance, functional response results, and presence/absence probability cutoffs. It generates raster files for prediction results, CSV files for model data and variable importance, and CSV files for functional response results. Additionally, it creates a CSV file for presence/absence probability cutoffs if provided.
 #'
 #' @keywords internal
-glossa_export <- function(sp = NULL, mods = NULL, time = NULL, fields = NULL,
+glossa_export <- function(species = NULL, mods = NULL, time = NULL, fields = NULL,
                           model_data = FALSE, fr = FALSE, prob_cut = FALSE,
                           varimp = FALSE, layer_format = "tif",
                           prediction_results = NULL, presence_absence_list = NULL,
@@ -245,169 +245,172 @@ glossa_export <- function(sp = NULL, mods = NULL, time = NULL, fields = NULL,
   # Initialize an empty vector to store file paths of exported files
   export_files <- c()
 
-  if ("native_range" %in% mods){
-    # Create a temporary directory to store native range files
-    tmp_nr <- file.path(tempdir(), "native_range")
-    dir.create(tmp_nr)
+  print(species)
 
-    # Iterate over each time period
-    for (t in time){
-      if (t == "historical"){
-        dir.create(file.path(tmp_nr, t))
-        # Iterate over each field and export raster files
-        for (value in fields) {
-          dir.create(file.path(tmp_nr, t, value))
-          terra::writeRaster(
-            prediction_results[[t]][["native_range"]][[sp]][[value]],
-            filename = file.path(file.path(tmp_nr, t, value, paste(gsub(" ", "_", sp), "_native_range_", t, "_", value, ".", layer_format, sep = ""))),
-            overwrite = TRUE
-          )
-        }
-      } else if (t == "past"){
-        dir.create(file.path(tmp_nr, t))
-        # Iterate over each year and each field to export raster files
-        for (value in fields) {
-          dir.create(file.path(tmp_nr, t, value))
-          for (year in seq_along(prediction_results[[t]][["native_range"]][[sp]])){
+  for (sp in species){
+    print(sp)
+    tmp_sp <- file.path(tempdir(), sp)
+    dir.create(tmp_sp)
+
+    if ("native_range" %in% mods){
+      # Create a temporary directory to store native range files
+      tmp_nr <- file.path(tmp_sp, "native_range")
+      dir.create(tmp_nr)
+
+      # Iterate over each time period
+      for (t in time){
+        if (t == "historical"){
+          dir.create(file.path(tmp_nr, t))
+          # Iterate over each field and export raster files
+          for (value in fields) {
+            dir.create(file.path(tmp_nr, t, value))
             terra::writeRaster(
-              prediction_results[[t]][["native_range"]][[sp]][[year]][[value]],
-              filename = file.path(file.path(tmp_nr, t, value, paste(gsub(" ", "_", sp), "_native_range_", t, "_", year,  "_", value, ".", layer_format, sep = ""))),
+              prediction_results[[t]][["native_range"]][[sp]][[value]],
+              filename = file.path(file.path(tmp_nr, t, value, paste(gsub(" ", "_", sp), "_native_range_", t, "_", value, ".", layer_format, sep = ""))),
               overwrite = TRUE
             )
           }
-        }
-      } else if (t == "future"){
-        dir.create(file.path(tmp_nr, t))
-        # Iterate over each scenario, year, and field to export raster files
-        for (scenario in names(prediction_results[[t]][["native_range"]][[sp]])){
-          dir.create(file.path(tmp_nr, t, scenario))
+        } else if (t == "past"){
+          dir.create(file.path(tmp_nr, t))
+          # Iterate over each year and each field to export raster files
           for (value in fields) {
-            dir.create(file.path(tmp_nr, t, scenario, value))
-            for (year in seq_along(prediction_results[[t]][["native_range"]][[sp]][[scenario]])){
+            dir.create(file.path(tmp_nr, t, value))
+            for (year in seq_along(prediction_results[[t]][["native_range"]][[sp]])){
               terra::writeRaster(
-                prediction_results[[t]][["native_range"]][[sp]][[scenario]][[year]][[value]],
-                filename = file.path(file.path(tmp_nr, t, scenario, value, paste(gsub(" ", "_", sp), "_native_range_", t, "_", year, "_", value, ".", layer_format, sep = ""))),
+                prediction_results[[t]][["native_range"]][[sp]][[year]][[value]],
+                filename = file.path(file.path(tmp_nr, t, value, paste(gsub(" ", "_", sp), "_native_range_", t, "_", year,  "_", value, ".", layer_format, sep = ""))),
                 overwrite = TRUE
               )
+            }
+          }
+        } else if (t == "future"){
+          dir.create(file.path(tmp_nr, t))
+          # Iterate over each scenario, year, and field to export raster files
+          for (scenario in names(prediction_results[[t]][["native_range"]][[sp]])){
+            dir.create(file.path(tmp_nr, t, scenario))
+            for (value in fields) {
+              dir.create(file.path(tmp_nr, t, scenario, value))
+              for (year in seq_along(prediction_results[[t]][["native_range"]][[sp]][[scenario]])){
+                terra::writeRaster(
+                  prediction_results[[t]][["native_range"]][[sp]][[scenario]][[year]][[value]],
+                  filename = file.path(file.path(tmp_nr, t, scenario, value, paste(gsub(" ", "_", sp), "_native_range_", t, "_", year, "_", value, ".", layer_format, sep = ""))),
+                  overwrite = TRUE
+                )
+              }
             }
           }
         }
       }
     }
-    # Add the temporary directory to the list of exported files
-    export_files <- c(export_files, tmp_nr)
-  }
 
 
-  if ("suitable_habitat" %in% mods){
-    # Create a temporary directory to store suitable habitat files
-    tmp_sh <- file.path(tempdir(), "suitable_habitat")
-    dir.create(tmp_sh)
+    if ("suitable_habitat" %in% mods){
+      # Create a temporary directory to store suitable habitat files
+      tmp_sh <- file.path(tmp_sp, "suitable_habitat")
+      dir.create(tmp_sh)
 
-    for (t in time){
-      if (t == "historical"){
-        dir.create(file.path(tmp_sh, t))
-        # Iterate over each field and export raster files
-        for (value in fields) {
-          dir.create(file.path(tmp_sh, t, value))
-          terra::writeRaster(
-            prediction_results[[t]][["suitable_habitat"]][[sp]][[value]],
-            filename = file.path(file.path(tmp_sh, t, value, paste(gsub(" ", "_", sp), "_suitable_habitat_", t, "_", value, ".", layer_format, sep = ""))),
-            overwrite = TRUE
-          )
-        }
-      } else if (t == "past"){
-        dir.create(file.path(tmp_sh, t))
-        # Iterate over each year and each field to export raster files
-        for (value in fields) {
-          dir.create(file.path(tmp_sh, t, value))
-          for (year in seq_along(prediction_results[[t]][["suitable_habitat"]][[sp]])){
+      for (t in time){
+        if (t == "historical"){
+          dir.create(file.path(tmp_sh, t))
+          # Iterate over each field and export raster files
+          for (value in fields) {
+            dir.create(file.path(tmp_sh, t, value))
             terra::writeRaster(
-              prediction_results[[t]][["suitable_habitat"]][[sp]][[year]][[value]],
-              filename = file.path(file.path(tmp_sh, t, value, paste(gsub(" ", "_", sp), "_suitable_habitat_", t, "_", year,  "_", value, ".", layer_format, sep = ""))),
+              prediction_results[[t]][["suitable_habitat"]][[sp]][[value]],
+              filename = file.path(file.path(tmp_sh, t, value, paste(gsub(" ", "_", sp), "_suitable_habitat_", t, "_", value, ".", layer_format, sep = ""))),
               overwrite = TRUE
             )
           }
-        }
-      } else if (t == "future"){
-        dir.create(file.path(tmp_sh, t))
-        # Iterate over each scenario, year, and field to export raster files
-        for (scenario in names(prediction_results[[t]][["suitable_habitat"]][[sp]])){
-          dir.create(file.path(tmp_sh, t, scenario))
+        } else if (t == "past"){
+          dir.create(file.path(tmp_sh, t))
+          # Iterate over each year and each field to export raster files
           for (value in fields) {
-            dir.create(file.path(tmp_sh, t, scenario, value))
-            for (year in seq_along(prediction_results[[t]][["suitable_habitat"]][[sp]][[scenario]])){
+            dir.create(file.path(tmp_sh, t, value))
+            for (year in seq_along(prediction_results[[t]][["suitable_habitat"]][[sp]])){
               terra::writeRaster(
-                prediction_results[[t]][["suitable_habitat"]][[sp]][[scenario]][[year]][[value]],
-                filename = file.path(file.path(tmp_sh, t, scenario, value, paste(gsub(" ", "_", sp), "_suitable_habitat_", t, "_", year, "_", value, ".", layer_format, sep = ""))),
+                prediction_results[[t]][["suitable_habitat"]][[sp]][[year]][[value]],
+                filename = file.path(file.path(tmp_sh, t, value, paste(gsub(" ", "_", sp), "_suitable_habitat_", t, "_", year,  "_", value, ".", layer_format, sep = ""))),
                 overwrite = TRUE
               )
+            }
+          }
+        } else if (t == "future"){
+          dir.create(file.path(tmp_sh, t))
+          # Iterate over each scenario, year, and field to export raster files
+          for (scenario in names(prediction_results[[t]][["suitable_habitat"]][[sp]])){
+            dir.create(file.path(tmp_sh, t, scenario))
+            for (value in fields) {
+              dir.create(file.path(tmp_sh, t, scenario, value))
+              for (year in seq_along(prediction_results[[t]][["suitable_habitat"]][[sp]][[scenario]])){
+                terra::writeRaster(
+                  prediction_results[[t]][["suitable_habitat"]][[sp]][[scenario]][[year]][[value]],
+                  filename = file.path(file.path(tmp_sh, t, scenario, value, paste(gsub(" ", "_", sp), "_suitable_habitat_", t, "_", year, "_", value, ".", layer_format, sep = ""))),
+                  overwrite = TRUE
+                )
+              }
             }
           }
         }
       }
     }
+
+    # Export model data if requested
+    if (model_data){
+      if (!is.null(presence_absence_list[["model_pa"]])){
+        tmp_model_data <- file.path(tmp_sp, paste(gsub(" ", "_", sp), "_model_data.csv", sep = ""))
+        df <- presence_absence_list[["model_pa"]][[sp]]
+        write.table(df, tmp_model_data, quote = FALSE, sep = "\t", dec = ".", row.names = FALSE, col.names = TRUE)
+      } else {
+        warning("Unable to download model data as it has not been computed.")
+      }
+
+    }
+
+    # Export variable importance if requested
+    if (varimp){
+      if (!is.null(other_results[["variable_importance"]])){
+        tmp_var_imp <- file.path(tmp_sp, "variable_importance")
+        dir.create(tmp_var_imp)
+        for (mod in names(other_results[["variable_importance"]])){
+          sp_values <- other_results[["variable_importance"]][[mod]][[sp]]
+          df <- data.frame(covariates = names(sp_values), variable_importance = sp_values, row.names = NULL)
+          write.table(df, file = file.path(tmp_var_imp, paste(gsub(" ", "_", sp), "_variable_importance_", mod, ".csv", sep = "")), quote = FALSE, sep = "\t", dec = ".", row.names = FALSE, col.names = TRUE)
+        }
+      } else {
+        warning("Unable to download variable importance as it has not been computed.")
+      }
+
+    }
+
+    # Export functional responses if requested
+    if (fr){
+      if (!is.null(other_results[["response_curve"]])){
+        tmp_fr <- file.path(tmp_sp, "functional_responses")
+        dir.create(tmp_fr)
+        for (cov in names(other_results[["response_curve"]][[sp]])){
+          write.table(other_results[["response_curve"]][[sp]][[cov]], file = file.path(tmp_fr, paste(gsub(" ", "_", sp), "_functional_response_", cov, ".csv", sep = "")), quote = FALSE, sep = "\t", dec = ".", row.names = FALSE, col.names = TRUE)
+        }
+      } else {
+        warning("Unable to download functional response results as they have not been computed.")
+      }
+
+    }
+
+    # Export presence/absence probability cutoffs if requested
+    if (prob_cut){
+      if (!all(sapply(pa_cutoff, is.null))){
+        tmp_cutoff <- file.path(tmp_sp, paste(gsub(" ", "_", sp), "_presence_probability_cutoff.csv", sep = ""))
+        sp_values <- lapply(pa_cutoff, function(x) x[[sp]])
+        sp_values <- sp_values[!sapply(sp_values,is.null)]
+        df <- data.frame(model = names(sp_values), prob_cutoff = unlist(sp_values), row.names = NULL)
+        write.table(df, tmp_cutoff, quote = FALSE, sep = "\t", dec = ".", row.names = FALSE, col.names = TRUE)
+      } else {
+        warning("Unable to download P/A probability cutoff as they have not been computed.")
+      }
+    }
+
     # Add the temporary directory to the list of exported files
-    export_files <- c(export_files, tmp_sh)
-  }
-
-  # Export model data if requested
-  if (model_data){
-    if (!is.null(presence_absence_list[["model_pa"]])){
-      tmp_model_data <- file.path(tempdir(), paste(gsub(" ", "_", sp), "_model_data.csv", sep = ""))
-      df <- presence_absence_list[["model_pa"]][[sp]]
-      write.table(df, tmp_model_data, quote = FALSE, sep = "\t", dec = ".", row.names = FALSE, col.names = TRUE)
-      export_files <- c(export_files, tmp_model_data)
-    } else {
-      warning("Unable to download model data as it has not been computed.")
-    }
-
-  }
-
-  # Export variable importance if requested
-  if (varimp){
-    if (!is.null(other_results[["variable_importance"]])){
-      tmp_var_imp <- file.path(tempdir(), "variable_importance")
-      dir.create(tmp_var_imp)
-      for (mod in names(other_results[["variable_importance"]])){
-        sp_values <- other_results[["variable_importance"]][[mod]][[sp]]
-        df <- data.frame(covariates = names(sp_values), variable_importance = sp_values, row.names = NULL)
-        write.table(df, file = file.path(tmp_var_imp, paste(gsub(" ", "_", sp), "_variable_importance_", mod, ".csv", sep = "")), quote = FALSE, sep = "\t", dec = ".", row.names = FALSE, col.names = TRUE)
-      }
-      export_files <- c(export_files, tmp_var_imp)
-    } else {
-      warning("Unable to download variable importance as it has not been computed.")
-    }
-
-  }
-
-  # Export functional responses if requested
-  if (fr){
-    if (!is.null(other_results[["response_curve"]])){
-      tmp_fr <- file.path(tempdir(), "functional_responses")
-      dir.create(tmp_fr)
-      for (cov in names(other_results[["response_curve"]][[sp]])){
-        write.table(other_results[["response_curve"]][[sp]][[cov]], file = file.path(tmp_fr, paste(gsub(" ", "_", sp), "_functional_response_", cov, ".csv", sep = "")), quote = FALSE, sep = "\t", dec = ".", row.names = FALSE, col.names = TRUE)
-      }
-      export_files <- c(export_files, tmp_fr)
-    } else {
-      warning("Unable to download functional response results as they have not been computed.")
-    }
-
-  }
-
-  # Export presence/absence probability cutoffs if requested
-  if (prob_cut){
-    if (!all(sapply(pa_cutoff, is.null))){
-      tmp_cutoff <- file.path(tempdir(), paste(gsub(" ", "_", sp), "_presence_probability_cutoff.csv", sep = ""))
-      sp_values <- lapply(pa_cutoff, function(x) x[[sp]])
-      sp_values <- sp_values[!sapply(sp_values,is.null)]
-      df <- data.frame(model = names(sp_values), prob_cutoff = unlist(sp_values), row.names = NULL)
-      write.table(df, tmp_cutoff, quote = FALSE, sep = "\t", dec = ".", row.names = FALSE, col.names = TRUE)
-      export_files <- c(export_files, tmp_cutoff)
-    } else {
-      warning("Unable to download P/A probability cutoff as they have not been computed.")
-    }
+    export_files <- c(export_files, tmp_sp)
   }
 
   if (is.null(export_files)) {
@@ -725,10 +728,25 @@ generate_prediction_plot <- function(prediction_layer, pa_points, legend_label, 
 
   # Add prediction layer if available
   if (!is.null(prediction_layer)) {
-    p <- p +
-      tidyterra::geom_spatraster(data = prediction_layer) +
-      ggplot2::scale_fill_gradientn(colours = c("#9fe5d7", "#65c4d8", "#39a6d5", "#2b8fc7", "#f67d33", "#f44934", "#ca3a43", "#9e0142"),
-                                    limits = c(0,1), name = legend_label)
+    if (legend_label == "potential_presences"){
+      p <- p +
+        tidyterra::geom_spatraster(data = terra::as.factor(prediction_layer)) +
+        ggplot2::scale_fill_manual(values  = c("#65c4d8", "#f67d33"), name = legend_label)
+    } else {
+      lim <- switch(
+        legend_label,
+        "mean" = c(0, 1),
+        "median" = c(0, 1),
+        "sd" = NULL,
+        "q0.025" = c(0, 1),
+        "q0.975" = c(0, 1),
+        "diff" = c(0, 1)
+      )
+      p <- p +
+        tidyterra::geom_spatraster(data = prediction_layer) +
+        ggplot2::scale_fill_gradientn(colours = c("#9fe5d7", "#65c4d8", "#39a6d5", "#2b8fc7", "#f67d33", "#f44934", "#ca3a43", "#9e0142"),
+                                      limits = lim, name = legend_label)
+    }
   }
 
   # Add presence/absence points if available
