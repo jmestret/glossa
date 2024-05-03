@@ -13,20 +13,21 @@ library(glossa)
 library(dplyr)
 library(ggplot2)
 
-# Load world map
+## -----------------------------------------------------------------------------
 sf::sf_use_s2(FALSE)
-study_area_poly <- rnaturalearth::ne_countries(scale = "medium", returnclass = "sf") %>% 
+study_area_poly <- rnaturalearth::ne_countries(continent = "Oceania", scale = "medium", returnclass = "sf") %>% 
   sf::st_as_sfc() %>%
   sf::st_union() %>%
   sf::st_make_valid() %>%
   sf::st_wrap_dateline() %>% 
-  glossa::invert_polygon(bbox = c(xmin = -180, ymin =-90, xmax = 180, ymax = 90))
+  sf::st_crop(c(xmin = 112.90820, ymin =-54.74922, xmax = 180.00000, ymax = 18.80679)) %>% 
+  glossa::invert_polygon()
 
 non_study_area_poly <- glossa::invert_polygon(study_area_poly)
 
 ## -----------------------------------------------------------------------------
 # Load presence(/absence) data
-pa_file <- "../inst/extdata/sp2.csv"
+pa_file <- "../inst/extdata/sp1.csv"
 raw_pa <- glossa::read_glossa_pa(pa_file)
 
 # Load historical layers
@@ -134,23 +135,41 @@ if (all(y_resp[, "pa"] == 1)){
 }
 
 ## -----------------------------------------------------------------------------
+ggplot2::ggplot() +
+  tidyterra::geom_spatraster(data = historical_layers$x1) +
+  ggplot2::scale_fill_gradientn(colours = c("#9fe5d7", "#65c4d8", "#39a6d5", "#2b8fc7", "#f67d33", "#f44934", "#ca3a43", "#9e0142")) +
+  geom_sf(data = non_study_area_poly, color = "#353839", fill = "antiquewhite") +
+  geom_point(data = y_resp, aes(x = decimalLongitude, y = decimalLatitude, color = as.factor(pa)), alpha = 1) +
+  scale_color_manual(values = c("0" = "black","1" = "green"), labels = c("Absences", "Presences"), name = NULL) +
+  theme(
+    panel.grid.major = element_line(
+      color = gray(.5),
+      linetype = "dashed",
+      linewidth = 0.5
+    ),
+    panel.background = element_rect(fill = "white"),
+    axis.title = element_blank(),
+    legend.position = "bottom"
+  )
+
+## -----------------------------------------------------------------------------
 coords_layer <- glossa::create_coords_layer(historical_layers, study_area_poly, scale_layers = TRUE)
 
 ## -----------------------------------------------------------------------------
-model_native_range <- fit_bart_model(
+model_native_range <- glossa::fit_bart_model(
   y_resp,
   c(historical_layers, coords_layer),
   seed = 1234
 )
 
-model_suitable_habitat <- fit_bart_model(
+model_suitable_habitat <- glossa::fit_bart_model(
   y_resp,
   historical_layers,
   seed = 1234
 )
 
 ## -----------------------------------------------------------------------------
-historical_native_range <- glossa::predict_bart(model_suitable_habitat, c(historical_layers, coords_layer))
+historical_native_range <- glossa::predict_bart(model_native_range, c(historical_layers, coords_layer))
 historical_suitable_habitat <- glossa::predict_bart(model_suitable_habitat, historical_layers)
 
 ## -----------------------------------------------------------------------------

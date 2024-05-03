@@ -270,6 +270,7 @@ function(input, output, session) {
     other_results(glossa_results$other_results)
     pa_cutoff(glossa_results$pa_cutoff)
     habitat_suitability(glossa_results$habitat_suitability)
+
   })
 
   # reports server ----
@@ -529,6 +530,41 @@ function(input, output, session) {
     cov_layers_plot()
   })
 
+  # * Observations plot ----
+  observations_plot <- reactive({
+    p <- ggplot()
+
+    if (!is.null(input$sp)) {
+      model_points <- presence_absence_list()$model_pa[[input$sp]]
+      model_points <- model_points[model_points[, "pa"] == 1, c("decimalLongitude", "decimalLatitude", "pa")]
+      model_points$type <- "keeped"
+
+      raw_points <- presence_absence_list()$raw_pa[[input$sp]]
+      raw_points <- raw_points[raw_points[, "pa"] == 1, c("decimalLongitude", "decimalLatitude", "pa")]
+      raw_points <- dplyr::anti_join(raw_points, model_points, by = c("decimalLongitude", "decimalLatitude"))
+      raw_points$type <- "discarded"
+
+      p <- p +
+        geom_point(data = rbind(model_points, raw_points), aes(x = decimalLongitude, y = decimalLatitude, color = type))
+    }
+
+    p +
+      geom_sf(data = non_study_area_poly(), color = "#353839", fill = "antiquewhite") +
+      theme(
+        panel.grid.major = element_line(
+          color = gray(.5),
+          linetype = "dashed",
+          linewidth = 0.5
+        ),
+        panel.background = element_rect(fill = "white"),
+        axis.title = element_blank()
+      )
+  })
+  output$observations_plot<-renderPlot({
+    observations_plot()
+  })
+
+
   # * Functional responses plot ----
   fr_plot <- reactive({
     p <- ggplot(data = data.frame(y = 0:1), aes(y = y))
@@ -573,6 +609,7 @@ function(input, output, session) {
   # Export layers plot
   export_plot_server("export_pred_plot", prediction_plot())
   export_plot_server("export_layers_plot", cov_layers_plot())
+  export_plot_server("export_observations_plot", observations_plot())
   export_plot_server("export_fr_plot", fr_plot())
   export_plot_server("export_varimp_plot", varimp_plot())
 

@@ -5,7 +5,7 @@
 \title{Export Glossa Model Results}
 \usage{
 glossa_export(
-  sp = NULL,
+  species = NULL,
   mods = NULL,
   time = NULL,
   fields = NULL,

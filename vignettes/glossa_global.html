@@ -11,7 +11,7 @@
 
 <meta name="author" content="Jorge Mestre Tomás" />
 
-<meta name="date" content="2024-04-26" />
+<meta name="date" content="2024-05-03" />
 
 <title>Introduction to the GLOSSA workflow in R with a toy example</title>
 
@@ -354,7 +354,7 @@ display: none;
 with a toy example</h1>
 <h3 class="subtitle">Version 0.1.0</h3>
 <h4 class="author">Jorge Mestre Tomás</h4>
-<h4 class="date">2024-04-26</h4>
+<h4 class="date">2024-05-03</h4>
 
 </div>
 
@@ -566,7 +566,7 @@ habitat</p>
 #&gt;  use quantiles for rule cut points: false
 #&gt;  proposal probabilities: birth/death 0.50, swap 0.10, change 0.40; birth 0.50
 #&gt; data:
-#&gt;  number of training observations: 8
+#&gt;  number of training observations: 654
 #&gt;  number of test observations: 0
 #&gt;  number of explanatory variables: 4
 #&gt; 
@@ -586,23 +586,23 @@ habitat</p>
 #&gt; iteration: 800 (of 1000)
 #&gt; iteration: 900 (of 1000)
 #&gt; iteration: 1000 (of 1000)
-#&gt; total seconds in loop: 0.387121
+#&gt; total seconds in loop: 0.981120
 #&gt; 
 #&gt; Tree sizes, last iteration:
-#&gt; [1] 2 2 3 2 1 3 2 2 2 2 2 2 2 2 2 4 2 2 
-#&gt; 3 2 2 3 2 2 2 3 2 3 2 1 2 3 2 2 2 2 2 3 
-#&gt; 2 3 2 2 2 2 2 2 2 2 2 2 2 2 2 4 2 3 2 2 
-#&gt; 2 2 2 2 1 3 2 2 2 3 2 1 2 2 2 2 2 2 2 1 
-#&gt; 2 2 3 2 2 2 2 2 3 2 3 2 2 2 3 2 2 2 3 2 
-#&gt; 2 2 2 3 2 2 2 2 2 2 2 3 3 2 2 2 3 2 3 3 
-#&gt; 2 3 3 2 2 2 2 2 2 2 2 2 3 2 2 2 2 2 2 3 
-#&gt; 3 2 2 3 2 2 3 3 2 2 1 2 3 2 3 3 3 2 2 3 
-#&gt; 2 3 2 2 2 2 2 1 2 3 2 2 2 4 2 3 2 4 3 2 
-#&gt; 2 2 3 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 
-#&gt; 2 2 
+#&gt; [1] 2 2 2 2 2 2 3 2 2 3 2 2 2 1 2 3 2 2 
+#&gt; 2 2 2 2 5 3 2 4 4 3 2 2 3 2 2 2 1 3 2 2 
+#&gt; 3 2 3 2 2 2 4 3 2 2 2 2 2 2 3 3 2 3 2 3 
+#&gt; 2 3 2 3 2 2 3 2 2 2 3 4 2 2 4 2 2 3 2 3 
+#&gt; 2 2 3 2 2 2 2 1 2 2 2 4 2 3 2 3 2 2 2 2 
+#&gt; 2 4 2 3 3 2 2 2 2 4 4 3 2 4 3 2 4 3 2 2 
+#&gt; 3 2 2 2 5 2 2 2 2 4 4 2 2 2 2 3 3 3 3 3 
+#&gt; 2 2 3 3 4 3 3 2 3 2 3 2 3 3 2 2 2 2 2 2 
+#&gt; 3 2 4 5 2 2 2 2 3 3 1 3 3 2 3 2 2 2 3 2 
+#&gt; 3 2 4 4 2 2 3 2 4 3 2 4 3 2 2 2 2 2 3 2 
+#&gt; 1 3 
 #&gt; 
 #&gt; Variable Usage, last iteration (var:count):
-#&gt; (1: 65) (2: 44) (3: 77) (4: 56) 
+#&gt; (1: 73) (2: 61) (3: 91) (4: 72) 
 #&gt; DONE BART
 
 model_suitable_habitat &lt;- fit_bart_model(
@@ -622,7 +622,7 @@ model_suitable_habitat &lt;- fit_bart_model(
 #&gt;  use quantiles for rule cut points: false
 #&gt;  proposal probabilities: birth/death 0.50, swap 0.10, change 0.40; birth 0.50
 #&gt; data:
-#&gt;  number of training observations: 8
+#&gt;  number of training observations: 654
 #&gt;  number of test observations: 0
 #&gt;  number of explanatory variables: 2
 #&gt; 
@@ -642,29 +642,29 @@ model_suitable_habitat &lt;- fit_bart_model(
 #&gt; iteration: 800 (of 1000)
 #&gt; iteration: 900 (of 1000)
 #&gt; iteration: 1000 (of 1000)
-#&gt; total seconds in loop: 0.350238
+#&gt; total seconds in loop: 0.984212
 #&gt; 
 #&gt; Tree sizes, last iteration:
-#&gt; [1] 2 2 4 2 2 3 2 2 2 2 2 2 2 2 2 3 2 3 
-#&gt; 3 2 2 2 2 2 2 2 2 2 2 2 2 3 3 2 3 3 2 3 
-#&gt; 2 2 2 2 2 2 2 1 2 1 2 2 2 2 3 2 3 3 2 3 
-#&gt; 2 2 3 2 2 2 2 1 3 2 2 2 2 3 2 2 3 3 2 4 
-#&gt; 2 2 1 2 2 3 3 3 2 2 2 2 2 2 3 2 2 2 2 1 
-#&gt; 3 2 2 2 2 2 2 2 3 2 2 2 2 2 2 3 2 2 2 2 
-#&gt; 2 1 2 3 3 2 2 2 2 2 1 4 1 2 3 2 2 2 2 2 
-#&gt; 2 2 2 2 2 2 2 2 2 2 2 2 3 1 2 3 2 2 2 1 
-#&gt; 2 1 3 2 2 2 2 2 2 2 3 3 3 2 2 2 2 2 3 2 
-#&gt; 2 2 2 3 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 1 
-#&gt; 1 2 
+#&gt; [1] 2 2 2 2 2 3 4 1 1 2 3 2 2 2 2 1 2 2 
+#&gt; 2 5 3 2 3 2 2 2 2 2 2 3 3 2 2 2 2 3 2 2 
+#&gt; 2 3 2 2 1 2 3 3 3 1 3 3 2 4 4 2 3 4 2 4 
+#&gt; 4 2 2 2 2 2 2 2 5 3 2 3 2 3 4 4 2 2 4 2 
+#&gt; 3 3 3 2 3 2 2 2 5 2 2 2 2 2 3 2 3 2 2 3 
+#&gt; 2 2 2 2 2 4 5 2 2 2 2 3 1 3 2 5 2 2 3 5 
+#&gt; 3 3 3 2 2 2 5 2 2 2 2 3 4 2 3 4 2 2 2 2 
+#&gt; 3 3 3 3 2 3 2 3 3 3 2 2 2 3 4 3 2 3 4 3 
+#&gt; 2 2 2 2 1 3 2 4 1 2 4 2 2 3 2 3 3 2 2 3 
+#&gt; 2 3 3 3 2 2 2 2 2 3 2 2 2 2 3 1 3 3 2 3 
+#&gt; 3 2 
 #&gt; 
 #&gt; Variable Usage, last iteration (var:count):
-#&gt; (1: 103) (2: 126) 
+#&gt; (1: 143) (2: 159) 
 #&gt; DONE BART</code></pre>
 </div>
 <div id="predict-past-historical-and-future" class="section level1" number="8">
 <h1><span class="header-section-number">8</span> Predict past,
 historical and future</h1>
-<pre class="r"><code>historical_native_range &lt;- glossa::predict_bart(model_suitable_habitat, c(historical_layers, coords_layer))
+<pre class="r"><code>historical_native_range &lt;- glossa::predict_bart(model_native_range, c(historical_layers, coords_layer))
 historical_suitable_habitat &lt;- glossa::predict_bart(model_suitable_habitat, historical_layers)</code></pre>
 <pre class="r"><code># Past prediction
 past_suitable_habitat &lt;- lapply(1:terra::nlyr(past_layers[[1]]), function(i){

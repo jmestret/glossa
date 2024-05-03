@@ -782,7 +782,7 @@ body <- dashboardBody(
           ),
           fluidRow(
             box(
-              title = strong("Functional responses"),
+              title = strong("Presence validation"),
               status = NULL,
               width = 12,
               height = 200,
@@ -792,23 +792,16 @@ body <- dashboardBody(
               collapsible = FALSE,
               headerBorder = FALSE,
               elevation = 2,
-              label = export_plot_ui("export_fr_plot"),
+              label = export_plot_ui("export_observations_plot"),
 
               sidebar = boxSidebar(
                 startOpen = FALSE,
-                id = "fr_plot_sidebar",
+                id = "observations_plot_sidebar",
                 background = "#A97D87",
-                icon = icon("ellipsis", class = "fa-solid fa-ellipsis", style = "color:#3b444b;"),
-                pickerInput(
-                  inputId = "fr_plot_cov",
-                  label = NULL,
-                  choices = NULL,
-                  width = "90%",
-                  options = list(size = 5)
-                )
+                icon = icon("ellipsis", class = "fa-solid fa-ellipsis", style = "color:#3b444b;")
               ),
 
-              plotOutput("fr_plot", height = "100%")
+              plotOutput("observations_plot", height = "100%")
             )
           )
         )
@@ -816,9 +809,9 @@ body <- dashboardBody(
 
       fluidRow(
         box(
-          title = strong("Cross-validation"),
+          title = strong("Functional responses"),
           status = NULL,
-          width = 8,
+          width = 4,
           height = 200,
           solidHeader = FALSE,
           background = NULL,
@@ -826,23 +819,23 @@ body <- dashboardBody(
           collapsible = FALSE,
           headerBorder = FALSE,
           elevation = 2,
-          label = NULL,
+          label = export_plot_ui("export_fr_plot"),
 
           sidebar = boxSidebar(
             startOpen = FALSE,
-            id = "mycardsidebar",
-            background = "white",
+            id = "fr_plot_sidebar",
+            background = "#A97D87",
             icon = icon("ellipsis", class = "fa-solid fa-ellipsis", style = "color:#3b444b;"),
             pickerInput(
-              inputId = "Id086",
-              choices = c("Var1", "Var2", "Var3"),
-              select = 1,
-              options = list(
-                title = "This is a placeholder")
+              inputId = "fr_plot_cov",
+              label = NULL,
+              choices = NULL,
+              width = "90%",
+              options = list(size = 5)
             )
           ),
 
-          div("UNDER CONSTRUCTION", icon("person-digging"))
+          plotOutput("fr_plot", height = "100%")
         ),
 
         box(
@@ -872,6 +865,36 @@ body <- dashboardBody(
           ),
 
           plotOutput("varimp_plot", height = "100%")
+        ),
+
+        box(
+          title = strong("Cross-validation"),
+          status = NULL,
+          width = 4,
+          height = 200,
+          solidHeader = FALSE,
+          background = NULL,
+          maximizable = TRUE,
+          collapsible = FALSE,
+          headerBorder = FALSE,
+          elevation = 2,
+          label = NULL,
+
+          sidebar = boxSidebar(
+            startOpen = FALSE,
+            id = "mycardsidebar",
+            background = "white",
+            icon = icon("ellipsis", class = "fa-solid fa-ellipsis", style = "color:#3b444b;"),
+            pickerInput(
+              inputId = "Id086",
+              choices = c("Var1", "Var2", "Var3"),
+              select = 1,
+              options = list(
+                title = "This is a placeholder")
+            )
+          ),
+
+          div("UNDER CONSTRUCTION", icon("person-digging"))
         )
       )
     ),
