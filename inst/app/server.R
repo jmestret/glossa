@@ -630,8 +630,7 @@ function(input, output, session) {
   output$export_button <- downloadHandler(
     filename = function() { paste("glossa_", format(Sys.time(), "%D_%X"), ".zip", sep="") },
     content = function(file) {
-      w <- waiter::Waiter$new(id = "export_details",
-                              html = tagList(
+      w <- waiter::Waiter$new(html = tagList(
                                 img(src = "logo_glossa.gif", height = "200px")
                               ),
                               color = waiter::transparent(0.8)

@@ -245,11 +245,11 @@ glossa_export <- function(species = NULL, mods = NULL, time = NULL, fields = NUL
   # Initialize an empty vector to store file paths of exported files
   export_files <- c()
 
-  print(species)
-
   for (sp in species){
-    print(sp)
     tmp_sp <- file.path(tempdir(), sp)
+    if (file.exists(tmp_sp)){
+      unlink(tmp_sp, recursive = TRUE)
+    }
     dir.create(tmp_sp)
 
     if ("native_range" %in% mods){
