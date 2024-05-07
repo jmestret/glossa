@@ -239,7 +239,7 @@ create_coords_layer <- function(layers, sf_poly, scale_layers = FALSE){
 #' @keywords internal
 glossa_export <- function(species = NULL, mods = NULL, time = NULL, fields = NULL,
                           model_data = FALSE, fr = FALSE, prob_cut = FALSE,
-                          varimp = FALSE, layer_format = "tif",
+                          varimp = FALSE, cross_val = FALSE, layer_format = "tif",
                           prediction_results = NULL, presence_absence_list = NULL,
                           other_results = NULL, pa_cutoff = NULL) {
   # Initialize an empty vector to store file paths of exported files
@@ -393,7 +393,19 @@ glossa_export <- function(species = NULL, mods = NULL, time = NULL, fields = NUL
       } else {
         warning("Unable to download functional response results as they have not been computed.")
       }
+    }
 
+    # Export cross-validation metrics if requested
+    if (cross_val){
+      if (!is.null(other_results[["cross_validation"]])){
+        tmp_cv <- file.path(tmp_sp, "cross_validation")
+        dir.create(tmp_cv)
+        for (mode in names(other_results[["cross_validation"]])){
+          write.table(other_results[["cross_validation"]][[mode]][[sp]], file = file.path(tmp_cv, paste(gsub(" ", "_", sp), "_cross_validation_", mode, ".csv", sep = "")), quote = FALSE, sep = "\t", dec = ".", row.names = FALSE, col.names = TRUE)
+        }
+      } else {
+        warning("Unable to download functional response results as they have not been computed.")
+      }
     }
 
     # Export presence/absence probability cutoffs if requested
@@ -771,4 +783,75 @@ generate_prediction_plot <- function(prediction_layer, pa_points, legend_label, 
     )
 
   return(p)
+}
+
+generate_cv_plot <- function(data){
+  data <- data[, c("PREC", "SEN", "SPC", "FDR", "NPV", "FNR", "FPR", "Fscore", "ACC", "BA")]
+  data_mean <- colMeans(data, na.rm = TRUE)
+  data_median <- apply(data, 2, function(x) median(x, na.rm = TRUE))
+  data <- data.frame(id = 1:ncol(data), metric = colnames(data), mean_value = data_mean, median_value = data_median)
+
+  ggplot2::ggplot(data) +
+    ggplot2::geom_col(
+      aes(x = reorder(metric, mean_value), y = mean_value, fill = mean_value),
+      position = "dodge2",
+      show.legend = FALSE,
+      alpha = 0.9
+    ) +
+    ggplot2::geom_point(
+      aes(x = reorder(metric, mean_value), y = median_value),
+      size = 3,
+      color = "gray12"
+    ) +
+    ggplot2::geom_segment(
+      aes(x = reorder(metric, mean_value), y = 0,
+          xend = reorder(metric, mean_value), yend = 1),
+      linetype = "dashed",
+      color = "gray12"
+    ) +
+    coord_polar(start = 0) +
+    annotate(
+      x = 11,
+      y = 0.25,
+      label = "0.25",
+      geom = "text",
+      color = "gray12"
+    ) +
+    annotate(
+      x = 11,
+      y = 0.5,
+      label = "0.5",
+      geom = "text",
+      color = "gray12"
+    ) +
+    annotate(
+      x = 11,
+      y =0.75,
+      label = "0.75",
+      geom = "text",
+      color = "gray12"
+    ) +
+    annotate(
+      x = 11,
+      y =1,
+      label = "1",
+      geom = "text",
+      color = "gray12"
+    ) +
+    scale_y_continuous(
+      limits = c(0, 1),
+      expand = c(0, 0.1),
+      breaks = c(0.25, 0.5, 0.75, 1)
+    ) +
+    scale_fill_gradientn(
+      colours = c("#aaf0e2", "#8fdbd4", "#73c5c6", "#58afb8", "#3c99aa", "#21839c", "#056d8e", "#005780", "#004172"),
+      guide = "none"
+    ) +
+    theme_minimal() +
+    theme(
+      axis.title = element_blank(),
+      axis.ticks = element_blank(),
+      axis.text.y = element_blank(),
+      axis.text.x = element_text(color = "gray12", size = 12)
+    )
 }

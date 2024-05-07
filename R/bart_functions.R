@@ -191,3 +191,59 @@ pa_optimal_cutoff <- function(pa_coords, layers, model, seed = NULL) {
 
   return(pa_cutoff)
 }
+
+cv_bart <- function(pa_coords, layers, k = 5, seed = NULL){
+  set.seed(seed)
+  # Extract covariate values
+  pa_coords <- extract_noNA_cov_values(pa_coords, layers)
+  n <- nrow(pa_coords)
+  # Create index vector
+  k_index <- rep(1:k, length.out = n)
+  # Randomize vector
+  k_index <- sample(k_index)
+  pa_coords$k <- k_index
+  TP <- c()
+  FP <- c()
+  FN <- c()
+  TN <- c()
+  for (i in 1:k){
+    # Split train-test
+    train <- pa_coords[pa_coords$k != i, ]
+    test <- pa_coords[pa_coords$k == i, ]
+    bart_model <- dbarts::bart(x.train = train[, names(layers), drop = FALSE],
+                               y.train = train[,"pa"],
+                               keeptrees = TRUE)
+    invisible(bart_model$fit$state)
+    cutoff <- pa_optimal_cutoff(train, layers, bart_model)
+    pred <- dbarts:::predict.bart(bart_model, test[, names(layers), drop = FALSE])
+    pred <- colMeans(pred)
+    potential_presences <- ifelse(pred >= cutoff, 1, 0)
+
+    # Confusion matrices
+    TP <- c(TP, sum(test$pa == 1 & potential_presences == 1))
+    FP <- c(FP, sum(test$pa == 0 & potential_presences == 1))
+    FN <- c(FN, sum(test$pa == 1 & potential_presences == 0))
+    TN <- c(TN, sum(test$pa == 0 & potential_presences == 0))
+  }
+
+  # Metrics
+  PREC = TP / (TP + FP)
+  SEN = TP / (TP + FN)
+  SPC = TN / (TN + FP)
+  FDR = FP / (TP + FP)
+  NPV = TN / (FN + TN)
+  FNR = FN / (TP + FN)
+  FPR = FP / (FP + TN)
+  Fscore = 2 * ((PREC * SEN) / (PREC + SEN))
+  ACC = (TP + TN)/(TP + FP + FN + TN)
+  BA = (SEN + SPC) / 2
+  TSS = SEN + SPC - 1
+
+  cv_res <- data.frame(
+    TP = TP, FP = FP, FN = FN, TN = TN, PREC = PREC, SEN = SEN, SPC = SPC,
+    FDR = FDR, NPV = NPV, FNR = FNR, FPR = FPR, Fscore = Fscore, ACC = ACC,
+    BA = BA, TSS = TSS
+  )
+
+  return(cv_res)
+}

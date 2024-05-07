@@ -605,10 +605,51 @@ glossa_analysis <- function(
     print(paste("Functional responses execution time:", difftime(end_fr_time, start_fr_time, units = "mins"), "mins"))
   }
 
+  #=========================================================#
+  # 9. Cross-validation ----
+  #=========================================================#
+
+  if ("cross_validation" %in% other_analysis){
+    start_cv_time <- Sys.time()
+    if (!is.null(waiter)){waiter$update(html = tagList(img(src = "logo_glossa.gif", height = "200px"), h4("Performing cross-validation...")))}
+    print("Performing cross-validation...")
+
+    if (scale_layers) {
+      layers <-  terra::rast(covariate_list$historical$scaled)
+    } else {
+      layers <- terra::rast(covariate_list$historical$not_scaled)
+    }
+
+    if (!is.null(native_range)){
+      other_results$cross_validation$native_range <- lapply(names(presence_absence_list$model_pa), function(i){
+        cv_bart(pa_coords = presence_absence_list$model_pa[[i]],
+                layers = c(layers[[predictor_variables[[i]]]], coords_layer),
+                k = 10,
+                seed = seed)
+      })
+      names(other_results$cross_validation$native_range) <- names(presence_absence_list$model_pa)
+    }
+
+    if (!is.null(suitable_habitat)){
+      other_results$cross_validation$suitable_habitat <- lapply(names(presence_absence_list$model_pa), function(i){
+        cv_bart(pa_coords = presence_absence_list$model_pa[[i]],
+                layers = layers[[predictor_variables[[i]]]],
+                k = 10,
+                seed = seed)
+      })
+      names(other_results$cross_validation$suitable_habitat) <- names(presence_absence_list$model_pa)
+    }
+
+    end_cv_time <- Sys.time()
+    print(paste("Cross-validation execution time:", difftime(end_cv_time, start_cv_time, units = "mins"), "mins"))
+
+    print(other_results$cross_validation)
+  }
+
 
 
   #=========================================================#
-  # 9. Finalizing -----
+  # 10. Finalizing -----
   #=========================================================#
   if (!is.null(waiter)){waiter$update(html = tagList(img(src = "logo_glossa.gif", height = "200px"), h4("Finalizing...")))}
 

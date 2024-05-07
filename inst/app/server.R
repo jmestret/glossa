@@ -385,6 +385,14 @@ function(input, output, session) {
     updatePickerInput(session, "varimp_plot_mode", choices = names(other_results()[["variable_importance"]]))
   })
 
+  # * Cross-validation plot selectizer ----
+  observe({
+    req(other_results())
+    req(other_results()[["cross_validation"]])
+    req(input$sp)
+    updatePickerInput(session, "cv_plot_mode", choices = names(other_results()[["cross_validation"]]))
+  })
+
   # * Sparkline box ----
   output$spark_boxes <- renderUI({
     if (is.null(input$sp)){
@@ -604,6 +612,19 @@ function(input, output, session) {
     varimp_plot()
   })
 
+  # * Cross-validation plot ----
+  cv_plot <- reactive({
+    if (!is.null(input$cv_plot_mode)){
+      x <- other_results()[["cross_validation"]][[input$cv_plot_mode]][[input$sp]]
+    } else {
+      x <- c(TP = 0, FP = 0, FN = 0, TN = 0, precision = 0, sensitivity = 0, specificity = 0, accuracy = 0, f_score = 0, tss = 0, mcc = 0)
+    }
+    generate_cv_plot(x)
+  })
+  output$cv_plot<-renderPlot({
+    cv_plot()
+  })
+
 
   # * Export plots ----
   # Export layers plot
@@ -612,6 +633,7 @@ function(input, output, session) {
   export_plot_server("export_observations_plot", observations_plot())
   export_plot_server("export_fr_plot", fr_plot())
   export_plot_server("export_varimp_plot", varimp_plot())
+  export_plot_server("export_cv_plot", cv_plot())
 
   # Exports server ----
   # Update selectizers
@@ -640,7 +662,7 @@ function(input, output, session) {
                                     time = input$export_time, fields = input$export_fields,
                                     model_data = input$export_model_data, fr = input$export_fr,
                                     prob_cut = input$export_pa_cutoff, varimp = input$export_var_imp,
-                                    layer_format = input$export_layer_format,
+                                    cross_val = input$export_cv, layer_format = input$export_layer_format,
                                     prediction_results = prediction_results(),
                                     presence_absence_list = presence_absence_list(),
                                     other_results = other_results(), pa_cutoff = pa_cutoff())

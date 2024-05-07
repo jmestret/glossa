@@ -878,23 +878,23 @@ body <- dashboardBody(
           collapsible = FALSE,
           headerBorder = FALSE,
           elevation = 2,
-          label = NULL,
+          label = export_plot_ui("export_cv_plot"),
 
           sidebar = boxSidebar(
             startOpen = FALSE,
-            id = "mycardsidebar",
-            background = "white",
+            id = "fr_plot_sidebar",
+            background = "#A97D87",
             icon = icon("ellipsis", class = "fa-solid fa-ellipsis", style = "color:#3b444b;"),
             pickerInput(
-              inputId = "Id086",
-              choices = c("Var1", "Var2", "Var3"),
-              select = 1,
-              options = list(
-                title = "This is a placeholder")
+              inputId = "cv_plot_mode",
+              label = NULL,
+              choices = NULL,
+              width = "90%",
+              options = list(size = 5)
             )
           ),
 
-          div("UNDER CONSTRUCTION", icon("person-digging"))
+          plotOutput("cv_plot", height = "100%")
         )
       )
     ),
@@ -975,6 +975,13 @@ body <- dashboardBody(
             prettySwitch(
               inputId = "export_fr",
               label = "Functional responses",
+              status = "primary",
+              fill = TRUE
+            ),
+
+            prettySwitch(
+              inputId = "export_cv",
+              label = "Cross-validation metrics",
               status = "primary",
               fill = TRUE
             ),
