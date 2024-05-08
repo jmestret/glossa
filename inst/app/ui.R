@@ -78,7 +78,12 @@ sidebar <- dashboardSidebar(
   expandOnHover = TRUE,
   fixed = TRUE,
   id = "sidebar",
-  customArea = NULL,
+  customArea = fluidRow(
+    img(src = "logo_csic.jpg", height="25%", width="25%", align="center"),
+    img(src = "logo_icm.png", height="25%", width="25%", align="center"),
+    img(src = "logo_imares.png", height="25%", width="25%", align="center"),
+    img(src = "logo_prooceans.png", height="25%", width="25%", align="center")
+  ),
 
   sidebarMenu(
     id = "sidebar_menu",
@@ -350,7 +355,7 @@ body <- dashboardBody(
                   bs4Dash::column(
                     width = 6,
                     bs4Dash::actionButton(
-                      inputId = "new_analysis_gbif",
+                      inputId = "tutorial_1",
                       label = "Download GBIF Occurrences",
                       icon = NULL,
                       status = "primary",
@@ -361,7 +366,7 @@ body <- dashboardBody(
                   bs4Dash::column(
                     width = 6,
                     bs4Dash::actionButton(
-                      inputId = "new_analysis_isimip",
+                      inputId = "tutorial_2",
                       label = "Download ISIMIP Variables",
                       icon = NULL,
                       status = "primary",
