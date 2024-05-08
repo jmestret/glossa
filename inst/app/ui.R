@@ -392,54 +392,59 @@ body <- dashboardBody(
         bs4Dash::column(
           width = 6,
           box(id = "data_upload",
-            title = strong("Data Upload"),
-            status = NULL,
-            width = 12,
-            height = 300,
-            solidHeader = FALSE,
-            background = NULL,
-            collapsible = FALSE,
-            headerBorder = FALSE,
-            elevation = 2,
-            label = NULL,
-
-            fluidRow(
-              bs4Dash::column(
-                width = 4,
-                file_input_area_ui(
-                  "pa_files",
-                  label = "Presence/Absence",
-                  button_label = "Add CSV files",
-                  multiple = TRUE,
-                  accept = ".csv",
-                  icon_name = "map-location-dot"
-                )
+              title = strong("Data Upload"),
+              status = NULL,
+              width = 12,
+              height = 300,
+              solidHeader = FALSE,
+              background = NULL,
+              collapsible = FALSE,
+              headerBorder = FALSE,
+              elevation = 2,
+              label = actionButton(
+                "data_upload_info",
+                label = NULL,
+                icon = icon("circle-info", class = "fa-solid fa-circle-info", style = "color:#007bff;"),
+                style = "background-color: transparent; border: none; padding: 0;"
               ),
 
-              bs4Dash::column(
-                width = 4,
-                file_input_area_ui(
-                  "hist_layers",
-                  label = "Study period",
-                  button_label = "Add ZIP layers",
-                  multiple = FALSE,
-                  accept = ".zip",
-                  icon_name = "layer-group"
-                )
-              ),
+              fluidRow(
+                bs4Dash::column(
+                  width = 4,
+                  file_input_area_ui(
+                    "pa_files",
+                    label = "Presence/Absence",
+                    button_label = "Add CSV files",
+                    multiple = TRUE,
+                    accept = ".csv",
+                    icon_name = "map-location-dot"
+                  )
+                ),
 
-              bs4Dash::column(
-                width = 4,
-                file_input_area_ui(
-                  "fut_layers",
-                  label = "Non-study period",
-                  button_label = "Add ZIP layers",
-                  multiple = TRUE,
-                  accept = ".zip",
-                  icon_name = "forward"
+                bs4Dash::column(
+                  width = 4,
+                  file_input_area_ui(
+                    "hist_layers",
+                    label = "Study period",
+                    button_label = "Add ZIP layers",
+                    multiple = FALSE,
+                    accept = ".zip",
+                    icon_name = "layer-group"
+                  )
+                ),
+
+                bs4Dash::column(
+                  width = 4,
+                  file_input_area_ui(
+                    "fut_layers",
+                    label = "Non-study period",
+                    button_label = "Add ZIP layers",
+                    multiple = TRUE,
+                    accept = ".zip",
+                    icon_name = "forward"
+                  )
                 )
               )
-            )
           )
         ), # End upload data files
 
@@ -460,7 +465,13 @@ body <- dashboardBody(
             collapsible = FALSE,
             headerBorder = FALSE,
             elevation = 2,
-            label = NULL,
+            label = actionButton(
+              "analysis_options_info",
+              label = NULL,
+              icon = icon("circle-info", class = "fa-solid fa-circle-info", style = "color:#007bff;"),
+              style = "background-color: transparent; border: none; padding: 0;"
+            ),
+
             fluidRow(
               bs4Dash::column(
                 width = 8,
@@ -579,7 +590,12 @@ body <- dashboardBody(
             collapsible = FALSE,
             headerBorder = FALSE,
             elevation = 2,
-            label = NULL,
+            label = actionButton(
+              "predictor_variables_info",
+              label = NULL,
+              icon = icon("circle-info", class = "fa-solid fa-circle-info", style = "color:#007bff;"),
+              style = "background-color: transparent; border: none; padding: 0;"
+            ),
 
             bs4Dash::column(
               width = 12,
@@ -602,10 +618,18 @@ body <- dashboardBody(
             collapsible = FALSE,
             headerBorder = FALSE,
             elevation = 2,
-            label = customFileInput(
-              "study_area_file",
-              buttonLabel = "Upload polygon",
-              accept = ".gpkg"
+            label = div(
+              customFileInput(
+                "study_area_file",
+                buttonLabel = "Upload polygon",
+                accept = ".gpkg"
+              ),
+              actionButton(
+                "study_area_info",
+                label = NULL,
+                icon = icon("circle-info", class = "fa-solid fa-circle-info", style = "color:#007bff;"),
+                style = "background-color: transparent; border: none; padding: 0;"
+              )
             ),
 
             plotOutput("study_area_plot", height = "100%")
@@ -911,101 +935,101 @@ body <- dashboardBody(
         bs4Dash::column(
           width = 6, offset = 3,
           box(id = "export_details",
-            title = strong("Export details"),
-            status = NULL,
-            width = 12,
-            solidHeader = FALSE,
-            background = NULL,
-            collapsible = FALSE,
-            headerBorder = FALSE,
-            elevation = 2,
-            label = NULL,
+              title = strong("Export details"),
+              status = NULL,
+              width = 12,
+              solidHeader = FALSE,
+              background = NULL,
+              collapsible = FALSE,
+              headerBorder = FALSE,
+              elevation = 2,
+              label = NULL,
 
-            selectInput(
-              "export_sp",
-              label = "Species name",
-              choices = NULL,
-              selected = NULL,
-              multiple = TRUE
-            ),
+              selectInput(
+                "export_sp",
+                label = "Species name",
+                choices = NULL,
+                selected = NULL,
+                multiple = TRUE
+              ),
 
-            selectInput(
-              "export_time",
-              label = "Time period",
-              choices = NULL,
-              selected = NULL,
-              multiple = TRUE
-            ),
+              selectInput(
+                "export_time",
+                label = "Time period",
+                choices = NULL,
+                selected = NULL,
+                multiple = TRUE
+              ),
 
-            selectInput(
-              "export_mods",
-              label = "Model prediction",
-              choices = NULL,
-              selected = NULL,
-              multiple = TRUE
-            ),
+              selectInput(
+                "export_mods",
+                label = "Model prediction",
+                choices = NULL,
+                selected = NULL,
+                multiple = TRUE
+              ),
 
-            selectInput(
-              "export_fields",
-              label = "Fields",
-              choices = NULL,
-              selected = NULL,
-              multiple = TRUE
-            ),
+              selectInput(
+                "export_fields",
+                label = "Fields",
+                choices = NULL,
+                selected = NULL,
+                multiple = TRUE
+              ),
 
-            selectInput(
-              "export_layer_format",
-              label = "Layers file type",
-              choices = NULL,
-              selected = NULL,
-              multiple = FALSE
-            ),
+              selectInput(
+                "export_layer_format",
+                label = "Layers file type",
+                choices = NULL,
+                selected = NULL,
+                multiple = FALSE
+              ),
 
-            strong("Other results"),
+              strong("Other results"),
 
-            prettySwitch(
-              inputId = "export_model_data",
-              label = "Export data used to fit the models",
-              status = "primary",
-              fill = TRUE
-            ),
+              prettySwitch(
+                inputId = "export_model_data",
+                label = "Export data used to fit the models",
+                status = "primary",
+                fill = TRUE
+              ),
 
-            prettySwitch(
-              inputId = "export_var_imp",
-              label = "Variable importance",
-              status = "primary",
-              fill = TRUE
-            ),
+              prettySwitch(
+                inputId = "export_var_imp",
+                label = "Variable importance",
+                status = "primary",
+                fill = TRUE
+              ),
 
-            prettySwitch(
-              inputId = "export_fr",
-              label = "Functional responses",
-              status = "primary",
-              fill = TRUE
-            ),
+              prettySwitch(
+                inputId = "export_fr",
+                label = "Functional responses",
+                status = "primary",
+                fill = TRUE
+              ),
 
-            prettySwitch(
-              inputId = "export_cv",
-              label = "Cross-validation metrics",
-              status = "primary",
-              fill = TRUE
-            ),
+              prettySwitch(
+                inputId = "export_cv",
+                label = "Cross-validation metrics",
+                status = "primary",
+                fill = TRUE
+              ),
 
-            prettySwitch(
-              inputId = "export_pa_cutoff",
-              label = "P/A probability cutoff value",
-              status = "primary",
-              fill = TRUE
-            ),
+              prettySwitch(
+                inputId = "export_pa_cutoff",
+                label = "P/A probability cutoff value",
+                status = "primary",
+                fill = TRUE
+              ),
 
-            downloadActionButton(
-              outputId = "export_button",
-              label = "Save GLOSSA results",
-              icon = NULL,
-              status = "primary",
-              outline = FALSE,
-              width = "100%"
-            )
+              downloadActionButton(
+                outputId = "export_button",
+                label = "Save GLOSSA results",
+                icon = NULL,
+                status = "primary",
+                outline = FALSE,
+                width = "100%"
+              )
           ) # End box
         ) # End column
       ) # End fluidRow
@@ -1019,7 +1043,6 @@ dashboardPage(
   sidebar,
   body,
   controlbar = NULL,
-  footer = NULL,
   title = NULL,
   freshTheme = NULL,
   preloader = list(html = tagList(img(src = "logo_glossa.gif", height = "200px"), h4("Loading ...")), color = "#3b444b"),
@@ -1027,5 +1050,15 @@ dashboardPage(
   fullscreen = FALSE,
   help = NULL,
   dark = FALSE,
-  scrollToTop = FALSE
+  scrollToTop = FALSE,
+  footer = dashboardFooter(
+    fixed = FALSE,
+    left = span(
+      "Developed by ",
+      a(href = "https://github.com/jmestret", target = "_blank", "@jmestret"),
+      " and ",
+      a(href = "https://github.com/AlbaFuster", target = "_blank", "@AlbaFuster")
+    ),
+    right = "2024"
+  )
 )

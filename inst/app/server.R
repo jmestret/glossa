@@ -192,6 +192,16 @@ function(input, output, session) {
     }
   )
 
+  # Info buttons ----
+  observeEvent(input$data_upload_info, {
+    showModal(modalDialog(
+      title = "Somewhat important message",
+      "This is a somewhat important message.",
+      easyClose = TRUE,
+      footer = NULL
+    ))
+  })
+
   # Run analysis ----
   # Output variables to be filled
   presence_absence_list <- reactiveVal()
@@ -538,9 +548,7 @@ function(input, output, session) {
 
       p <- p +
         geom_spatraster(data = plot_layers) +
-        scale_fill_gradientn(colours = c("#A1D4B1","#2BAF90",
-                                         "#F1A512","#DD4111",
-                                         "#8C0027"),
+        scale_fill_gradientn(colours = c("#A1D4B1","#2BAF90","#F1A512","#DD4111","#8C0027"),
                              name = legend_label)
     }
 
@@ -581,7 +589,8 @@ function(input, output, session) {
       raw_points$type <- "discarded"
 
       p <- p +
-        geom_point(data = rbind(raw_points, model_points), aes(x = decimalLongitude, y = decimalLatitude, color = type))
+        geom_point(data = rbind(raw_points, model_points), aes(x = decimalLongitude, y = decimalLatitude, color = type)) +
+        scale_color_manual(values = c("keeped" = "#65c4d8", "discarded" = "#f67d33"))
     }
 
     p +
@@ -606,8 +615,8 @@ function(input, output, session) {
 
     if (!is.null(input$fr_plot_cov)) {
       p <- ggplot(data = other_results()[["response_curve"]][[input$sp]][[input$fr_plot_cov]], aes(x = value)) +
-        geom_ribbon(aes(ymin = q25, ymax = q975), fill = "#88b6d4", alpha = 0.3) +
-        geom_line(aes(y = mean), color = "#3b444b", linewidth = 1) +
+        geom_ribbon(aes(ymin = q25, ymax = q975), fill = "#65c4d8", alpha = 0.3) +
+        geom_line(aes(y = mean), color = "#004172", linewidth = 1) +
         xlab(input$fr_plot_cov)
     }
 

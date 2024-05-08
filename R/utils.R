@@ -756,7 +756,7 @@ generate_prediction_plot <- function(prediction_layer, pa_points, legend_label, 
       )
       p <- p +
         tidyterra::geom_spatraster(data = prediction_layer) +
-        ggplot2::scale_fill_gradientn(colours = c("#9fe5d7", "#65c4d8", "#39a6d5", "#2b8fc7", "#f67d33", "#f44934", "#ca3a43", "#9e0142"),
+        ggplot2::scale_fill_gradientn(colours = c("#A1D4B1","#2BAF90","#F1A512","#DD4111","#8C0027"),
                                       limits = lim, name = legend_label)
     }
   }
