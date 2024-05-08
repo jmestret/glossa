@@ -525,7 +525,7 @@ body <- dashboardBody(
                 prettyCheckboxGroup(
                   inputId = "analysis_options_sh",
                   label = "Suitable habitat",
-                  choiceNames = c("Historical prediction", "Past prediction", "Future prediction"),
+                  choiceNames = c("Aggregated prediction", "Study projections", "Non-study projections"),
                   choiceValues = c("historical", "past", "future"),
                   selected = NULL,
                   status = "primary",
