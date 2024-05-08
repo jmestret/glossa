@@ -415,8 +415,8 @@ body <- dashboardBody(
                 width = 4,
                 file_input_area_ui(
                   "hist_layers",
-                  label = "Historical layers",
-                  button_label = "Add ZIP directory",
+                  label = "Study period",
+                  button_label = "Add ZIP layers",
                   multiple = FALSE,
                   accept = ".zip",
                   icon_name = "layer-group"
@@ -427,8 +427,8 @@ body <- dashboardBody(
                 width = 4,
                 file_input_area_ui(
                   "fut_layers",
-                  label = "Future layers",
-                  button_label = "Add ZIP directory",
+                  label = "Non-study period",
+                  button_label = "Add ZIP layers",
                   multiple = TRUE,
                   accept = ".zip",
                   icon_name = "forward"
@@ -513,7 +513,7 @@ body <- dashboardBody(
                 prettyCheckboxGroup(
                   inputId = "analysis_options_nr",
                   label = "Native range",
-                  choiceNames = c("Historical prediction", "Past prediction", "Future prediction"),
+                  choiceNames = c("Aggregated prediction", "Study projections", "Non-study projections"),
                   choiceValues = c("historical", "past", "future"),
                   selected = NULL,
                   status = "primary",

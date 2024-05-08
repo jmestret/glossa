@@ -795,14 +795,19 @@ generate_cv_plot <- function(data){
     ggplot2::geom_col(
       aes(x = reorder(metric, mean_value), y = mean_value, fill = mean_value),
       position = "dodge2",
-      show.legend = FALSE,
+      show.legend = TRUE,
       alpha = 0.9
     ) +
-    ggplot2::geom_point(
-      aes(x = reorder(metric, mean_value), y = median_value),
-      size = 3,
-      color = "gray12"
+    scale_fill_gradientn(
+      colours = c("#aaf0e2", "#8fdbd4", "#73c5c6", "#58afb8", "#3c99aa", "#21839c", "#056d8e", "#005780", "#004172"),
+      limits = c(0, 1),
+      name = "mean"
     ) +
+    ggplot2::geom_point(
+      aes(x = reorder(metric, mean_value), y = median_value, color = "median"),
+      size = 3
+    ) +
+    scale_color_manual(values = "gray12", name = "") +
     ggplot2::geom_segment(
       aes(x = reorder(metric, mean_value), y = 0,
           xend = reorder(metric, mean_value), yend = 1),
@@ -843,15 +848,12 @@ generate_cv_plot <- function(data){
       expand = c(0, 0.1),
       breaks = c(0.25, 0.5, 0.75, 1)
     ) +
-    scale_fill_gradientn(
-      colours = c("#aaf0e2", "#8fdbd4", "#73c5c6", "#58afb8", "#3c99aa", "#21839c", "#056d8e", "#005780", "#004172"),
-      guide = "none"
-    ) +
     theme_minimal() +
     theme(
       axis.title = element_blank(),
       axis.ticks = element_blank(),
       axis.text.y = element_blank(),
       axis.text.x = element_text(color = "gray12", size = 12)
-    )
+    ) +
+    guides(color=guide_legend(override.aes=list(fill=NA)))
 }

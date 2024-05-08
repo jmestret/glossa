@@ -540,7 +540,8 @@ function(input, output, session) {
 
   # * Observations plot ----
   observations_plot <- reactive({
-    p <- ggplot()
+    p <- ggplot() +
+      geom_sf(data = non_study_area_poly(), color = "#353839", fill = "antiquewhite")
 
     if (!is.null(input$sp)) {
       model_points <- presence_absence_list()$model_pa[[input$sp]]
@@ -549,15 +550,19 @@ function(input, output, session) {
 
       raw_points <- presence_absence_list()$raw_pa[[input$sp]]
       raw_points <- raw_points[raw_points[, "pa"] == 1, c("decimalLongitude", "decimalLatitude", "pa")]
+      decimal_digits <- switch(input$round_digits + 1, NULL, input$decimal_digits)
+      if (!is.null(decimal_digits)) {
+        raw_points[, "decimalLongitude"] <- round(raw_points[, "decimalLongitude"], decimal_digits)
+        raw_points[, "decimalLatitude"] <- round(raw_points[, "decimalLatitude"], decimal_digits)
+      }
       raw_points <- dplyr::anti_join(raw_points, model_points, by = c("decimalLongitude", "decimalLatitude"))
       raw_points$type <- "discarded"
 
       p <- p +
-        geom_point(data = rbind(model_points, raw_points), aes(x = decimalLongitude, y = decimalLatitude, color = type))
+        geom_point(data = rbind(raw_points, model_points), aes(x = decimalLongitude, y = decimalLatitude, color = type))
     }
 
     p +
-      geom_sf(data = non_study_area_poly(), color = "#353839", fill = "antiquewhite") +
       theme(
         panel.grid.major = element_line(
           color = gray(.5),
@@ -617,7 +622,7 @@ function(input, output, session) {
     if (!is.null(input$cv_plot_mode)){
       x <- other_results()[["cross_validation"]][[input$cv_plot_mode]][[input$sp]]
     } else {
-      x <- c(TP = 0, FP = 0, FN = 0, TN = 0, precision = 0, sensitivity = 0, specificity = 0, accuracy = 0, f_score = 0, tss = 0, mcc = 0)
+      x <- data.frame(PREC = 0, SEN = 0, SPC = 0, FDR = 0, NPV = 0, FNR = 0, FPR = 0, Fscore = 0, ACC = 0, BA = 0)
     }
     generate_cv_plot(x)
   })
