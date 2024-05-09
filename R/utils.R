@@ -558,7 +558,9 @@ sparkvalueBox <- function(title, sparkline_data, description, type = "line", box
     # Calculate percentage increase and format description accordingly
     value <- sparkline_data[length(sparkline_data)]
     value <- ifelse(nchar(value) > 6, format(value, scientific = TRUE, digits = 2), value)
-    perc_inc <- round(((sparkline_data[length(sparkline_data)] - sparkline_data[1]) / sparkline_data[1]) * 100, 1)
+    first_period <- head(sparkline_data, ceiling(0.05*length(sparkline_data)))
+    last_period <- tail(sparkline_data, ceiling(0.05*length(sparkline_data)))
+    perc_inc <- round(((mean(last_period) - mean(first_period)) / mean(first_period)) * 100, 1)
     perc_inc <- ifelse(is.nan(perc_inc), 0, perc_inc)
     description <- paste0(ifelse(perc_inc >= 0, "+", ""), perc_inc, description)
     # Determine icon and colors based on percentage increase

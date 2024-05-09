@@ -193,13 +193,16 @@ function(input, output, session) {
   )
 
   # Info buttons ----
-  observeEvent(input$data_upload_info, {
-    showModal(modalDialog(
-      title = "Somewhat important message",
-      "This is a somewhat important message.",
-      easyClose = TRUE,
-      footer = NULL
-    ))
+  observeEvent(input$analysis_options_nr_info, {
+      addPopover(
+        id = "analysis_options_nr_info",
+        options = list(
+          content = "Vivamus sagittis lacus vel augue laoreet rutrum faucibus.",
+          title = "Server popover",
+          placement = "bottom",
+          trigger = "hover"
+        )
+      )
   })
 
   # Run analysis ----
@@ -438,35 +441,15 @@ function(input, output, session) {
       sparkline_data2 <- rep(0, 30)
       description1_2 <- "%"
 
-      if (!is.null(habitat_suitability()[["past"]]) &  !is.null(habitat_suitability()[["future"]]) & !is.null(input$pred_plot_scenario_future)) {
-        # Check if past and future data along with input scenario are available
-        sparkline_data1 <- c(
-          habitat_suitability()[["past"]][["covered_area"]][[input$sp]],
-          habitat_suitability()[["future"]][["covered_area"]][[input$sp]][[input$pred_plot_scenario_future]]
-        )
-        sparkline_data2 <- c(
-          habitat_suitability()[["past"]][["suit_prob"]][[input$sp]],
-          habitat_suitability()[["future"]][["suit_prob"]][[input$sp]][[input$pred_plot_scenario_future]]
-        )
-        description1_2 <- paste("% vs", input$pred_plot_scenario_future)
-
-      } else if (!is.null(habitat_suitability()[["past"]])) {
-        # Check if only past data is available
-        sparkline_data1 <- habitat_suitability()[["past"]][["covered_area"]][[input$sp]]
-        sparkline_data2 <- habitat_suitability()[["past"]][["suit_prob"]][[input$sp]]
-        description1_2 <- paste("% vs last year")
-
-      } else if (!is.null(habitat_suitability()[["future"]]) & !is.null(input$pred_plot_scenario_future)) {
-        # Check if only future data and input scenario are available
-        sparkline_data1 <- habitat_suitability()[["future"]][["covered_area"]][[input$sp]][[input$pred_plot_scenario_future]]
-        sparkline_data2 <- habitat_suitability()[["future"]][["suit_prob"]][[input$sp]][[input$pred_plot_scenario_future]]
-        description1_2 <- paste("% vs", input$pred_plot_scenario_future)
-
-      } else if (!is.null(habitat_suitability()[["historical"]])) {
-        # Check if only future data and input scenario are available
-        sparkline_data1 <- habitat_suitability()[["historical"]][["covered_area"]][[input$sp]]
-        sparkline_data2 <- habitat_suitability()[["historical"]][["suit_prob"]][[input$sp]]
-        description1_2 <- paste("% historical")
+      if (input$pred_plot_time == "future" & !is.null(habitat_suitability()[[input$pred_plot_time]]) & !is.null(input$pred_plot_scenario_future)){
+        # Check if future data along with input scenario are available
+        sparkline_data1 <- habitat_suitability()[[input$pred_plot_time]][["covered_area"]][[input$sp]][[input$pred_plot_scenario_future]]
+        sparkline_data2 <- habitat_suitability()[[input$pred_plot_time]][["suit_prob"]][[input$sp]][[input$pred_plot_scenario_future]]
+        description1_2 <- paste("%", input$pred_plot_scenario_future)
+      } else if (input$pred_plot_time != "future" & !is.null(habitat_suitability()[[input$pred_plot_time]])) {
+        sparkline_data1 <- habitat_suitability()[[input$pred_plot_time]][["covered_area"]][[input$sp]]
+        sparkline_data2 <- habitat_suitability()[[input$pred_plot_time]][["suit_prob"]][[input$sp]]
+        description1_2 <- paste("%", input$pred_plot_scenario_future)
       }
 
       sparkline_data3 <-  c(

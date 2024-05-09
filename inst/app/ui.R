@@ -465,12 +465,7 @@ body <- dashboardBody(
             collapsible = FALSE,
             headerBorder = FALSE,
             elevation = 2,
-            label = actionButton(
-              "analysis_options_info",
-              label = NULL,
-              icon = icon("circle-info", class = "fa-solid fa-circle-info", style = "color:#007bff;"),
-              style = "background-color: transparent; border: none; padding: 0;"
-            ),
+            label = NULL,
 
             fluidRow(
               bs4Dash::column(
@@ -528,7 +523,7 @@ body <- dashboardBody(
                 width = 4,
                 prettyCheckboxGroup(
                   inputId = "analysis_options_nr",
-                  label = "Native range",
+                  label = tags$span("Native range", shiny::actionButton("analysis_options_nr_info", label = "", icon = icon("circle-info", class = "fa-solid fa-circle-info", style = "color:#007bff;"), class = "btn btn-default action-button btn-xs", style="background-color:transparent;border-radius:0px;border-width:0px")),
                   choiceNames = c("Aggregated prediction", "Study projections", "Non-study projections"),
                   choiceValues = c("historical", "past", "future"),
                   selected = NULL,
@@ -590,12 +585,7 @@ body <- dashboardBody(
             collapsible = FALSE,
             headerBorder = FALSE,
             elevation = 2,
-            label = actionButton(
-              "predictor_variables_info",
-              label = NULL,
-              icon = icon("circle-info", class = "fa-solid fa-circle-info", style = "color:#007bff;"),
-              style = "background-color: transparent; border: none; padding: 0;"
-            ),
+            label = NULL,
 
             bs4Dash::column(
               width = 12,
@@ -618,19 +608,11 @@ body <- dashboardBody(
             collapsible = FALSE,
             headerBorder = FALSE,
             elevation = 2,
-            label = div(
-              customFileInput(
+            label = customFileInput(
                 "study_area_file",
                 buttonLabel = "Upload polygon",
                 accept = ".gpkg"
               ),
-              actionButton(
-                "study_area_info",
-                label = NULL,
-                icon = icon("circle-info", class = "fa-solid fa-circle-info", style = "color:#007bff;"),
-                style = "background-color: transparent; border: none; padding: 0;"
-              )
-            ),
 
             plotOutput("study_area_plot", height = "100%")
           )

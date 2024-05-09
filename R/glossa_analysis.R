@@ -642,8 +642,6 @@ glossa_analysis <- function(
 
     end_cv_time <- Sys.time()
     print(paste("Cross-validation execution time:", difftime(end_cv_time, start_cv_time, units = "mins"), "mins"))
-
-    print(other_results$cross_validation)
   }
 
 
