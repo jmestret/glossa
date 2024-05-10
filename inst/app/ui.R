@@ -5,7 +5,7 @@ header <- dashboardHeader(
     title = strong("GLOSSA"),
     color = NULL,
     href = "https://github.com/jmestret",
-    image = "https://raw.githubusercontent.com/jmestret/img/main/logo_glossa.png",
+    image = "logo_glossa.png",
     opacity = 1
   ),
 
@@ -187,7 +187,7 @@ body <- dashboardBody(
             bs4Dash::column(
               width = 6,
               align = "center",
-              img(src = "https://raw.githubusercontent.com/jmestret/img/main/logo_glossa.png")
+              img(src = "logo_glossa.png", height = "30%")
             )
           ),
           fluidRow(
