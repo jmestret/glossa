@@ -78,12 +78,7 @@ sidebar <- dashboardSidebar(
   expandOnHover = TRUE,
   fixed = TRUE,
   id = "sidebar",
-  customArea = fluidRow(
-    img(src = "logo_csic.jpg", height="25%", width="25%", align="center"),
-    img(src = "logo_icm.png", height="25%", width="25%", align="center"),
-    img(src = "logo_imares.png", height="25%", width="25%", align="center"),
-    img(src = "logo_prooceans.png", height="25%", width="25%", align="center")
-  ),
+  customArea = NULL,
 
   sidebarMenu(
     id = "sidebar_menu",
@@ -1041,6 +1036,12 @@ dashboardPage(
       " and ",
       a(href = "https://github.com/AlbaFuster", target = "_blank", "@AlbaFuster")
     ),
-    right = "2024"
+    right = tagList(
+      img(src = "logo_csic.png", height="25px", align="center"),
+      img(src = "logo_icm.png", height="25px", align="center"),
+      img(src = "logo_so.png", height="25px", align="center"),
+      img(src = "logo_imares.png", height="25px", align="center"),
+      img(src = "logo_prooceans.png", height="25px", align="center")
+    )
   )
 )
