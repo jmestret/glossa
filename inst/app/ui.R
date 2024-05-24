@@ -1,5 +1,5 @@
 # Header ----
-header <- dashboardHeader(
+header <- bs4DashNavbar(
   # Logo
   title = dashboardBrand(
     title = strong("GLOSSA"),
@@ -69,7 +69,7 @@ header <- dashboardHeader(
 )
 
 # Sidebar ----
-sidebar <- dashboardSidebar(
+sidebar <- bs4DashSidebar(
   # Sidebar options
   skin = "light",
   status = "primary",
@@ -151,7 +151,7 @@ sidebar <- dashboardSidebar(
 )
 
 # Body ----
-body <- dashboardBody(
+body <- bs4DashBody(
   waiter::useWaiter(), # include dependencies
 
   tabItems(
@@ -406,7 +406,7 @@ body <- dashboardBody(
               fluidRow(
                 bs4Dash::column(
                   width = 4,
-                  file_input_area_ui(
+                  glossa::file_input_area_ui(
                     "pa_files",
                     label = "Presence/Absence",
                     button_label = "Add CSV files",
@@ -418,7 +418,7 @@ body <- dashboardBody(
 
                 bs4Dash::column(
                   width = 4,
-                  file_input_area_ui(
+                  glossa::file_input_area_ui(
                     "hist_layers",
                     label = "Study period",
                     button_label = "Add ZIP layers",
@@ -430,7 +430,7 @@ body <- dashboardBody(
 
                 bs4Dash::column(
                   width = 4,
-                  file_input_area_ui(
+                  glossa::file_input_area_ui(
                     "fut_layers",
                     label = "Non-study period",
                     button_label = "Add ZIP layers",
@@ -603,7 +603,7 @@ body <- dashboardBody(
             collapsible = FALSE,
             headerBorder = FALSE,
             elevation = 2,
-            label = customFileInput(
+            label = glossa::customFileInput(
                 "study_area_file",
                 buttonLabel = "Upload polygon",
                 accept = ".gpkg"
@@ -690,7 +690,7 @@ body <- dashboardBody(
               collapsible = FALSE,
               headerBorder = FALSE,
               elevation = 2,
-              label = export_plot_ui("export_pred_plot"),
+              label = glossa::export_plot_ui("export_pred_plot"),
 
               sidebar = boxSidebar(
                 startOpen = FALSE,
@@ -752,7 +752,7 @@ body <- dashboardBody(
               collapsible = FALSE,
               headerBorder = FALSE,
               elevation = 2,
-              label = export_plot_ui("export_layers_plot"),
+              label = glossa::export_plot_ui("export_layers_plot"),
 
               sidebar = boxSidebar(
                 startOpen = FALSE,
@@ -798,7 +798,7 @@ body <- dashboardBody(
               collapsible = FALSE,
               headerBorder = FALSE,
               elevation = 2,
-              label = export_plot_ui("export_observations_plot"),
+              label = glossa::export_plot_ui("export_observations_plot"),
 
               sidebar = boxSidebar(
                 startOpen = FALSE,
@@ -825,7 +825,7 @@ body <- dashboardBody(
           collapsible = FALSE,
           headerBorder = FALSE,
           elevation = 2,
-          label = export_plot_ui("export_fr_plot"),
+          label = glossa::export_plot_ui("export_fr_plot"),
 
           sidebar = boxSidebar(
             startOpen = FALSE,
@@ -855,7 +855,7 @@ body <- dashboardBody(
           collapsible = FALSE,
           headerBorder = FALSE,
           elevation = 2,
-          label = export_plot_ui("export_varimp_plot"),
+          label = glossa::export_plot_ui("export_varimp_plot"),
 
           sidebar = boxSidebar(
             startOpen = FALSE,
@@ -884,7 +884,7 @@ body <- dashboardBody(
           collapsible = FALSE,
           headerBorder = FALSE,
           elevation = 2,
-          label = export_plot_ui("export_cv_plot"),
+          label = glossa::export_plot_ui("export_cv_plot"),
 
           sidebar = boxSidebar(
             startOpen = FALSE,
@@ -999,7 +999,7 @@ body <- dashboardBody(
                 fill = TRUE
               ),
 
-              downloadActionButton(
+              glossa::downloadActionButton(
                 outputId = "export_button",
                 label = "Save GLOSSA results",
                 icon = NULL,
@@ -1015,7 +1015,7 @@ body <- dashboardBody(
 )
 
 # UI ----
-dashboardPage(
+bs4DashPage(
   header,
   sidebar,
   body,

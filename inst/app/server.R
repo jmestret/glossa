@@ -46,9 +46,9 @@ function(input, output, session) {
   })
 
   # new_analysis server ----
-  pa_files_input <- file_input_area_server("pa_files")
-  hist_layers_input <- file_input_area_server("hist_layers")
-  fut_layers_input <- file_input_area_server("fut_layers")
+  pa_files_input <- glossa::file_input_area_server("pa_files")
+  hist_layers_input <- glossa::file_input_area_server("hist_layers")
+  fut_layers_input <- glossa::file_input_area_server("fut_layers")
 
   # Validate inputs - TODO: very repetitive code
   pa_files <- reactive({
@@ -63,7 +63,7 @@ function(input, output, session) {
       w$show()
       data$name <- paste(as.character(icon("map-location-dot",style = "font-size:2rem; color:#007bff;")), data$name)
       for (i in 1:nrow(data)){
-        data[i, "validation"] <- validate_presences_absences_csv(data[i, 4])
+        data[i, "validation"] <- glossa::validate_presences_absences_csv(data[i, 4])
       }
       w$hide()
       data
@@ -83,7 +83,7 @@ function(input, output, session) {
       )
       w$show()
       data$name <- paste(as.character(icon("layer-group",style = "font-size:2rem; color:#007bff;")), data$name)
-      data$validation <- validate_layers_zip(data[1, 4])
+      data$validation <- glossa::validate_layers_zip(data[1, 4])
       w$hide()
       data
     } else{
@@ -104,9 +104,9 @@ function(input, output, session) {
       data$name <- paste(as.character(icon("forward",style = "font-size:2rem; color:#007bff;")), data$name)
       data$validation <- FALSE
       for (i in 1:nrow(data)){
-        if (validate_layers_zip(data[i, 4])){
+        if (glossa::validate_layers_zip(data[i, 4])){
           if (!is.null(hist_layers_input())){
-            if (validate_hist_fut_layers(hist_layers_input()[1, 4], data[i, 4])) {
+            if (glossa::validate_hist_fut_layers(hist_layers_input()[1, 4], data[i, 4])) {
               data[i, "validation"] <- TRUE
             }
           } else {
@@ -133,7 +133,7 @@ function(input, output, session) {
   predictor_variables <- reactive({
     data <- hist_layers_input()
     if (!is.null(data)) {
-      get_covariate_names(data[1, 4])
+      glossa::get_covariate_names(data[1, 4])
     } else{
       NULL
     }
@@ -280,7 +280,7 @@ function(input, output, session) {
     })
 
     # Run GLOSSA analysis
-    glossa_results <- glossa_analysis(
+    glossa_results <- glossa::glossa_analysis(
       pa_files = pa_files_input()[,"datapath"],
       historical_files = hist_layers_input()[,"datapath"],
       future_files = fut_layers_input()[,"datapath"],
@@ -459,21 +459,21 @@ function(input, output, session) {
     }
 
     fluidRow(
-      sparkvalueBox(
+      glossa::sparkvalueBox(
         title = "Potential suitable area (km2)",
         sparkline_data = sparkline_data1,
         description = description1_2,
         elevation = 2
       ),
 
-      sparkvalueBox(
+      glossa::sparkvalueBox(
         title = "Mean suitable probability",
         sparkline_data = sparkline_data2,
         description = description1_2,
         elevation = 2
       ),
 
-      sparkvalueBox(
+      glossa::sparkvalueBox(
         title = "Presences/Absences",
         sparkline_data = sparkline_data3,
         description = "ratio P/A",
@@ -507,7 +507,7 @@ function(input, output, session) {
       pa_points <- presence_absence_list()$model_pa[[input$sp]]
     }
 
-    generate_prediction_plot(prediction_layer, pa_points, legend_label, non_study_area_poly())
+    glossa::generate_prediction_plot(prediction_layer, pa_points, legend_label, non_study_area_poly())
   })
   output$prediction_plot <- renderPlot({
     prediction_plot()
@@ -638,7 +638,7 @@ function(input, output, session) {
     } else {
       x <- data.frame(PREC = 0, SEN = 0, SPC = 0, FDR = 0, NPV = 0, FNR = 0, FPR = 0, Fscore = 0, ACC = 0, BA = 0)
     }
-    generate_cv_plot(x)
+    glossa::generate_cv_plot(x)
   })
   output$cv_plot<-renderPlot({
     cv_plot()
@@ -647,12 +647,12 @@ function(input, output, session) {
 
   # * Export plots ----
   # Export layers plot
-  export_plot_server("export_pred_plot", prediction_plot())
-  export_plot_server("export_layers_plot", cov_layers_plot())
-  export_plot_server("export_observations_plot", observations_plot())
-  export_plot_server("export_fr_plot", fr_plot())
-  export_plot_server("export_varimp_plot", varimp_plot())
-  export_plot_server("export_cv_plot", cv_plot())
+  glossa::export_plot_server("export_pred_plot", prediction_plot())
+  glossa::export_plot_server("export_layers_plot", cov_layers_plot())
+  glossa::export_plot_server("export_observations_plot", observations_plot())
+  glossa::export_plot_server("export_fr_plot", fr_plot())
+  glossa::export_plot_server("export_varimp_plot", varimp_plot())
+  glossa::export_plot_server("export_cv_plot", cv_plot())
 
   # Exports server ----
   # Update selectizers
