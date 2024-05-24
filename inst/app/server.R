@@ -6,42 +6,42 @@ function(input, output, session) {
     sf::st_make_valid() %>%
     sf::st_wrap_dateline() %>%
     glossa::invert_polygon(bbox = c(xmin = -180, ymin =-90, xmax = 180, ymax = 90))
-  study_area_poly <- reactiveVal(value = default_polygon)
-  non_study_area_poly <- reactiveVal(value = glossa::invert_polygon(default_polygon))
+  study_area_poly <- shiny::reactiveVal(value = default_polygon)
+  non_study_area_poly <- shiny::reactiveVal(value = glossa::invert_polygon(default_polygon))
 
-  observeEvent(input$study_area_file, {
+  shiny::observeEvent(input$study_area_file, {
     study_area_poly(sf::st_read(input$study_area_file[["datapath"]]))
     non_study_area_poly(glossa::invert_polygon(study_area_poly()))
   })
 
   # header server ----
-  observeEvent(input$new_analysis_header, {
-    updateTabItems(session, "sidebar_menu", "new_analysis")
+  shiny::observeEvent(input$new_analysis_header, {
+    bs4Dash::updateTabItems(session, "sidebar_menu", "new_analysis")
   })
 
-  observeEvent(input$new_analysis_home, {
-    updateTabItems(session, "sidebar_menu", "new_analysis")
+  shiny::observeEvent(input$new_analysis_home, {
+    bs4Dash::updateTabItems(session, "sidebar_menu", "new_analysis")
   })
 
   # home server ----
   # NOTE: this doesnt work in deployed apps, use onclick ="window.open('<url>', '_blank')" in ui
-  observeEvent(input$try_demo,{
+  shiny::observeEvent(input$try_demo,{
     browseURL("https://github.com/jmestret/glossa/tree/main/inst/extdata")
   })
 
-  observeEvent(input$know_the_group,{
+  shiny::observeEvent(input$know_the_group,{
     browseURL("https://martacollmarine.science/researchers/")
   })
 
-  observeEvent(input$documentation_and_guidelines,{
+  shiny::observeEvent(input$documentation_and_guidelines,{
     browseURL("https://github.com/jmestret/glossa/wiki")
   })
 
-  observeEvent(input$tutorial_1,{
+  shiny::observeEvent(input$tutorial_1,{
     browseURL("https://github.com/jmestret/glossa/blob/main/vignettes/glossa_global.html")
   })
 
-  observeEvent(input$tutorial_2,{
+  shiny::observeEvent(input$tutorial_2,{
     browseURL("https://github.com/jmestret/glossa/blob/main/vignettes/glossa_region.html")
   })
 
@@ -51,7 +51,7 @@ function(input, output, session) {
   fut_layers_input <- glossa::file_input_area_server("fut_layers")
 
   # Validate inputs - TODO: very repetitive code
-  pa_files <- reactive({
+  pa_files <- shiny::reactive({
     data <- pa_files_input()
     if (!is.null(data)) {
       w <- waiter::Waiter$new(id = "data_upload",
@@ -72,7 +72,7 @@ function(input, output, session) {
     }
   })
 
-  hist_layers <- reactive({
+  hist_layers <- shiny::reactive({
     data <- hist_layers_input()
     if (!is.null(data)) {
       w <- waiter::Waiter$new(id = "data_upload",
@@ -91,7 +91,7 @@ function(input, output, session) {
     }
   })
 
-  fut_layers <- reactive({
+  fut_layers <- shiny::reactive({
     data <- fut_layers_input()
     if (!is.null(data)) {
       w <- waiter::Waiter$new(id = "data_upload",
@@ -121,7 +121,7 @@ function(input, output, session) {
     }
   })
 
-  species_files_names <- reactive({
+  species_files_names <- shiny::reactive({
     data <- pa_files_input()
     if (!is.null(data)) {
       data$name
@@ -130,7 +130,7 @@ function(input, output, session) {
     }
   })
 
-  predictor_variables <- reactive({
+  predictor_variables <- shiny::reactive({
     data <- hist_layers_input()
     if (!is.null(data)) {
       glossa::get_covariate_names(data[1, 4])
@@ -150,8 +150,8 @@ function(input, output, session) {
     })
   })
 
-  study_area_plot <- reactive({
-    ggplot() +
+  study_area_plot <- shiny::reactive({
+    ggplot2::ggplot() +
       geom_sf(data = study_area_poly(), color = "#353839", fill = "#39a6d5") +
       theme(
         panel.background = element_rect(fill = "white"),
@@ -193,7 +193,7 @@ function(input, output, session) {
   )
 
   # Info buttons ----
-  observeEvent(input$analysis_options_nr_info, {
+  shiny::observeEvent(input$analysis_options_nr_info, {
       addPopover(
         id = "analysis_options_nr_info",
         options = list(
@@ -207,15 +207,15 @@ function(input, output, session) {
 
   # Run analysis ----
   # Output variables to be filled
-  presence_absence_list <- reactiveVal()
-  covariate_list <- reactiveVal()
-  prediction_results <- reactiveVal()
-  other_results <- reactiveVal()
-  pa_cutoff <- reactiveVal()
-  habitat_suitability <- reactiveVal()
+  presence_absence_list <- shiny::reactiveVal()
+  covariate_list <- shiny::reactiveVal()
+  prediction_results <- shiny::reactiveVal()
+  other_results <- shiny::reactiveVal()
+  pa_cutoff <- shiny::reactiveVal()
+  habitat_suitability <- shiny::reactiveVal()
 
   # Confirmation dialog
-  observeEvent(input$run_button, {
+  shiny::observeEvent(input$run_button, {
     shinyWidgets::ask_confirmation(
       inputId = "run_button_confirmation",
       type = "question",
@@ -225,7 +225,7 @@ function(input, output, session) {
     )
   })
 
-  observeEvent(input$run_button_confirmation, {
+  shiny::observeEvent(input$run_button_confirmation, {
 
     req(input$run_button_confirmation == TRUE)
 
@@ -515,7 +515,7 @@ function(input, output, session) {
 
   # * Layers plot ----
   cov_layers_plot <- reactive({
-    p <- ggplot()
+    p <- ggplot2::ggplot()
 
     if (!is.null(input$layers_plot_cov)){
       if (input$layers_plot_time == "historical") {
@@ -553,7 +553,7 @@ function(input, output, session) {
 
   # * Observations plot ----
   observations_plot <- reactive({
-    p <- ggplot() +
+    p <- ggplot2::ggplot() +
       geom_sf(data = non_study_area_poly(), color = "#353839", fill = "antiquewhite")
 
     if (!is.null(input$sp)) {
@@ -572,7 +572,7 @@ function(input, output, session) {
       raw_points$type <- "discarded"
 
       p <- p +
-        geom_point(data = rbind(raw_points, model_points), aes(x = decimalLongitude, y = decimalLatitude, color = type)) +
+        geom_point(data = rbind(raw_points, model_points), ggplot2::aes(x = decimalLongitude, y = decimalLatitude, color = type)) +
         scale_color_manual(values = c("keeped" = "#65c4d8", "discarded" = "#f67d33"))
     }
 
@@ -594,12 +594,12 @@ function(input, output, session) {
 
   # * Functional responses plot ----
   fr_plot <- reactive({
-    p <- ggplot(data = data.frame(y = 0:1), aes(y = y))
+    p <- ggplot2::ggplot(data = data.frame(y = 0:1), ggplot2::aes(y = y))
 
     if (!is.null(input$fr_plot_cov)) {
-      p <- ggplot(data = other_results()[["response_curve"]][[input$sp]][[input$fr_plot_cov]], aes(x = value)) +
-        geom_ribbon(aes(ymin = q25, ymax = q975), fill = "#65c4d8", alpha = 0.3) +
-        geom_line(aes(y = mean), color = "#004172", linewidth = 1) +
+      p <- ggplot2::ggplot(data = other_results()[["response_curve"]][[input$sp]][[input$fr_plot_cov]], ggplot2::aes(x = value)) +
+        geom_ribbon(ggplot2::aes(ymin = q25, ymax = q975), fill = "#65c4d8", alpha = 0.3) +
+        geom_line(ggplot2::aes(y = mean), color = "#004172", linewidth = 1) +
         xlab(input$fr_plot_cov)
     }
 
@@ -613,11 +613,11 @@ function(input, output, session) {
 
   # * Variable importance plot ----
   varimp_plot <- reactive({
-    p <- ggplot(data.frame(x = paste("var", 1:3), y = c(0, 0, 0)), aes(x = x, y = y))
+    p <- ggplot2::ggplot(data.frame(x = paste("var", 1:3), y = c(0, 0, 0)), ggplot2::aes(x = x, y = y))
 
     if (!is.null(input$varimp_plot_mode)) {
       x <- other_results()[["variable_importance"]][[input$varimp_plot_mode]][[input$sp]]
-      p <- ggplot(data.frame(x = factor(names(x), levels = names(x)), y = x), aes(x = x, y = y))
+      p <- ggplot2::ggplot(data.frame(x = factor(names(x), levels = names(x)), y = x), ggplot2::aes(x = x, y = y))
     }
 
     p +

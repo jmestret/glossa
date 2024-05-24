@@ -19,13 +19,9 @@ library(DT)
 library(svglite)
 library(dbarts)
 
-#library(glossa)
-#for (i in list.files("../../R/", full.names = TRUE)){
-#  source(i)
-#}
+library(glossa)
 
 #=========================================================#
-# Data preparation ----
+# GLOSSA options ----
 #=========================================================#
-# Load world map
 sf::sf_use_s2(FALSE)

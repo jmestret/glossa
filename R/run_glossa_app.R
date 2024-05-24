@@ -2,7 +2,8 @@
 #'
 #' This function launches the Glossa Shiny web application.
 #'
-#' @param maxRequestSize To increase the maximum file size allowed for uploading in Shiny (default 5Mb)
+#' @param launch.browser launch browser or local R
+#' @param port port for browse
 #'
 #' @details The Glossa Shiny app provides an interactive interface for users to access Glossa functionalities.
 #'
@@ -12,10 +13,8 @@
 #' \dontrun{
 #' run_glossa_app()
 #' }
-run_glossa_app <- function(maxRequestSize = NULL) {
-  if (!is.null(maxRequestSize)){
-    options(shiny.maxRequestSize = maxRequestSize)
-  }
-
-  shiny::runApp(appDir = system.file("app", package = "glossa"))
+run_glossa_app <- function(request_size_mb = 2000, launch.browser = TRUE, port = getOption("shiny.port")) {
+  options(shiny.maxRequestSize = request_size_mb * (1024^2))
+  on.exit(rm(list = ls(envir = .GlobalEnv), envir = .GlobalEnv))
+  return(shiny::runApp(appDir = system.file("app", package = "glossa"), launch.browser = launch.browser, port = port))
 }
