@@ -235,7 +235,8 @@ body <- bs4Dash::bs4DashBody(
                   icon = NULL,
                   status = "secondary",
                   outline = FALSE,
-                  width = "100%"
+                  width = "100%",
+                  onclick ="window.open('https://github.com/jmestret/glossa/tree/main/inst/extdata', '_blank')"
                 )
               )
             )
@@ -273,7 +274,8 @@ body <- bs4Dash::bs4DashBody(
                   icon = NULL,
                   status = "secondary",
                   outline = FALSE,
-                  width = "100%"
+                  width = "100%",
+                  onclick ="window.open('https://martacollmarine.science/researchers/', '_blank')"
                 )
               )
             )
@@ -314,7 +316,8 @@ body <- bs4Dash::bs4DashBody(
                   icon = NULL,
                   status = "primary",
                   outline = TRUE,
-                  width = "100%"
+                  width = "100%",
+                  onclick ="window.open('https://github.com/jmestret/glossa/wiki', '_blank')"
                 )
               )
             )
@@ -355,7 +358,8 @@ body <- bs4Dash::bs4DashBody(
                       icon = NULL,
                       status = "primary",
                       outline = TRUE,
-                      width = "100%"
+                      width = "100%",
+                      onclick ="window.open('https://github.com/jmestret/glossa/blob/main/vignettes/glossa_global.html', '_blank')"
                     )
                   ),
                   bs4Dash::column(
@@ -366,7 +370,8 @@ body <- bs4Dash::bs4DashBody(
                       icon = NULL,
                       status = "primary",
                       outline = TRUE,
-                      width = "100%"
+                      width = "100%",
+                      onclick ="window.open('https://github.com/jmestret/glossa/blob/main/vignettes/glossa_global.html', '_blank')"
                     )
                   )
                 )

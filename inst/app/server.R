@@ -23,27 +23,6 @@ function(input, output, session) {
     bs4Dash::updateTabItems(session, "sidebar_menu", "new_analysis")
   })
 
-  # home server ----
-  # NOTE: this doesnt work in deployed apps, use onclick ="window.open('<url>', '_blank')" in ui
-  shiny::observeEvent(input$try_demo,{
-    browseURL("https://github.com/jmestret/glossa/tree/main/inst/extdata")
-  })
-
-  shiny::observeEvent(input$know_the_group,{
-    browseURL("https://martacollmarine.science/researchers/")
-  })
-
-  shiny::observeEvent(input$documentation_and_guidelines,{
-    browseURL("https://github.com/jmestret/glossa/wiki")
-  })
-
-  shiny::observeEvent(input$tutorial_1,{
-    browseURL("https://github.com/jmestret/glossa/blob/main/vignettes/glossa_global.html")
-  })
-
-  shiny::observeEvent(input$tutorial_2,{
-    browseURL("https://github.com/jmestret/glossa/blob/main/vignettes/glossa_region.html")
-  })
 
   # new_analysis server ----
   pa_files_input <- glossa::file_input_area_server("pa_files")
