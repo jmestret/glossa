@@ -17,9 +17,11 @@ Description: An R package and Shiny app for exploring the past and future of mar
 License: GPL (>=3) + file LICENSE
 URL: https://github.com/jmestret/glossa
 BugReports: https://github.com/jmestret/glossa/issues
-Depends: R (>= 3.5.0)
+Depends:
+    R (>= 3.5.0),
+    shiny,
+    bs4Dash
 Imports:
-    bs4Dash,
     dbarts,
     dplyr,
     DT,
@@ -31,7 +33,6 @@ Imports:
     mcp,
     rnaturalearth,
     sf,
-    shiny,
     shinyWidgets,
     sparkline,
     svglite,
