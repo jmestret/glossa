@@ -10,50 +10,75 @@
 #' @return TRUE if the file has the expected columns and formats, FALSE otherwise.
 #' @details This function validates the format of a CSV file containing presence/absence data. It checks if the file has the expected columns and formats. If the "pa" column is missing, it assumes the presence/absence column and adds it with default values.
 #' @keywords internal
-validate_presences_absences_csv <- function(file_path) {
+validate_presences_absences_csv <- function(file_input) {
+  file_path <- file_input["datapath"]
+  file_name <- file_input["name"]
   # Define expected columns and formats
   expected_columns <- c("decimalLongitude", "decimalLatitude", "year", "species")
   expected_formats <- c("numeric", "numeric", "numeric", "character")
 
   # Load the CSV file
-  data <- read.csv2(file_path, sep = "\t", dec = ".", header = TRUE, stringsAsFactors = FALSE)
+  data <- tryCatch(
+    read.csv2(file_path, sep = "\t", dec = ".", header = TRUE, stringsAsFactors = FALSE),
+    error = function(e) "error"
+  )
+  if (inherits(data, "character")){
+    msg <- paste("Check", file_name, "file format, delimiters or separators.")
+    warning(msg)
+    showNotification(msg, duration = 5, closeButton = TRUE, type = "error")
+    return(NULL)
+  }
 
   # Check if the data has the expected columns
   if (all(expected_columns %in% colnames(data))) {
     # Check if "pa" column is present
-    if ("pa" %in% colnames(data)) {
-      expected_columns <- c(expected_columns, "pa")
+    if (!("pa" %in% colnames(data))) {
+      data[, "pa"] <- 1
     }
+    expected_columns <- c(expected_columns, "pa")
     data <- data[, expected_columns]
-  } else { # If columns are not named correctly, check if positional order matches
-    if (ncol(data) == 4) { # Assuming it doesn't have the "pa" column
-      colnames(data) <- expected_columns
-    } else if (ncol(data) >= 5) { # Assuming it has the "pa" column
-      data <- data[, 1:5]
-      colnames(data) <- c(expected_columns, "pa")
-    } else {
-      warning("The uploaded CSV files do not have the correct format.")
-      return(FALSE)
-    }
+  } else {
+    msg <- paste("The", file_name, "file does not have the correct column names.")
+    warning(msg)
+    showNotification(msg, duration = 5, closeButton = TRUE, type = "error")
+    return(NULL)
+  }
+
+  # Remove NA coordinates
+  data <- data[complete.cases(data[, expected_columns[1:2]]), ]
+  if (nrow(data) == 0){
+    msg <- paste("No records with valid coordinates in", file_name, ".")
+    warning(msg)
+    showNotification(msg, duration = 5, closeButton = TRUE, type = "error")
+    return(NULL)
   }
 
   # Check column formats
   for (i in seq_along(expected_formats)) {
     if (expected_formats[i] == "numeric" && !all(sapply(data[[i]], is.numeric))) {
-      warning(paste("Column", i, "is not numeric."))
-      return(FALSE)
+      msg <- paste("Column", i, "is not numeric in", file_name, "file .")
+      warning(msg)
+      showNotification(msg, duration = 5, closeButton = TRUE, type = "error")
+      return(NULL)
     } else if (expected_formats[i] == "character" && !all(sapply(data[[i]], is.character))) {
-      warning(paste("Column", i, "is not character."))
-      return(FALSE)
+      msg <- paste("Column", i, "is not character in", file_name, "file .")
+      warning(msg)
+      showNotification(msg, duration = 5, closeButton = TRUE, type = "error")
+      return(NULL)
     }
   }
 
   if ("pa" %in% colnames(data)) {
-    if (!(all(data[, "pa"]) %in% c(0, 1)))
-      return(FALSE)
+    if (!(all(data[, "pa"] %in% c(0, 1)))){
+      msg <- paste("column 'pa0' has values other than 0 and 1 in", file_name, "file .")
+      warning(msg)
+      showNotification(msg, duration = 5, closeButton = TRUE, type = "error")
+      return(NULL)
+    }
+
   }
 
-  return(TRUE)
+  return(data)
 }
 
 
@@ -67,7 +92,76 @@ validate_presences_absences_csv <- function(file_path) {
 #'
 #' @importFrom terra rast crs res
 #' @keywords internal
-validate_layers_zip <- function(file_path) {
+validate_historical_layers_zip <- function(file_input) {
+  file_path <- file_input[, "datapath"]
+
+  # Extract contents of the zip file
+  tmpdir <- tempdir()
+  zip_contents <- unzip(file_path, unzip = getOption("unzip"), exdir = tmpdir)
+
+  # Load the first layer of each covariate to check CRS and resolution
+  layers <- lapply(zip_contents, function(x) {
+    terra::rast(x)
+  })
+  names(layers) <- sub("([^.]+)\\.[[:alnum:]]+$", "\\1", basename(zip_contents))
+
+  # Check if all layers have the same CRS
+  crs_list <- sapply(layers, function(x) {
+    terra::crs(x, proj = TRUE)
+  })
+  if (any(sapply(crs_list, is.na) == TRUE)){
+    msg <- paste("There are rasters with undefined coordinate reference system (CRS).")
+    warning(msg)
+    showNotification(msg, duration = 5, closeButton = TRUE, type = "error")
+    return(NULL)
+  }
+  if (length(unique(crs_list)) != 1) {
+    msg <- paste("There are layers with different coordinate reference system (CRS).")
+    warning(msg)
+    showNotification(msg, duration = 5, closeButton = TRUE, type = "warning")
+  }
+
+  # Project all layers to +proj=longlat +datum=WGS84
+  layers <- lapply(layers, function(x){
+    terra::project(x, "epsg:4326")
+  })
+
+  # Check if all layers have the same resolution
+  res_list <- sapply(layers, function(x) {
+    paste(terra::res(x), collapse = "")
+  })
+  if (length(unique(res_list)) != 1) {
+    msg <- paste("The layers uploaded have different resolution.")
+    warning(msg)
+    showNotification(msg, duration = 5, closeButton = TRUE, type = "error")
+    return(NULL)
+  }
+
+  # Check if all layers have the same extent
+  ext_list <- lapply(layers, function(x){
+    as.vector(terra::ext(x))
+  })
+  if (length(unique(ext_list)) != 1) {
+    msg <- paste("There are layers with different extent. We will transform layers to biggest extent.")
+    warning(msg)
+    showNotification(msg, duration = 5, closeButton = TRUE, type = "warning")
+
+    ext_df <- do.call(rbind, ext_list)
+    largest_ext <- terra::ext(c(min(ext_df[, 1]), max(ext_df[, 2]), min(ext_df[, 3]), max(ext_df[, 4]))) # xmin xmax ymin ymax
+    layers <- lapply(layers, function(x){
+      terra::extend(x, largest_ext)
+    })
+  }
+
+  layers <- terra::rast(layers)
+
+  # If all checks passed, return layers
+  return(layers)
+}
+
+validate_projection_layers_zip <- function(file_input) {
+  file_path <- file_input["datapath"]
+
   # Extract contents of the zip file
   tmpdir <- tempdir()
   zip_contents <- unzip(file_path, unzip = getOption("unzip"), exdir = tmpdir)
@@ -77,8 +171,10 @@ validate_layers_zip <- function(file_path) {
   # Check if each covariate has the same number of files
   n_files <- sapply(covariates, function(x) length(list.files(x)))
   if (length(unique(n_files)) != 1) {
-    warning("The layers uploaded differ in number between the different covariates.")
-    return(FALSE)
+    msg <- paste("The layers uploaded differ in number between the different covariates.")
+    warning(msg)
+    showNotification(msg, duration = 5, closeButton = TRUE, type = "error")
+    return(NULL)
   }
 
   # Load the first layer of each covariate to check CRS and resolution
@@ -90,9 +186,16 @@ validate_layers_zip <- function(file_path) {
   crs_list <- sapply(layers, function(x) {
     terra::crs(x, proj = TRUE)
   })
+  if (any(sapply(crs_list, is.na) == TRUE)){
+    msg <- paste("There are rasters with undefined coordinate reference system (CRS).")
+    warning(msg)
+    showNotification(msg, duration = 5, closeButton = TRUE, type = "error")
+    return(NULL)
+  }
   if (length(unique(crs_list)) != 1) {
-    warning("The layers uploaded have different CRS. They must be in WGS84.")
-    return(FALSE)
+    msg <- paste("There are layers with different coordinate reference system (CRS).")
+    warning(msg)
+    showNotification(msg, duration = 5, closeButton = TRUE, type = "error")
   }
 
   # Check if all layers have the same resolution
@@ -100,12 +203,14 @@ validate_layers_zip <- function(file_path) {
     paste(terra::res(x), collapse = "")
   })
   if (length(unique(res_list)) != 1) {
-    warning("The layers uploaded have different resolution.")
-    return(FALSE)
+    msg <- paste("The layers uploaded have different resolution.")
+    warning(msg)
+    showNotification(msg, duration = 5, closeButton = TRUE, type = "error")
+    return(NULL)
   }
 
   # If all checks passed, return TRUE
-  return(TRUE)
+  return(file_path)
 }
 
 
@@ -119,41 +224,43 @@ validate_layers_zip <- function(file_path) {
 #' @details This function compares historical and future layers to ensure they have the same CRS, resolution, and covariates.
 #'
 #' @keywords internal
-validate_hist_fut_layers <- function(hist_path, fut_path) {
+validate_hist_proj_layers <- function(hist_path, proj_path) {
   # Extract contents of the zip file
   tmpdir_hist <- tempdir()
-  tmpdir_fut <- tempdir()
+  tmpdir_proj <- tempdir()
   hist_contents <- unzip(hist_path, unzip = getOption("unzip"), exdir = tmpdir_hist)
-  fut_contents <- unzip(fut_path, unzip = getOption("unzip"), exdir = tmpdir_fut)
+  proj_contents <- unzip(proj_path, unzip = getOption("unzip"), exdir = tmpdir_proj)
 
   # Get unique covariate directories
-  hist_covariates <- unique(dirname(hist_contents))
-  fut_covariates <- unique(dirname(fut_contents))
-
-  # Load one layer to check CRS and resolution
-  hist_layer <- terra::rast(list.files(hist_covariates[1], full.names = TRUE)[1])
-  fut_layer <- terra::rast(list.files(fut_covariates[1], full.names = TRUE)[1])
-
-  # Check if they have the same CRS
-  if (!(terra::crs(hist_layer, proj = TRUE) == terra::crs(fut_layer, proj = TRUE))) {
-    warning("The future layers have different CRS from historical layers. They must be in WGS84.")
-    return(FALSE)
-  }
-
-  # Check if they have the same resolution
-  if (!(paste(terra::res(hist_layer), collapse = "") == paste(terra::res(fut_layer), collapse = ""))) {
-    warning("The future layers uploaded have different resolution from the historical layers.")
-    return(FALSE)
-  }
+  hist_covariates <- sub("([^.]+)\\.[[:alnum:]]+$", "\\1", basename(hist_contents))
+  proj_covariates <- basename(unique(dirname(proj_contents)))
 
   # Check they have same covariates
-  if (!all(paste(sort(basename(hist_covariates)), collapse = "") == paste(sort(basename(fut_covariates)), collapse = ""))){
-    warning("The future layers uploaded have different covariates from the historical layers.")
+  if (!all(paste(sort(hist_covariates), collapse = "") == paste(sort(proj_covariates), collapse = ""))){
+    msg <- "The projection layers uploaded have different covariates from the historical layers."
+    warning(msg)
+    showNotification(msg, duration = 5, closeButton = TRUE, type = "error")
     return(FALSE)
   }
 
   # If all checks passed, return TRUE
   return(TRUE)
+}
+
+validate_extent_poly <- function(file_input){
+  file_path <- file_input["datapath"]
+  extent_poly <- tryCatch(
+    sf::st_read(file_path, drivers = c("GPKG", "ESRI Shapefile")),
+    error = function(e) "error"
+  )
+  if (inherits(extent_poly, "character")){
+    msg <- "Check file format."
+    warning(msg)
+    showNotification(msg, duration = 5, closeButton = TRUE, type = "error")
+    return(NULL)
+  }
+
+  return(extent_poly)
 }
 
 get_covariate_names <- function(file_path){

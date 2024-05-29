@@ -386,18 +386,21 @@ body <- bs4Dash::bs4DashBody(
     bs4Dash::tabItem(
       tabName = "new_analysis",
 
-      # Start first row
+
+      # Data upload and visualization
       shiny::fluidRow(
-        # Upload data files
         bs4Dash::column(
           width = 6,
-          bs4Dash::box(id = "data_upload",
-              title = strong("Data Upload"),
+          shiny::fluidRow(
+            id = "data_upload",
+            bs4Dash::box(
+              title = strong("Data upload"),
               status = NULL,
               width = 12,
-              height = 300,
+              height = NULL,
               solidHeader = FALSE,
               background = NULL,
+              maximizable = FALSE,
               collapsible = FALSE,
               headerBorder = FALSE,
               elevation = 2,
@@ -408,12 +411,57 @@ body <- bs4Dash::bs4DashBody(
                 style = "background-color: transparent; border: none; padding: 0;"
               ),
 
+              sidebar = bs4Dash::boxSidebar(
+                startOpen = FALSE,
+                id = "advanced_options_sidebar",
+                background = "#6c757d",
+                icon = NULL,
+
+                strong("Ocurrences processing"),
+
+                shinyWidgets::prettySwitch(
+                  inputId = "round_digits",
+                  label = "Round coordinates",
+                  status = "primary",
+                  fill = TRUE
+                ),
+
+                conditionalPanel(
+                  condition = "input['round_digits']",
+                  numericInput("decimal_digits", NULL, 4, min = 0, max = 100, width = "50%"),
+                ),
+
+                strong("Layers processing"),
+
+                shinyWidgets::prettySwitch(
+                  inputId = "scale_layers",
+                  label = "Standardize covariates",
+                  status = "primary",
+                  fill = TRUE
+                ),
+
+                shinyWidgets::pickerInput(
+                  inputId = "pred_plot_mode",
+                  label = "Model",
+                  choices = c("BART"),
+                  selected = "BART",
+                  width = "90%"
+                ),
+
+                numericInput(
+                  inputId = "seed",
+                  label = "Set a seed",
+                  value = NULL,
+                  width = "90%"
+                )
+              ),
+
               shiny::fluidRow(
                 bs4Dash::column(
-                  width = 4,
+                  width = 3,
                   glossa::file_input_area_ui(
                     "pa_files",
-                    label = "Presence/Absence",
+                    label = "Ocurrences",
                     button_label = "Add CSV files",
                     multiple = TRUE,
                     accept = ".csv",
@@ -422,225 +470,213 @@ body <- bs4Dash::bs4DashBody(
                 ),
 
                 bs4Dash::column(
-                  width = 4,
+                  width = 3,
                   glossa::file_input_area_ui(
                     "hist_layers",
-                    label = "Study period",
+                    label = "Environmental data",
                     button_label = "Add ZIP layers",
                     multiple = FALSE,
                     accept = ".zip",
                     icon_name = "layer-group"
                   )
                 ),
-
                 bs4Dash::column(
-                  width = 4,
+                  width = 3,
                   glossa::file_input_area_ui(
-                    "fut_layers",
-                    label = "Non-study period",
-                    button_label = "Add ZIP layers",
+                    "proj_layers",
+                    label = "Projection layers",
+                    button_label = "Add ZIP layers (optional)",
                     multiple = TRUE,
                     accept = ".zip",
                     icon_name = "forward"
                   )
-                )
-              )
-          )
-        ), # End upload data files
-
-        # Start analysis options
-        bs4Dash::column(
-          width = 6,
-          tags$style(HTML("
-          .pretty .state label span {
-            font-weight: normal !important;
-          }")),
-          bs4Dash::box(
-            title = strong("Analysis options"),
-            status = NULL,
-            width = 12,
-            height = 300,
-            solidHeader = FALSE,
-            background = NULL,
-            collapsible = FALSE,
-            headerBorder = FALSE,
-            elevation = 2,
-            label = NULL,
-
-            shiny::fluidRow(
-              bs4Dash::column(
-                width = 8,
-
-                shiny::fluidRow(
-                  bs4Dash::column(
-                    width = 6,
-                    shinyWidgets::prettySwitch(
-                      inputId = "round_digits",
-                      label = "Round coordinates",
-                      status = "primary",
-                      fill = TRUE
-                    ),
-                    style = 'display: inline-block; vertical-align: middle;'
-                  ),
-
-                  bs4Dash::column(
-                    width = 6,
-                    # Only show this panel if the round_digits is selected
-                    conditionalPanel(
-                      condition = "input['round_digits']",
-                      numericInput("decimal_digits", NULL, 4, min = 0, max = 100, width = "50%"),
-                    ),
-                    style = 'display: inline-block; vertical-align: middle;'
-                  )
                 ),
 
-                shiny::fluidRow(
-                  bs4Dash::column(
-                    width = 12,
-                    shinyWidgets::prettySwitch(
-                      inputId = "scale_layers",
-                      label = "Standardize covariates",
-                      status = "primary",
-                      fill = TRUE
-                    )
+                bs4Dash::column(
+                  width = 3,
+                  glossa::file_input_area_ui(
+                    "extent_poly",
+                    label = "Study area",
+                    button_label = "Add polygon (optional)",
+                    multiple = TRUE,
+                    accept = c(".gpkg", ".shp"),
+                    icon_name = "crop"
                   )
                 )
               ),
-              bs4Dash::column(
-                width = 4,
-                numericInput(
-                  inputId = "seed",
-                  label = "Set a seed",
-                  value = NULL
+
+              strong("Select one or more options to compute"),
+
+              tags$style(HTML("
+              .pretty .state label span {
+              font-weight: normal !important;
+              }")),
+
+              fluidRow(
+                style = "display: flex; justify-content: center; flex-wrap: wrap",
+                bs4Dash::column(
+                  width = 4,
+                  prettyCheckboxGroup(
+                    inputId = "analysis_options_nr",
+                    label = tags$span("Native range", shiny::actionButton("analysis_options_nr_info", label = "", icon = icon("circle-info", class = "fa-solid fa-circle-info", style = "color:#007bff;"), class = "btn btn-default action-button btn-xs", style="background-color:transparent;border-radius:0px;border-width:0px")),
+                    choiceNames = c("Aggregated prediction", "Study projections", "Non-study projections"),
+                    choiceValues = c("historical", "past", "future"),
+                    selected = NULL,
+                    status = "primary",
+                    shape = "curve"
+                  )
+                ),
+                bs4Dash::column(
+                  width = 4,
+                  prettyCheckboxGroup(
+                    inputId = "analysis_options_sh",
+                    label = "Suitable habitat",
+                    choiceNames = c("Aggregated prediction", "Study projections", "Non-study projections"),
+                    choiceValues = c("historical", "past", "future"),
+                    selected = NULL,
+                    status = "primary",
+                    shape = "curve"
+                  )
+                ),
+                bs4Dash::column(
+                  width = 4,
+                  prettyCheckboxGroup(
+                    inputId = "analysis_options_other",
+                    label = "Others",
+                    choiceNames = c("Functional repsonses", "Cross-validation"),
+                    choiceValues = c("functional_responses", "cross_validation"),
+                    selected = NULL,
+                    status = "primary",
+                    shape = "curve"
+                  )
+                )
+              ),
+
+              fluidRow(
+                bs4Dash::column(
+                  width = 6,
+                  bs4Dash::actionButton(
+                    inputId = "toggle_advanced_options",
+                    label = "Advanced options",
+                    icon = NULL,
+                    status = "primary",
+                    outline = TRUE,
+                    width = "100%"
+                  )
+                ),
+                bs4Dash::column(
+                  width = 6,
+                  bs4Dash::actionButton(
+                    "run_button",
+                    "Run Job",
+                    icon = icon("play"),
+                    status = "primary",
+                    width = "100%"
+                  )
                 )
               )
-            ),
-
-            strong("Select one or more options to compute"),
-
-            shiny::fluidRow(
-              bs4Dash::column(
-                width = 4,
-                shinyWidgets::prettyCheckboxGroup(
-                  inputId = "analysis_options_nr",
-                  label = tags$span("Native range", shiny::actionButton("analysis_options_nr_info", label = "", icon = icon("circle-info", class = "fa-solid fa-circle-info", style = "color:#007bff;"), class = "btn btn-default action-button btn-xs", style="background-color:transparent;border-radius:0px;border-width:0px")),
-                  choiceNames = c("Aggregated prediction", "Study projections", "Non-study projections"),
-                  choiceValues = c("historical", "past", "future"),
-                  selected = NULL,
-                  status = "primary",
-                  shape = "curve"
-                )
-              ),
-              bs4Dash::column(
-                width = 4,
-                shinyWidgets::prettyCheckboxGroup(
-                  inputId = "analysis_options_sh",
-                  label = "Suitable habitat",
-                  choiceNames = c("Aggregated prediction", "Study projections", "Non-study projections"),
-                  choiceValues = c("historical", "past", "future"),
-                  selected = NULL,
-                  status = "primary",
-                  shape = "curve"
-                )
-              ),
-              bs4Dash::column(
-                width = 4,
-                shinyWidgets::prettyCheckboxGroup(
-                  inputId = "analysis_options_other",
-                  label = "Others",
-                  choiceNames = c("Functional repsonses", "Cross-validation"),
-                  choiceValues = c("functional_responses", "cross_validation"),
-                  selected = NULL,
-                  status = "primary",
-                  shape = "curve"
-                )
-              )
-            ),
-
-            shiny::fluidRow(
-              bs4Dash::actionButton(
-                "run_button",
-                "Run Job",
-                icon = icon("play"),
-                status = "primary",
-                style = "margin-right:5px;"
-              ),
-              style="position:absolute;bottom:10px;"
             )
           )
-        ) # End analysis options column
+        ),
+
+        bs4Dash::column(
+          width = 6,
+
+          # Prediction map
+          shiny::fluidRow(
+            bs4Dash::box(
+              title = strong("Previsualization"),
+              status = NULL,
+              width = 12,
+              height = 455,
+              solidHeader = FALSE,
+              background = NULL,
+              maximizable = TRUE,
+              collapsible = FALSE,
+              headerBorder = FALSE,
+              elevation = 2,
+              label = glossa::export_plot_ui("export_previsualization_plot"),
+
+              sidebar = bs4Dash::boxSidebar(
+                startOpen = FALSE,
+                id = "previsualization_plot_sidebar",
+                background = "#adb5bd",
+                icon = icon("ellipsis", class = "fa-solid fa-ellipsis", style = "color:#3b444b;"),
+
+                shinyWidgets::pickerInput(
+                  inputId = "previsualization_plot_species",
+                  label = "Species occurrences",
+                  choices = NULL,
+                  width = "90%"
+                ),
+
+                shinyWidgets::pickerInput(
+                  inputId = "previsualization_plot_layer",
+                  label = "Environmental data",
+                  choices = NULL,
+                  width = "90%"
+                ),
+
+                shinyWidgets::prettySwitch(
+                  inputId = "previsualization_plot_extent",
+                  label = "Extent polygon",
+                  status = "primary",
+                  fill = TRUE
+                )
+              ),
+
+              leaflet::leafletOutput("previsualization_plot", height = "100%")
+            )
+          )
+        )
       ), # End first row
 
       # Start second row
       shiny::fluidRow(
         bs4Dash::column(
           width = 6,
-          bs4Dash::box(
-            title = strong("Predictor variables"),
-            status = NULL,
-            width = 12,
-            height = 250,
-            solidHeader = FALSE,
-            background = NULL,
-            collapsible = FALSE,
-            headerBorder = FALSE,
-            elevation = 2,
-            label = NULL,
-
-            bs4Dash::column(
+          shiny::fluidRow(
+            bs4Dash::box(
+              title = strong("Predictor variables"),
+              status = NULL,
               width = 12,
-              uiOutput(outputId = "predictor_selector"),
-              style = "overflow-y: scroll;height:210px"
+              solidHeader = FALSE,
+              background = NULL,
+              collapsible = FALSE,
+              headerBorder = FALSE,
+              elevation = 2,
+              label = NULL,
+
+              bs4Dash::column(
+                width = 12,
+                uiOutput(outputId = "predictor_selector")
+              )
             )
           )
         ),
 
-        # Start study area poly  options
         bs4Dash::column(
           width = 6,
-          bs4Dash::box(
-            title = strong("Study area"),
-            status = NULL,
-            width = 12,
-            height = 225,
-            solidHeader = FALSE,
-            background = NULL,
-            collapsible = FALSE,
-            headerBorder = FALSE,
-            elevation = 2,
-            label = glossa::customFileInput(
-                "study_area_file",
-                buttonLabel = "Upload polygon",
-                accept = ".gpkg"
-              ),
-
-            plotOutput("study_area_plot", height = "100%")
-          )
-        ) # End study area poly column
-      ), # End second row
-
-      # Start third row
-      shiny::fluidRow(
-        bs4Dash::column(
-          width = 12,
-          bs4Dash::box(
-            title = strong("Uploaded files"),
-            status = NULL,
-            width = 12,
-            solidHeader = FALSE,
-            background = NULL,
-            collapsible = FALSE,
-            headerBorder = FALSE,
-            elevation = 2,
-            label = NULL,
-
-            bs4Dash::column(
+          shiny::fluidRow(
+            bs4Dash::box(
+              title = strong("Uploaded files"),
+              status = NULL,
               width = 12,
-              DT::DTOutput("uploaded_files")
+              solidHeader = FALSE,
+              background = NULL,
+              collapsible = FALSE,
+              headerBorder = FALSE,
+              elevation = 2,
+              label = NULL,
+
+              bs4Dash::column(
+                width = 12,
+                DT::DTOutput("uploaded_files")
+              )
             )
           )
         )
-      ) # End third row
+      ) # End second row
     ),
 
     # * reports tab ----
@@ -700,7 +736,7 @@ body <- bs4Dash::bs4DashBody(
               sidebar = bs4Dash::boxSidebar(
                 startOpen = FALSE,
                 id = "pred_plot_sidebar",
-                background = "#A97D87",
+                background = "#adb5bd",
                 icon = icon("ellipsis", class = "fa-solid fa-ellipsis", style = "color:#3b444b;"),
                 shinyWidgets::pickerInput(
                   inputId = "pred_plot_time",
@@ -762,7 +798,7 @@ body <- bs4Dash::bs4DashBody(
               sidebar = bs4Dash::boxSidebar(
                 startOpen = FALSE,
                 id = "layers_plot_sidebar",
-                background = "#A97D87",
+                background = "#adb5bd",
                 icon = icon("ellipsis", class = "fa-solid fa-ellipsis", style = "color:#3b444b;"),
                 shinyWidgets::pickerInput(
                   inputId = "layers_plot_time",
@@ -808,7 +844,7 @@ body <- bs4Dash::bs4DashBody(
               sidebar = bs4Dash::boxSidebar(
                 startOpen = FALSE,
                 id = "observations_plot_sidebar",
-                background = "#A97D87",
+                background = "#adb5bd",
                 icon = icon("ellipsis", class = "fa-solid fa-ellipsis", style = "color:#3b444b;")
               ),
 
@@ -835,7 +871,7 @@ body <- bs4Dash::bs4DashBody(
           sidebar = bs4Dash::boxSidebar(
             startOpen = FALSE,
             id = "fr_plot_sidebar",
-            background = "#A97D87",
+            background = "#adb5bd",
             icon = icon("ellipsis", class = "fa-solid fa-ellipsis", style = "color:#3b444b;"),
             shinyWidgets::pickerInput(
               inputId = "fr_plot_cov",
@@ -865,7 +901,7 @@ body <- bs4Dash::bs4DashBody(
           sidebar = bs4Dash::boxSidebar(
             startOpen = FALSE,
             id = "varimp_plot_sidebar",
-            background = "#A97D87",
+            background = "#adb5bd",
             icon = icon("ellipsis", class = "fa-solid fa-ellipsis", style = "color:#3b444b;"),
             shinyWidgets::pickerInput(
               inputId = "varimp_plot_mode",
@@ -894,7 +930,7 @@ body <- bs4Dash::bs4DashBody(
           sidebar = bs4Dash::boxSidebar(
             startOpen = FALSE,
             id = "fr_plot_sidebar",
-            background = "#A97D87",
+            background = "#adb5bd",
             icon = icon("ellipsis", class = "fa-solid fa-ellipsis", style = "color:#3b444b;"),
             shinyWidgets::pickerInput(
               inputId = "cv_plot_mode",
@@ -917,101 +953,101 @@ body <- bs4Dash::bs4DashBody(
         bs4Dash::column(
           width = 6, offset = 3,
           bs4Dash::box(id = "export_details",
-              title = strong("Export details"),
-              status = NULL,
-              width = 12,
-              solidHeader = FALSE,
-              background = NULL,
-              collapsible = FALSE,
-              headerBorder = FALSE,
-              elevation = 2,
-              label = NULL,
+                       title = strong("Export details"),
+                       status = NULL,
+                       width = 12,
+                       solidHeader = FALSE,
+                       background = NULL,
+                       collapsible = FALSE,
+                       headerBorder = FALSE,
+                       elevation = 2,
+                       label = NULL,
 
-              selectInput(
-                "export_sp",
-                label = "Species name",
-                choices = NULL,
-                selected = NULL,
-                multiple = TRUE
-              ),
+                       selectInput(
+                         "export_sp",
+                         label = "Species name",
+                         choices = NULL,
+                         selected = NULL,
+                         multiple = TRUE
+                       ),
 
-              selectInput(
-                "export_time",
-                label = "Time period",
-                choices = NULL,
-                selected = NULL,
-                multiple = TRUE
-              ),
+                       selectInput(
+                         "export_time",
+                         label = "Time period",
+                         choices = NULL,
+                         selected = NULL,
+                         multiple = TRUE
+                       ),
 
-              selectInput(
-                "export_mods",
-                label = "Model prediction",
-                choices = NULL,
-                selected = NULL,
-                multiple = TRUE
-              ),
+                       selectInput(
+                         "export_mods",
+                         label = "Model prediction",
+                         choices = NULL,
+                         selected = NULL,
+                         multiple = TRUE
+                       ),
 
-              selectInput(
-                "export_fields",
-                label = "Fields",
-                choices = NULL,
-                selected = NULL,
-                multiple = TRUE
-              ),
+                       selectInput(
+                         "export_fields",
+                         label = "Fields",
+                         choices = NULL,
+                         selected = NULL,
+                         multiple = TRUE
+                       ),
 
-              selectInput(
-                "export_layer_format",
-                label = "Layers file type",
-                choices = NULL,
-                selected = NULL,
-                multiple = FALSE
-              ),
+                       selectInput(
+                         "export_layer_format",
+                         label = "Layers file type",
+                         choices = NULL,
+                         selected = NULL,
+                         multiple = FALSE
+                       ),
 
-              strong("Other results"),
+                       strong("Other results"),
 
-              shinyWidgets::prettySwitch(
-                inputId = "export_model_data",
-                label = "Export data used to fit the models",
-                status = "primary",
-                fill = TRUE
-              ),
+                       shinyWidgets::prettySwitch(
+                         inputId = "export_model_data",
+                         label = "Export data used to fit the models",
+                         status = "primary",
+                         fill = TRUE
+                       ),
 
-              shinyWidgets::prettySwitch(
-                inputId = "export_var_imp",
-                label = "Variable importance",
-                status = "primary",
-                fill = TRUE
-              ),
+                       shinyWidgets::prettySwitch(
+                         inputId = "export_var_imp",
+                         label = "Variable importance",
+                         status = "primary",
+                         fill = TRUE
+                       ),
 
-              shinyWidgets::prettySwitch(
-                inputId = "export_fr",
-                label = "Functional responses",
-                status = "primary",
-                fill = TRUE
-              ),
+                       shinyWidgets::prettySwitch(
+                         inputId = "export_fr",
+                         label = "Functional responses",
+                         status = "primary",
+                         fill = TRUE
+                       ),
 
-              shinyWidgets::prettySwitch(
-                inputId = "export_cv",
-                label = "Cross-validation metrics",
-                status = "primary",
-                fill = TRUE
-              ),
+                       shinyWidgets::prettySwitch(
+                         inputId = "export_cv",
+                         label = "Cross-validation metrics",
+                         status = "primary",
+                         fill = TRUE
+                       ),
 
-              shinyWidgets::prettySwitch(
-                inputId = "export_pa_cutoff",
-                label = "P/A probability cutoff value",
-                status = "primary",
-                fill = TRUE
-              ),
+                       shinyWidgets::prettySwitch(
+                         inputId = "export_pa_cutoff",
+                         label = "P/A probability cutoff value",
+                         status = "primary",
+                         fill = TRUE
+                       ),
 
-              glossa::downloadActionButton(
-                outputId = "export_button",
-                label = "Save GLOSSA results",
-                icon = NULL,
-                status = "primary",
-                outline = FALSE,
-                width = "100%"
-              )
+                       glossa::downloadActionButton(
+                         outputId = "export_button",
+                         label = "Save GLOSSA results",
+                         icon = NULL,
+                         status = "primary",
+                         outline = FALSE,
+                         width = "100%"
+                       )
           ) # End box
         ) # End column
       ) # End fluidRow

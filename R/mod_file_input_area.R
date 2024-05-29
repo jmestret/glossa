@@ -27,7 +27,7 @@ file_input_area_ui <- function(id, label = "Input text: ", multiple = FALSE, acc
   input_tag <- tags$input(
     id = ns("file_input"),
     type = "file",
-    style = "position: absolute !important; top: -99999px !important; left: -99999px !important;",
+    style = "position: absolute !important; top: -99999px !important; left: -99999px !important; z-index: -2;",
     `data-restore` = restored_value
   )
 
@@ -46,14 +46,16 @@ file_input_area_ui <- function(id, label = "Input text: ", multiple = FALSE, acc
     shiny:::shinyInputLabel(id, ""),
     div(
       class = "input-group mb-3",
+      style = "z-index: 0",
       tags$label(
         class = "input-group-btn input-group-prepend w-100",
         span(
           class = "btn btn-area w-100",
+          style = "min-height: 200px; display: flex; flex-direction: column; justify-content: space-between; align-items: center",
           input_tag,
-          div(p(label), style = "font-size: 1.1rem; font-weight: 700; padding-top: 2rem;"),
-          div(p(button_label), style = "font-size: 1rem; font-weight: 400;"),
-          div(icon(icon_name, style = "font-size:5rem; color:#495057;"), style = "margin-bottom: 2rem;")
+          div(p(label), style = "font-size: 1rem; font-weight: 700; padding-top: 1rem;"),
+          div(p(button_label), style = "font-size: 0.7rem; font-weight: 400;"),
+          div(icon(icon_name, style = "font-size:2.5rem; color:#495057;"), style = "margin-bottom: 1rem;")
         )
       )
     ),

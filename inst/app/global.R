@@ -18,6 +18,7 @@ library(mcp)
 library(DT)
 library(svglite)
 library(dbarts)
+library(leaflet)
 
 library(glossa)
 

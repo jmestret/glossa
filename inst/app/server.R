@@ -9,11 +9,6 @@ function(input, output, session) {
   study_area_poly <- shiny::reactiveVal(value = default_polygon)
   non_study_area_poly <- shiny::reactiveVal(value = glossa::invert_polygon(default_polygon))
 
-  shiny::observeEvent(input$study_area_file, {
-    study_area_poly(sf::st_read(input$study_area_file[["datapath"]]))
-    non_study_area_poly(glossa::invert_polygon(study_area_poly()))
-  })
-
   # header server ----
   shiny::observeEvent(input$new_analysis_header, {
     bs4Dash::updateTabItems(session, "sidebar_menu", "new_analysis")
@@ -25,14 +20,82 @@ function(input, output, session) {
 
 
   # new_analysis server ----
+  # Open advanced options sidebar
+  observeEvent(input$toggle_advanced_options, {
+    updateControlbar(id = "advanced_options_sidebar", session = session)
+  })
+
+  # Previsualization of input
+  output$previsualization_plot <- renderLeaflet({
+    leaflet::leaflet() %>%
+      leaflet::addTiles() %>%
+      leaflet::setView(0, 0, zoom = 1)
+  })
+
+  # plot proxy to update leaflet visualization
+  previsualization_plot <- leaflet::leafletProxy("previsualization_plot", session)
+
+  observe({
+    req(pa_data())
+    updatePickerInput(session, "previsualization_plot_species", choices = c(names(pa_data()[!sapply(pa_data(), is.null)]), "None"))
+  })
+
+  observe({
+    req(hist_layers())
+    updatePickerInput(session, "previsualization_plot_layer", choices = c(names(hist_layers()), "None"))
+  })
+
+  observeEvent(input$previsualization_plot_species, {
+    req(pa_data())
+    if(input$previsualization_plot_species != "None"){
+      previsualization_plot %>%
+        leaflet::setView(0, 0, zoom = 1) %>%
+        leaflet::clearMarkers() %>%
+        leaflet::addCircleMarkers(data = pa_data()[[input$previsualization_plot_species]], lat = ~decimalLatitude, lng = ~decimalLongitude,
+                                  color = ~ifelse(pa == 1, "blue", "red"), radius = 5)
+    } else {
+      previsualization_plot %>%
+        leaflet::clearMarkers()
+    }
+  })
+
+  observeEvent(input$previsualization_plot_layer, {
+    req(hist_layers())
+    if (input$previsualization_plot_layer != "None"){
+      previsualization_plot %>%
+        leaflet::clearImages() %>%
+        leaflet::addRasterImage(terra::crop(hist_layers()[input$previsualization_plot_layer], ext(-180, 180, -87, 87)), opacity = 0.7)
+    } else {
+      previsualization_plot %>%
+        leaflet::clearImages()
+    }
+  })
+
+  observeEvent(input$previsualization_plot_extent, {
+    req(extent_poly())
+
+    if(!is.null(extent_poly()[[1]]) & input$previsualization_plot_extent){
+      previsualization_plot %>%
+        leaflet::clearShapes() %>%
+        addPolygons(data = extent_poly(), color = "#353839", fill = TRUE, fillColor = "antiquewhite", fillOpacity = 1)
+    } else{
+      previsualization_plot %>%
+        leaflet::clearShapes()
+    }
+  })
+
   pa_files_input <- glossa::file_input_area_server("pa_files")
   hist_layers_input <- glossa::file_input_area_server("hist_layers")
-  fut_layers_input <- glossa::file_input_area_server("fut_layers")
+  proj_layers_input <- glossa::file_input_area_server("proj_layers")
+  extent_poly_input <- glossa::file_input_area_server("extent_poly")
 
-  # Validate inputs - TODO: very repetitive code
-  pa_files <- shiny::reactive({
-    data <- pa_files_input()
-    if (!is.null(data)) {
+  # Validate inputs
+  pa_data <- reactive({
+    # Check is not null and it was possible to upload the data
+    if (is.null(pa_files_input())){
+      NULL
+    } else {
+      # Turn on waiter
       w <- waiter::Waiter$new(id = "data_upload",
                               html = tagList(
                                 img(src = "logo_glossa.gif", height = "200px")
@@ -40,39 +103,41 @@ function(input, output, session) {
                               color = waiter::transparent(0.8)
       )
       w$show()
-      data$name <- paste(as.character(icon("map-location-dot",style = "font-size:2rem; color:#007bff;")), data$name)
-      for (i in 1:nrow(data)){
-        data[i, "validation"] <- glossa::validate_presences_absences_csv(data[i, 4])
+
+      # Read files
+      pa_data <- apply(pa_files_input(), 1, function(x){
+        glossa::validate_presences_absences_csv(x)
+      })
+      if (is.null(pa_data)){
+        pa_data <- list(pa_data)
       }
+
+      names(pa_data) <- pa_files_input()[, "name"]
+
       w$hide()
-      data
-    } else{
-      NULL
+      pa_data
     }
   })
 
-  hist_layers <- shiny::reactive({
-    data <- hist_layers_input()
-    if (!is.null(data)) {
-      w <- waiter::Waiter$new(id = "data_upload",
-                              html = tagList(
-                                img(src = "logo_glossa.gif", height = "200px")
-                              ),
-                              color = waiter::transparent(0.8)
-      )
-      w$show()
-      data$name <- paste(as.character(icon("layer-group",style = "font-size:2rem; color:#007bff;")), data$name)
-      data$validation <- glossa::validate_layers_zip(data[1, 4])
-      w$hide()
-      data
-    } else{
+
+  pa_validation_table <- reactive({
+    if (is.null(pa_files_input()) | is.null(pa_data())){
       NULL
+    } else {
+      # Check which ones where properly loaded
+      pa_validation_table <- as.data.frame(pa_files_input())
+      pa_validation_table[, "validation"] <- !sapply(pa_data(), is.null)
+      pa_validation_table[, "name"] <- paste(as.character(icon("map-location-dot",style = "font-size:2rem; color:#007bff;")), pa_validation_table[, "name"])
+      pa_validation_table
     }
   })
 
-  fut_layers <- shiny::reactive({
-    data <- fut_layers_input()
-    if (!is.null(data)) {
+  hist_layers <- reactive({
+    # Check is not null and it was possible to upload the data
+    if (is.null(hist_layers_input())){
+      NULL
+    } else {
+      # Turn on waiter
       w <- waiter::Waiter$new(id = "data_upload",
                               html = tagList(
                                 img(src = "logo_glossa.gif", height = "200px")
@@ -80,23 +145,105 @@ function(input, output, session) {
                               color = waiter::transparent(0.8)
       )
       w$show()
-      data$name <- paste(as.character(icon("forward",style = "font-size:2rem; color:#007bff;")), data$name)
-      data$validation <- FALSE
-      for (i in 1:nrow(data)){
-        if (glossa::validate_layers_zip(data[i, 4])){
-          if (!is.null(hist_layers_input())){
-            if (glossa::validate_hist_fut_layers(hist_layers_input()[1, 4], data[i, 4])) {
-              data[i, "validation"] <- TRUE
-            }
-          } else {
-            data[i, "validation"] <- TRUE
-          }
-        }
-      }
+
+      # Read files
+      hist_layers <- glossa::validate_historical_layers_zip(hist_layers_input())
+      hist_layers <- list(hist_layers)
+
       w$hide()
-      data
-    } else{
+      hist_layers
+    }
+  })
+
+  hist_validation_table <- reactive({
+    if (is.null(hist_layers_input()) | is.null(hist_layers())){
       NULL
+    } else {
+      # Check which ones where properly loaded
+      hist_validation_table <- as.data.frame(hist_layers_input())
+      hist_validation_table[, "validation"] <-!sapply(hist_layers(), is.null)
+      hist_validation_table[, "name"] <- paste(as.character(icon("layer-group",style = "font-size:2rem; color:#007bff;")), hist_validation_table[, "name"])
+      hist_validation_table
+    }
+  })
+
+  proj_layers <-  reactive({
+    # Check is not null and it was possible to upload the data
+    if (is.null(proj_layers_input())){
+      NULL
+    } else {
+      # Turn on waiter
+      w <- waiter::Waiter$new(id = "data_upload",
+                              html = tagList(
+                                img(src = "logo_glossa.gif", height = "200px")
+                              ),
+                              color = waiter::transparent(0.8)
+      )
+      w$show()
+
+      # Read files
+      proj_layers <- apply(proj_layers_input(), 1, function(x){
+        glossa::validate_projection_layers_zip(x)
+      })
+      if (is.null(proj_layers)){
+        proj_layers <- list(proj_layers)
+      }
+
+      w$hide()
+      proj_layers
+    }
+  })
+
+  proj_validation_table <- reactive({
+    if (is.null(proj_layers_input()) | is.null(proj_layers())){
+      NULL
+    } else {
+      # Check which ones where properly loaded
+      proj_validation_table <- as.data.frame(proj_layers_input())
+      proj_validation_table[, "name"] <- paste(as.character(icon("forward",style = "font-size:2rem; color:#007bff;")), proj_validation_table[, "name"])
+
+      if(!is.null(hist_layers_input())){
+        proj_validation_table[, "validation"] <- !sapply(proj_layers(), is.null) & sapply(proj_layers_input()[, "datapath"], function(x){glossa::validate_hist_proj_layers(hist_layers_input()[, "datapath"], x)})
+      } else {
+        proj_validation_table[, "validation"] <- !sapply(proj_layers(), is.null)
+      }
+
+      proj_validation_table
+    }
+  })
+
+  extent_poly <- reactive({
+    # Check is not null and it was possible to upload the data
+    if (is.null(extent_poly_input())){
+      NULL
+    } else {
+      # Turn on waiter
+      w <- waiter::Waiter$new(id = "data_upload",
+                              html = tagList(
+                                img(src = "logo_glossa.gif", height = "200px")
+                              ),
+                              color = waiter::transparent(0.8)
+      )
+      w$show()
+
+      # Read files
+      extent_poly <- glossa::validate_extent_poly(extent_poly_input())
+      extent_poly <- list(extent_poly)
+
+      w$hide()
+      extent_poly
+    }
+  })
+
+  extent_validation_table <- reactive({
+    if (is.null(extent_poly_input()) | is.null(extent_poly())){
+      NULL
+    } else {
+      # Check which ones where properly loaded
+      extent_validation_table <- as.data.frame(extent_poly_input())
+      extent_validation_table[, "validation"] <- !sapply(extent_poly(), is.null)
+      extent_validation_table[, "name"] <- paste(as.character(icon("crop",style = "font-size:2rem; color:#007bff;")), extent_validation_table[, "name"])
+      extent_validation_table
     }
   })
 
@@ -110,12 +257,8 @@ function(input, output, session) {
   })
 
   predictor_variables <- shiny::reactive({
-    data <- hist_layers_input()
-    if (!is.null(data)) {
-      glossa::get_covariate_names(data[1, 4])
-    } else{
-      NULL
-    }
+    req(hist_layers())
+    return(names(hist_layers()))
   })
 
   # Select predictor variable for each species
@@ -143,11 +286,11 @@ function(input, output, session) {
 
   # Render uploaded files as a DT table
   output$uploaded_files <- DT::renderDT(
-    if (is.null(rbind(pa_files(), hist_layers(), fut_layers()))) {
+    if (is.null(rbind(pa_validation_table(), hist_validation_table(), proj_validation_table(), extent_validation_table()))) {
       DT::datatable(NULL)
     } else {
-      rbind(pa_files(), hist_layers(), fut_layers()) %>%
-        dplyr::select(!datapath) %>%
+      rbind(pa_validation_table(), hist_validation_table(), proj_validation_table(), extent_validation_table()) %>%
+        dplyr::select(name, size, validation) %>%
         dplyr::mutate(validation = ifelse(
           validation,
           as.character(icon("circle-check", class = "fa-solid", style = "font-size:2rem;color:#418B24")),
@@ -163,7 +306,7 @@ function(input, output, session) {
           selection = "none",
           class = 'row-border',
           escape = FALSE,
-          colnames = c("File name", "File size", "File type", "Date uploaded", "Format Validation"),
+          colnames = c("File name", "File size", "Format Validation"),
           rownames = TRUE,
           filter = "none",
           width = 500
@@ -173,15 +316,15 @@ function(input, output, session) {
 
   # Info buttons ----
   shiny::observeEvent(input$analysis_options_nr_info, {
-      addPopover(
-        id = "analysis_options_nr_info",
-        options = list(
-          content = "Vivamus sagittis lacus vel augue laoreet rutrum faucibus.",
-          title = "Server popover",
-          placement = "bottom",
-          trigger = "hover"
-        )
+    addPopover(
+      id = "analysis_options_nr_info",
+      options = list(
+        content = "Vivamus sagittis lacus vel augue laoreet rutrum faucibus.",
+        title = "Server popover",
+        placement = "bottom",
+        trigger = "hover"
       )
+    )
   })
 
   # Run analysis ----
@@ -213,22 +356,22 @@ function(input, output, session) {
     if (is.null(pa_files_input())) {
       showNotification("Please upload a P/A file", type = "error")
     }
-    if (!all(pa_files()[, "validation"] == TRUE)) {
+    if (!all(pa_validation_table()[, "validation"] == TRUE)) {
       showNotification("Please upload valid P/A files", type = "error")
     }
 
     if (is.null(hist_layers_input())) {
       showNotification("Please upload historical layers", type = "error")
     }
-    if (!all(hist_layers()[, "validation"] == TRUE)) {
+    if (!all(hist_validation_table()[, "validation"] == TRUE)) {
       showNotification("Please upload valid historical layers", type = "error")
     }
 
     if ("future" %in% input$analysis_options_nr | "future" %in% input$analysis_options_sh){
-      if (is.null(fut_layers_input())) {
+      if (is.null(proj_layers_input())) {
         showNotification("Please upload future layers", type = "error")
       }
-      if (!all(fut_layers()[, "validation"] == TRUE)) {
+      if (!all(proj_validation_table()[, "validation"] == TRUE)) {
         showNotification("Please upload valid future layers", type = "error")
       }
     }
@@ -238,10 +381,10 @@ function(input, output, session) {
     }
 
     # Req
-    req(pa_files_input(), all(pa_files()[, "validation"] == TRUE))
-    req(hist_layers_input(), all(hist_layers()[, "validation"] == TRUE))
+    req(pa_files_input(), all(pa_validation_table()[, "validation"] == TRUE))
+    req(hist_layers_input(), all(hist_validation_table()[, "validation"] == TRUE))
     if ("future" %in% input$analysis_options_nr | "future" %in% input$analysis_options_sh) {
-      req(fut_layers_input(), all(fut_layers()[, "validation"] == TRUE))
+      req(proj_layers_input(), all(proj_validation_table()[, "validation"] == TRUE))
     }
     req(c(input$analysis_options_nr, input$analysis_options_sh))
 
@@ -262,8 +405,8 @@ function(input, output, session) {
     glossa_results <- glossa::glossa_analysis(
       pa_files = pa_files_input()[,"datapath"],
       historical_files = hist_layers_input()[,"datapath"],
-      future_files = fut_layers_input()[,"datapath"],
-      future_scenario_names = sub("\\.zip$", "", fut_layers_input()[,"name"]),
+      future_files = proj_layers_input()[,"datapath"],
+      future_scenario_names = sub("\\.zip$", "", proj_layers_input()[,"name"]),
       study_area_poly = study_area_poly(),
       predictor_variables = predictor_variables,
       decimal_digits = switch(input$round_digits + 1, NULL, input$decimal_digits),
@@ -626,6 +769,7 @@ function(input, output, session) {
 
   # * Export plots ----
   # Export layers plot
+  glossa::export_plot_server("export_previsualization_plot", prediction_plot())
   glossa::export_plot_server("export_pred_plot", prediction_plot())
   glossa::export_plot_server("export_layers_plot", cov_layers_plot())
   glossa::export_plot_server("export_observations_plot", observations_plot())
@@ -651,9 +795,9 @@ function(input, output, session) {
     filename = function() { paste("glossa_", format(Sys.time(), "%D_%X"), ".zip", sep="") },
     content = function(file) {
       w <- waiter::Waiter$new(html = tagList(
-                                img(src = "logo_glossa.gif", height = "200px")
-                              ),
-                              color = waiter::transparent(0.8)
+        img(src = "logo_glossa.gif", height = "200px")
+      ),
+      color = waiter::transparent(0.8)
       )
       w$show()
       export_files <- glossa_export(species = input$export_sp, mods = input$export_mods,
