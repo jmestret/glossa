@@ -4,12 +4,12 @@
 \alias{create_coords_layer}
 \title{Create Geographic Coordinate Layers}
 \usage{
-create_coords_layer(layers, sf_poly, scale_layers = FALSE)
+create_coords_layer(layers, study_area = NULL, scale_layers = FALSE)
 }
 \arguments{
 \item{layers}{Raster or stack of raster layers to derive geographic extent and resolution.}
 
-\item{sf_poly}{Spatial object for masking output layers.}
+\item{study_area}{Spatial object for masking output layers.}
 
 \item{scale_layers}{Logical indicating if scaling is applied. Default is FALSE.}
 }

@@ -2,14 +2,14 @@
 % Please edit documentation in R/bart_functions.R
 \name{predict_bart}
 \alias{predict_bart}
-\title{Make predictions using a BART model}
+\title{Make Predictions Using a BART Model}
 \usage{
-predict_bart(bart_model, raster_stack, cutoff = NULL)
+predict_bart(bart_model, layers, cutoff = NULL)
 }
 \arguments{
 \item{bart_model}{A BART model object obtained from fitting BART (bart).}
 
-\item{raster_stack}{A SpatRaster object containing environmental covariates for prediction.}
+\item{layers}{A SpatRaster object containing environmental covariates for prediction.}
 
 \item{cutoff}{An optional cutoff value for determining potential presences.}
 }

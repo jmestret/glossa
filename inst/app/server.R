@@ -1,253 +1,52 @@
 function(input, output, session) {
-  # load polygon
-  default_polygon <- rnaturalearth::ne_countries(scale = "medium", returnclass = "sf") %>%
-    sf::st_as_sfc() %>%
-    sf::st_union() %>%
-    sf::st_make_valid() %>%
-    sf::st_wrap_dateline() %>%
-    glossa::invert_polygon(bbox = c(xmin = -180, ymin =-90, xmax = 180, ymax = 90))
-  study_area_poly <- shiny::reactiveVal(value = default_polygon)
-  non_study_area_poly <- shiny::reactiveVal(value = glossa::invert_polygon(default_polygon))
+  #=========================================================#
+  # Initialization ----
+  #=========================================================#
 
-  # header server ----
-  shiny::observeEvent(input$new_analysis_header, {
-    bs4Dash::updateTabItems(session, "sidebar_menu", "new_analysis")
-  })
+  # * Reactive values ----
+  # Inputs
+  pa_data <- reactiveVal()
+  pa_validation_table <- reactiveVal()
+  fit_layers <- reactiveVal()
+  fit_layers_validation_table <- reactiveVal()
+  proj_layers <- reactiveVal()
+  proj_validation_table <- reactiveVal()
+  study_area_poly <- reactiveVal()
+  extent_validation_table <- reactiveVal()
 
-  shiny::observeEvent(input$new_analysis_home, {
-    bs4Dash::updateTabItems(session, "sidebar_menu", "new_analysis")
-  })
+  # Analysis results
+  presence_absence_list <- reactiveVal()
+  covariate_list <- reactiveVal()
+  projections_results <- reactiveVal()
+  other_results <- reactiveVal()
+  pa_cutoff <- reactiveVal()
+  habitat_suitability <- reactiveVal()
 
+  #=========================================================#
+  # Reactive expressions ----
+  #=========================================================#
 
-  # new_analysis server ----
-  # Open advanced options sidebar
-  observeEvent(input$toggle_advanced_options, {
-    updateControlbar(id = "advanced_options_sidebar", session = session)
-  })
-
-  # Previsualization of input
-  output$previsualization_plot <- renderLeaflet({
-    leaflet::leaflet() %>%
-      leaflet::addTiles() %>%
-      leaflet::setView(0, 0, zoom = 1)
-  })
-
-  # plot proxy to update leaflet visualization
-  previsualization_plot <- leaflet::leafletProxy("previsualization_plot", session)
-
-  observe({
-    req(pa_data())
-    updatePickerInput(session, "previsualization_plot_species", choices = c(names(pa_data()[!sapply(pa_data(), is.null)]), "None"))
-  })
-
-  observe({
-    req(hist_layers())
-    updatePickerInput(session, "previsualization_plot_layer", choices = c(names(hist_layers()), "None"))
-  })
-
-  observeEvent(input$previsualization_plot_species, {
-    req(pa_data())
-    if(input$previsualization_plot_species != "None"){
-      previsualization_plot %>%
-        leaflet::setView(0, 0, zoom = 1) %>%
-        leaflet::clearMarkers() %>%
-        leaflet::addCircleMarkers(data = pa_data()[[input$previsualization_plot_species]], lat = ~decimalLatitude, lng = ~decimalLongitude,
-                                  color = ~ifelse(pa == 1, "blue", "red"), radius = 5)
-    } else {
-      previsualization_plot %>%
-        leaflet::clearMarkers()
-    }
-  })
-
-  observeEvent(input$previsualization_plot_layer, {
-    req(hist_layers())
-    if (input$previsualization_plot_layer != "None"){
-      previsualization_plot %>%
-        leaflet::clearImages() %>%
-        leaflet::addRasterImage(terra::crop(hist_layers()[input$previsualization_plot_layer], ext(-180, 180, -87, 87)), opacity = 0.7)
-    } else {
-      previsualization_plot %>%
-        leaflet::clearImages()
-    }
-  })
-
-  observeEvent(input$previsualization_plot_extent, {
-    req(extent_poly())
-
-    if(!is.null(extent_poly()[[1]]) & input$previsualization_plot_extent){
-      previsualization_plot %>%
-        leaflet::clearShapes() %>%
-        addPolygons(data = extent_poly(), color = "#353839", fill = TRUE, fillColor = "antiquewhite", fillOpacity = 1)
-    } else{
-      previsualization_plot %>%
-        leaflet::clearShapes()
-    }
-  })
-
+  # * File inputs ----
   pa_files_input <- glossa::file_input_area_server("pa_files")
-  hist_layers_input <- glossa::file_input_area_server("hist_layers")
+  fit_layers_input <- glossa::file_input_area_server("fit_layers")
   proj_layers_input <- glossa::file_input_area_server("proj_layers")
-  extent_poly_input <- glossa::file_input_area_server("extent_poly")
+  study_area_poly_input <- glossa::file_input_area_server("study_area_poly")
 
-  # Validate inputs
-  pa_data <- reactive({
-    # Check is not null and it was possible to upload the data
-    if (is.null(pa_files_input())){
+  # Invert study area polygon for plotting
+  inv_study_area_poly <- reactive({
+    if(is.null(study_area_poly()) | is.null(extent_validation_table())){
       NULL
     } else {
-      # Turn on waiter
-      w <- waiter::Waiter$new(id = "data_upload",
-                              html = tagList(
-                                img(src = "logo_glossa.gif", height = "200px")
-                              ),
-                              color = waiter::transparent(0.8)
-      )
-      w$show()
-
-      # Read files
-      pa_data <- apply(pa_files_input(), 1, function(x){
-        glossa::validate_presences_absences_csv(x)
-      })
-      if (is.null(pa_data)){
-        pa_data <- list(pa_data)
-      }
-
-      names(pa_data) <- pa_files_input()[, "name"]
-
-      w$hide()
-      pa_data
-    }
-  })
-
-
-  pa_validation_table <- reactive({
-    if (is.null(pa_files_input()) | is.null(pa_data())){
-      NULL
-    } else {
-      # Check which ones where properly loaded
-      pa_validation_table <- as.data.frame(pa_files_input())
-      pa_validation_table[, "validation"] <- !sapply(pa_data(), is.null)
-      pa_validation_table[, "name"] <- paste(as.character(icon("map-location-dot",style = "font-size:2rem; color:#007bff;")), pa_validation_table[, "name"])
-      pa_validation_table
-    }
-  })
-
-  hist_layers <- reactive({
-    # Check is not null and it was possible to upload the data
-    if (is.null(hist_layers_input())){
-      NULL
-    } else {
-      # Turn on waiter
-      w <- waiter::Waiter$new(id = "data_upload",
-                              html = tagList(
-                                img(src = "logo_glossa.gif", height = "200px")
-                              ),
-                              color = waiter::transparent(0.8)
-      )
-      w$show()
-
-      # Read files
-      hist_layers <- glossa::validate_historical_layers_zip(hist_layers_input())
-      hist_layers <- list(hist_layers)
-
-      w$hide()
-      hist_layers
-    }
-  })
-
-  hist_validation_table <- reactive({
-    if (is.null(hist_layers_input()) | is.null(hist_layers())){
-      NULL
-    } else {
-      # Check which ones where properly loaded
-      hist_validation_table <- as.data.frame(hist_layers_input())
-      hist_validation_table[, "validation"] <-!sapply(hist_layers(), is.null)
-      hist_validation_table[, "name"] <- paste(as.character(icon("layer-group",style = "font-size:2rem; color:#007bff;")), hist_validation_table[, "name"])
-      hist_validation_table
-    }
-  })
-
-  proj_layers <-  reactive({
-    # Check is not null and it was possible to upload the data
-    if (is.null(proj_layers_input())){
-      NULL
-    } else {
-      # Turn on waiter
-      w <- waiter::Waiter$new(id = "data_upload",
-                              html = tagList(
-                                img(src = "logo_glossa.gif", height = "200px")
-                              ),
-                              color = waiter::transparent(0.8)
-      )
-      w$show()
-
-      # Read files
-      proj_layers <- apply(proj_layers_input(), 1, function(x){
-        glossa::validate_projection_layers_zip(x)
-      })
-      if (is.null(proj_layers)){
-        proj_layers <- list(proj_layers)
-      }
-
-      w$hide()
-      proj_layers
-    }
-  })
-
-  proj_validation_table <- reactive({
-    if (is.null(proj_layers_input()) | is.null(proj_layers())){
-      NULL
-    } else {
-      # Check which ones where properly loaded
-      proj_validation_table <- as.data.frame(proj_layers_input())
-      proj_validation_table[, "name"] <- paste(as.character(icon("forward",style = "font-size:2rem; color:#007bff;")), proj_validation_table[, "name"])
-
-      if(!is.null(hist_layers_input())){
-        proj_validation_table[, "validation"] <- !sapply(proj_layers(), is.null) & sapply(proj_layers_input()[, "datapath"], function(x){glossa::validate_hist_proj_layers(hist_layers_input()[, "datapath"], x)})
+      if(extent_validation_table()[, "validation"] == FALSE){
+        NULL
       } else {
-        proj_validation_table[, "validation"] <- !sapply(proj_layers(), is.null)
+        glossa::invert_polygon(study_area_poly())
       }
-
-      proj_validation_table
     }
   })
 
-  extent_poly <- reactive({
-    # Check is not null and it was possible to upload the data
-    if (is.null(extent_poly_input())){
-      NULL
-    } else {
-      # Turn on waiter
-      w <- waiter::Waiter$new(id = "data_upload",
-                              html = tagList(
-                                img(src = "logo_glossa.gif", height = "200px")
-                              ),
-                              color = waiter::transparent(0.8)
-      )
-      w$show()
-
-      # Read files
-      extent_poly <- glossa::validate_extent_poly(extent_poly_input())
-      extent_poly <- list(extent_poly)
-
-      w$hide()
-      extent_poly
-    }
-  })
-
-  extent_validation_table <- reactive({
-    if (is.null(extent_poly_input()) | is.null(extent_poly())){
-      NULL
-    } else {
-      # Check which ones where properly loaded
-      extent_validation_table <- as.data.frame(extent_poly_input())
-      extent_validation_table[, "validation"] <- !sapply(extent_poly(), is.null)
-      extent_validation_table[, "name"] <- paste(as.character(icon("crop",style = "font-size:2rem; color:#007bff;")), extent_validation_table[, "name"])
-      extent_validation_table
-    }
-  })
-
-  species_files_names <- shiny::reactive({
+  # Get file names of species occurrences for picker inputs
+  species_files_names <- reactive({
     data <- pa_files_input()
     if (!is.null(data)) {
       data$name
@@ -256,15 +55,517 @@ function(input, output, session) {
     }
   })
 
-  predictor_variables <- shiny::reactive({
-    req(hist_layers())
-    return(names(hist_layers()))
+  # name of uploaded predictor variables (name of files)
+  predictor_variables <- reactive({
+    req(fit_layers())
+    return(names(fit_layers()))
   })
 
-  # Select predictor variable for each species
+  #=========================================================#
+  # Observers ----
+  #=========================================================#
+
+  # * Header server ----
+  observeEvent(input$new_analysis_header, {
+    bs4Dash::updateTabItems(session, "sidebar_menu", "new_analysis")
+  })
+
+  observeEvent(input$new_analysis_home, {
+    bs4Dash::updateTabItems(session, "sidebar_menu", "new_analysis")
+  })
+
+  # show help modal
+  observeEvent(input$show_help, {
+    showModal(modalDialog(
+      title = "Welcome to the GLOSSA App!",
+      tags$div(
+        tags$ol(
+          tags$li(tags$strong("Explore the Demo: "), "If you're new, start by watching our quick demo video to see how GLOSSA works. Click the 'Watch Demo' button to get started."),
+          tags$li(tags$strong("New Analysis: "), "Start by uploading your species occurrences and environmental layers. Then, tune the analysis options to customize your model."),
+          tags$li(tags$strong("Reports: "), "After running the analysis, view the results in the Reports tab. Here, you can explore predictions of species suitable habitat and other insights."),
+          tags$li(tags$strong("Export: "), "Once you're satisfied with the results, head over to the Export tab to save your findings."),
+          tags$li(tags$strong("Documentation: "), "Access detailed documentation and user guides in the Documentation tab."),
+          tags$li(tags$strong("How to Cite: "), "Find information on how to cite GLOSSA in your publications in the How to Cite tab."),
+          tags$li(tags$strong("FAQs: "), "Have questions? Check out the FAQs tab for answers to commonly asked questions."),
+        ),
+        tags$p("Need more help? Feel free to reach out to us directly via the Contact tab."),
+        tags$p("Happy modeling!")
+      ),
+      easyClose = TRUE
+    ))
+  })
+
+  # * New Analysis server ----
+  # Open advanced options sidebar
+  observeEvent(input$toggle_advanced_options, {
+    updateControlbar(id = "advanced_options_sidebar", session = session)
+  })
+
+  # leaflet previsualization plots selectizers
+  observe({
+    req(pa_data())
+    updatePickerInput(session, "previsualization_plot_species", choices = c(names(pa_data()[!sapply(pa_data(), is.null)]), "None"))
+  })
+
+  observe({
+    req(fit_layers())
+    updatePickerInput(session, "previsualization_plot_layer", choices = c(names(fit_layers()), "None"))
+  })
+
+  # * Validate inputs ----
+  observeEvent(pa_files_input(), {
+    # Check is not null and it was possible to upload the data
+    if (is.null(pa_files_input())){
+      pa_data(NULL)
+    } else {
+      # Turn on waiter
+      w <- waiter::Waiter$new(id = "data_upload",
+                              html = tagList(
+                                img(src = "logo_glossa.gif", height = "200px")
+                              ),
+                              color = waiter::transparent(0.8)
+      )
+      w$show()
+
+      # Read files
+      data <- apply(pa_files_input(), 1, function(x){
+        glossa::validate_presences_absences_csv(x, show_modal = TRUE)
+      })
+      if (is.null(data)){
+        data <- list(data)
+      }
+      names(data) <- sub(" ", "_", sub("([^.]+)\\.[[:alnum:]]+$", "\\1", pa_files_input()[, "name"]))
+
+      pa_data(data)
+      w$hide()
+    }
+  })
+
+  observeEvent(fit_layers_input(), {
+    # Check is not null and it was possible to upload the data
+    if (is.null(fit_layers_input())){
+      fit_layers(NULL)
+    } else {
+      # Turn on waiter
+      w <- waiter::Waiter$new(id = "data_upload",
+                              html = tagList(
+                                img(src = "logo_glossa.gif", height = "200px")
+                              ),
+                              color = waiter::transparent(0.8)
+      )
+      w$show()
+
+      # Read files
+      fit_layers(glossa::validate_fit_layers_zip(fit_layers_input(), show_modal = TRUE))
+
+      w$hide()
+    }
+  })
+
+  observeEvent(proj_layers_input(), {
+    # Check is not null and it was possible to upload the data
+    if (is.null(proj_layers_input())){
+      proj_layers(NULL)
+    } else {
+      # Turn on waiter
+      w <- waiter::Waiter$new(id = "data_upload",
+                              html = tagList(
+                                img(src = "logo_glossa.gif", height = "200px")
+                              ),
+                              color = waiter::transparent(0.8)
+      )
+      w$show()
+
+      # Read files
+      layers <- apply(proj_layers_input(), 1, function(x){
+        glossa::validate_projection_layers_zip(x, show_modal = TRUE)
+      })
+      if (is.null(layers)){
+        layers <- list(layers)
+      }
+      names(layers) <- sub("\\.zip$", "", proj_layers_input()[,"name"])
+
+      proj_layers(layers)
+      w$hide()
+    }
+  })
+
+  observeEvent(study_area_poly_input(), {
+    # Check is not null and it was possible to upload the data
+    if (is.null(study_area_poly_input())){
+      study_area_poly(NULL)
+    } else {
+      # Turn on waiter
+      w <- waiter::Waiter$new(id = "data_upload",
+                              html = tagList(
+                                img(src = "logo_glossa.gif", height = "200px")
+                              ),
+                              color = waiter::transparent(0.8)
+      )
+      w$show()
+
+      # Read files
+      study_area_poly(glossa::validate_extent_poly(study_area_poly_input(), show_modal = TRUE))
+
+      w$hide()
+    }
+  })
+
+  observeEvent(pa_files_input(), {
+    if (is.null(pa_files_input()) | is.null(pa_data())){
+      pa_validation_table(NULL)
+    } else {
+      # Check which ones where properly loaded
+      validation_table <- as.data.frame(pa_files_input())
+      validation_table[, "validation"] <- !sapply(pa_data(), is.null)
+      validation_table[, "name"] <- paste(as.character(icon("map-location-dot",style = "font-size:2rem; color:#007bff;")), validation_table[, "name"])
+      pa_validation_table(validation_table)
+    }
+  })
+
+  observeEvent(fit_layers_input(), {
+    if (is.null(fit_layers_input())){
+      fit_layers_validation_table(NULL)
+    } else {
+      validation_table <- as.data.frame(fit_layers_input())
+      validation_table[, "name"] <- paste(as.character(icon("layer-group", style = "font-size:2rem; color:#007bff;")), validation_table[, "name"])
+      if (is.null(fit_layers())){
+        validation_table[, "validation"] <- FALSE
+      } else {
+        validation_table[, "validation"] <- !is.null(fit_layers())
+      }
+      fit_layers_validation_table(validation_table)
+    }
+  })
+
+  observeEvent(c(proj_layers_input(), fit_layers_input()), {
+    if (is.null(proj_layers_input()) | is.null(proj_layers())){
+      proj_validation_table(NULL)
+    } else {
+      # Check which ones where properly loaded
+      validation_table <- as.data.frame(proj_layers_input())
+      validation_table[, "name"] <- paste(as.character(icon("forward",style = "font-size:2rem; color:#007bff;")), validation_table[, "name"])
+
+      if(!is.null(fit_layers_input())){
+        validation_table[, "validation"] <- !sapply(proj_layers(), is.null) & sapply(proj_layers_input()[, "datapath"], function(x){glossa::validate_fit_proj_layers(fit_layers_input()[, "datapath"], x, show_modal = TRUE)})
+      } else {
+        validation_table[, "validation"] <- !sapply(proj_layers(), is.null)
+      }
+      proj_validation_table(validation_table)
+    }
+  })
+
+  observeEvent(study_area_poly_input(), {
+    if (is.null(study_area_poly_input())){
+      extent_validation_table(NULL)
+    } else {
+      validation_table <- as.data.frame(study_area_poly_input())
+      validation_table[, "name"] <- paste(as.character(icon("crop",style = "font-size:2rem; color:#007bff;")), validation_table[, "name"])
+      if (is.null(study_area_poly())){
+        validation_table[, "validation"] <- FALSE
+      } else {
+        validation_table[, "validation"] <- !is.null(study_area_poly())
+      }
+      extent_validation_table(validation_table)
+    }
+  })
+
+  # * Info buttons ----
+  observe({
+    bs4Dash::addPopover(
+      id = "data_upload_info",
+      options = list(
+        content = "1) Presence/Absence Data: Upload a CSV file containing latitude and longitude columns for species occurrences, with an optional column 'pa' indicating presence (1) or absence (0).
+        2) Environmental Layers: Upload a ZIP file containing raster layers of environmental variables.
+        3) Projection Layers: Upload a ZIP file containing layers for projecting species distribution.
+        4) Study Area: Upload a polygon defining the study area if you want to delimit the extent.",
+        title = "Data upload",
+        placement = "bottom",
+        trigger = "hover"
+      )
+    )
+  })
+
+  observe({
+    bs4Dash::addPopover(
+      id = "analysis_options_options_info",
+      options = list(
+        content = "1) fit_layers: Fit the model and perform spatial prediction in the model fitting layers.
+        2) projections: Predict in new layers (projection layers).",
+        title = "Model options",
+        placement = "bottom",
+        trigger = "hover"
+      )
+    )
+  })
+
+  observe({
+    bs4Dash::addPopover(
+      id = "analysis_options_nr_info",
+      options = list(
+        content = "Model incorporating environmental data and spatial smoothing, with latitude and longitude as covariates.",
+        title = "Native range",
+        placement = "bottom",
+        trigger = "hover"
+      )
+    )
+  })
+
+  observe({
+    bs4Dash::addPopover(
+      id = "analysis_options_sh_info",
+      options = list(
+        content = "Model estimating spatial probability of niche based solely on environmental variables.",
+        title = "Suitable habitat",
+        placement = "bottom",
+        trigger = "hover"
+      )
+    )
+  })
+
+  observe({
+    bs4Dash::addPopover(
+      id = "analysis_options_others_info",
+      options = list(
+        content = "1) Functional Responses: Estimate the response curve of the probability for each value of the environmental variable.
+        2) Cross-validation: Perform k-fold cross-validation. Warning: It may take some time.",
+        title = "Others",
+        placement = "bottom",
+        trigger = "hover"
+      )
+    )
+  })
+
+  observe({
+    bs4Dash::addPopover(
+      id = "predictor_variables_info",
+      options = list(
+        content = "In this section, you can select which variables to include in the model for each species.",
+        title = "Predictor variables",
+        placement = "bottom",
+        trigger = "hover"
+      )
+    )
+  })
+
+  # * Run GLOSSA analysis ----
+  # Reset button
+  observeEvent(input$reset_input, {
+    # Reset data upload
+    pa_data(NULL)
+    pa_validation_table(NULL)
+    fit_layers(NULL)
+    fit_layers_validation_table(NULL)
+    proj_layers(NULL)
+    proj_validation_table(NULL)
+    study_area_poly(NULL)
+    extent_validation_table(NULL)
+
+    # Reset analysis options
+    updatePrettyCheckboxGroup(inputId = "analysis_options_nr", selected = character(0))
+    updatePrettyCheckboxGroup(inputId = "analysis_options_sh", selected = character(0))
+    updatePrettyCheckboxGroup(inputId = "analysis_options_other", selected = character(0))
+    updatePrettySwitch(inputId = "round_digits", value = FALSE)
+    updatePrettySwitch(inputId = "scale_layers", value = FALSE)
+    updateNumericInput(inputId = "seed", value = numeric(0))
+  })
+
+  # Confirmation dialog
+  observeEvent(input$run_button, {
+    shinyWidgets::ask_confirmation(
+      inputId = "run_button_confirmation",
+      type = "question",
+      title = "Want to confirm?",
+      text = "GLOSSA analysis may require some time. Please double-check all inputs before proceeding.",
+      btn_labels = c("Cancel", "Confirm"),
+    )
+  })
+
+  observeEvent(input$run_button_confirmation, {
+
+    req(input$run_button_confirmation == TRUE)
+
+    # Validate input
+    # Messages
+    if (is.null(pa_files_input())) {
+      showNotification("Please upload a P/A file", type = "error")
+    }
+    if (!all(pa_validation_table()[, "validation"] == TRUE)) {
+      showNotification("Please upload valid P/A files", type = "error")
+    }
+
+    if (is.null(fit_layers_input())) {
+      showNotification("Please upload model fit layers", type = "error")
+    }
+    if (!all(fit_layers_validation_table()[, "validation"] == TRUE)) {
+      showNotification("Please upload valid model fit layers", type = "error")
+    }
+
+    if ("projections" %in% input$analysis_options_nr | "projections" %in% input$analysis_options_sh){
+      if (is.null(proj_layers_input())) {
+        showNotification("Please upload projection layers", type = "error")
+      }
+      if (!all(proj_validation_table()[, "validation"] == TRUE)) {
+        showNotification("Please upload valid projection layers", type = "error")
+      }
+    }
+
+    if (is.null(c(input$analysis_options_nr, input$analysis_options_sh))){
+      showNotification("Select at least one option to compute from Native range and/or Suitable habitat", type = "error")
+    }
+
+    # Req
+    req(pa_files_input(), all(pa_validation_table()[, "validation"] == TRUE))
+    req(fit_layers_input(), all(fit_layers_validation_table()[, "validation"] == TRUE))
+    if ("projections" %in% input$analysis_options_nr | "projections" %in% input$analysis_options_sh) {
+      req(proj_layers_input(), all(proj_validation_table()[, "validation"] == TRUE))
+    }
+    req(c(input$analysis_options_nr, input$analysis_options_sh))
+
+    # Create waiter
+    w <- waiter::Waiter$new(
+      html = tagList(
+        img(src = "logo_glossa.gif", height = "200px"),
+        h4("")
+      )
+    )
+    w$show()
+    # Get predictor variables for each sp
+    predictor_variables <- lapply(1:length(species_files_names()), function(i){
+      input[[paste0("pred_vars_", i)]]
+    })
+
+    # Run GLOSSA analysis
+    glossa_results <- glossa::glossa_analysis(
+      pa_data = pa_data(),
+      fit_layers = fit_layers(),
+      proj_files = proj_layers(),
+      study_area_poly = study_area_poly(),
+      predictor_variables = predictor_variables,
+      decimal_digits = switch(input$round_digits + 1, NULL, input$decimal_digits),
+      scale_layers = input$scale_layers,
+      native_range = input$analysis_options_nr,
+      suitable_habitat = input$analysis_options_sh,
+      other_analysis = input$analysis_options_other,
+      seed = input$seed,
+      waiter = w
+    )
+    w$hide()
+
+    showNotification("GLOSSA analysis done!", duration = NULL, closeButton = TRUE, type = "message")
+
+    presence_absence_list(glossa_results$presence_absence_list)
+    covariate_list(glossa_results$covariate_list)
+    projections_results(glossa_results$projections_results)
+    other_results(glossa_results$other_results)
+    pa_cutoff(glossa_results$pa_cutoff)
+    habitat_suitability(glossa_results$habitat_suitability)
+
+  })
+
+  # * Reports server ----
+  # Sp names report selectizer
+  observe({
+    req(presence_absence_list())
+    updatePickerInput(session, "sp", label = NULL, choices = names(presence_absence_list()$model_pa), choicesOpt = list(icon = rep("fa-solid fa-globe", length(names(presence_absence_list()$model_pa)))))
+  })
+
+  # ** Prediction plot selectizers ----
+  # Update pred_plot_layers picker
+  observe({
+    req(projections_results())
+    updatePickerInput(session, "pred_plot_layers", choices = names(projections_results()[!unlist(lapply(projections_results(),is.null))]))
+  })
+
+  # Update pred_plot_model picker
+  observe({
+    req(input$pred_plot_layers)
+    display_choices <- names(projections_results()[[input$pred_plot_layers]])
+    display_val <- input$pred_plot_model
+    if (!is.null(display_val)){
+      if (!(display_val %in% display_choices)) {
+        display_val <- NULL
+      }
+    }
+    updatePickerInput(session, "pred_plot_model", choices = display_choices, selected = display_val)
+  })
+
+  # Update pred_plot_value picker
+  observe({
+    req(input$pred_plot_model)
+    if (input$pred_plot_layers != "projections") {
+      updatePickerInput(session, "pred_plot_value", choices = names(projections_results()[[input$pred_plot_layers]][[input$pred_plot_model]][[input$sp]]))
+    } else {
+      req(input$pred_plot_scenario)
+      req(input$pred_plot_year)
+      req(input$pred_plot_year <= length(projections_results()[[input$pred_plot_layers]][[input$pred_plot_model]][[input$sp]][[input$pred_plot_scenario]]))
+      updatePickerInput(session, "pred_plot_value", choices = names(projections_results()[[input$pred_plot_layers]][[input$pred_plot_model]][[input$sp]][[input$pred_plot_scenario]][[input$pred_plot_year]]))
+    }
+  })
+
+  # ** Layers plot selectizer ----
+  observe({
+    req(covariate_list())
+    updatePickerInput(session, "layers_plot_mode", choices = names(covariate_list()[!unlist(lapply(covariate_list(),is.null))]))
+  })
+
+  observe({
+    req(input$layers_plot_mode)
+    if (input$layers_plot_mode == "fit_layers") {
+      updatePickerInput(session, "layers_plot_cov", choices = names(covariate_list()[[input$layers_plot_mode]]))
+    } else if (input$layers_plot_mode == "projections") {
+      req(input$layers_plot_scenario)
+      req(input$layers_plot_year)
+      req(input$layers_plot_year <= length(covariate_list()[[input$layers_plot_mode]][[input$layers_plot_scenario]]))
+      updatePickerInput(session, "layers_plot_cov", choices = names(covariate_list()[[input$layers_plot_mode]][[input$layers_plot_scenario]][[input$layers_plot_year]]))
+    }
+  })
+
+  # ** Functional responses plot selectizer ----
+  observe({
+    req(other_results())
+    req(other_results()[["response_curve"]])
+    req(input$sp)
+    updatePickerInput(session, "fr_plot_cov", choices = names(other_results()[["response_curve"]][[input$sp]]))
+  })
+
+  # ** Variable importance plot selectizer ----
+  observe({
+    req(other_results())
+    req(other_results()[["variable_importance"]])
+    updatePickerInput(session, "varimp_plot_mode", choices = names(other_results()[["variable_importance"]]))
+  })
+
+  # ** Cross-validation plot selectizer ----
+  observe({
+    req(other_results())
+    req(other_results()[["cross_validation"]])
+    req(input$sp)
+    updatePickerInput(session, "cv_plot_mode", choices = names(other_results()[["cross_validation"]]))
+  })
+
+  # * Exports server ----
+  # Update selectizers
+  observe({
+    req(presence_absence_list())
+    req(projections_results())
+    updateSelectInput(session, "export_sp", choices = names(presence_absence_list()$model_pa))
+    export_layer_results <- names(projections_results()[!unlist(lapply(projections_results(),is.null))])
+    updateSelectInput(session, "export_results", choices = export_layer_results)
+    updateSelectInput(session, "export_models", choices = unique(as.vector((unlist((sapply(projections_results()[export_layer_results], names)))))))
+    updateSelectInput(session, "export_values", choices = c("mean", "median", "sd", "q0.025", "q0.975", "diff", "potential_presences"))
+    updateSelectInput(session, "export_layer_format", choices = c("tif", "asc", "nc"))
+  })
+
+  #=========================================================#
+  # Outputs ----
+  #=========================================================#
+
+  # * Render selectizers ----
+  # Select predictor variable for each species in new analysis tab
   output$predictor_selector <- renderUI({
     if (is.null(species_files_names()) | is.null(predictor_variables())) {
-      validate("Upload species ocurrences and historical layers")
+      validate("Upload species ocurrences and fit layers")
     }
 
     lapply(1:length(species_files_names()), function(i){
@@ -272,24 +573,38 @@ function(input, output, session) {
     })
   })
 
-  study_area_plot <- shiny::reactive({
-    ggplot2::ggplot() +
-      geom_sf(data = study_area_poly(), color = "#353839", fill = "#39a6d5") +
-      theme(
-        panel.background = element_rect(fill = "white"),
-        axis.title = element_blank()
-      )
-  })
-  output$study_area_plot <- renderPlot({
-    study_area_plot()
+  # Update pred_plot_scenario picker
+  output$pred_plot_scenario_picker <- renderUI({
+    req(input$pred_plot_layers == "projections")
+    pickerInput("pred_plot_scenario", label = NULL, width = "90%", choices = names(projections_results()[[input$pred_plot_layers]][[input$pred_plot_model]][[input$sp]]))
   })
 
+  # Update pred_plot_year picker
+  output$pred_plot_year_slider <- renderUI({
+    req(input$pred_plot_layers == "projections")
+    req(input$pred_plot_scenario)
+    sliderInput(inputId = "pred_plot_year", label = "Year", value = 1, step = 1, round = TRUE, min = 1, max = length(projections_results()[[input$pred_plot_layers]][[input$pred_plot_model]][[input$sp]][[input$pred_plot_scenario]]))
+  })
+
+  # Update layers plot selectizers
+  output$layers_plot_scenario_picker <- renderUI({
+    req(input$layers_plot_mode == "projections")
+    pickerInput("layers_plot_scenario", label = NULL, width = "90%", choices = names(covariate_list()[[input$layers_plot_mode]]))
+  })
+
+  output$layers_plot_year_slider <- renderUI({
+    req(input$layers_plot_mode == "projections")
+    req(input$layers_plot_scenario)
+    sliderInput(inputId = "layers_plot_year", label = "Year", round = TRUE, step = 1, width = "90%", value = 1, min = 1, max = length(covariate_list()[[input$layers_plot_mode]][[input$layers_plot_scenario]]))
+  })
+
+  # * Input validation table ----
   # Render uploaded files as a DT table
   output$uploaded_files <- DT::renderDT(
-    if (is.null(rbind(pa_validation_table(), hist_validation_table(), proj_validation_table(), extent_validation_table()))) {
+    if (is.null(rbind(pa_validation_table(), fit_layers_validation_table(), proj_validation_table(), extent_validation_table()))) {
       DT::datatable(NULL)
     } else {
-      rbind(pa_validation_table(), hist_validation_table(), proj_validation_table(), extent_validation_table()) %>%
+      rbind(pa_validation_table(), fit_layers_validation_table(), proj_validation_table(), extent_validation_table()) %>%
         dplyr::select(name, size, validation) %>%
         dplyr::mutate(validation = ifelse(
           validation,
@@ -314,243 +629,66 @@ function(input, output, session) {
     }
   )
 
-  # Info buttons ----
-  shiny::observeEvent(input$analysis_options_nr_info, {
-    addPopover(
-      id = "analysis_options_nr_info",
-      options = list(
-        content = "Vivamus sagittis lacus vel augue laoreet rutrum faucibus.",
-        title = "Server popover",
-        placement = "bottom",
-        trigger = "hover"
-      )
-    )
+  # * Previsualization of input ----
+  # base plot
+  output$previsualization_plot <- renderLeaflet({
+    leaflet::leaflet() %>%
+      leaflet::addTiles() %>%
+      leaflet::setView(0, 0, zoom = 1)
   })
 
-  # Run analysis ----
-  # Output variables to be filled
-  presence_absence_list <- shiny::reactiveVal()
-  covariate_list <- shiny::reactiveVal()
-  prediction_results <- shiny::reactiveVal()
-  other_results <- shiny::reactiveVal()
-  pa_cutoff <- shiny::reactiveVal()
-  habitat_suitability <- shiny::reactiveVal()
+  # plot proxy to update leaflet visualization
+  previsualization_plot <- leaflet::leafletProxy("previsualization_plot", session)
 
-  # Confirmation dialog
-  shiny::observeEvent(input$run_button, {
-    shinyWidgets::ask_confirmation(
-      inputId = "run_button_confirmation",
-      type = "question",
-      title = "Want to confirm?",
-      text = "GLOSSA analysis may require some time. Please double-check all inputs before proceeding.",
-      btn_labels = c("Cancel", "Confirm"),
-    )
-  })
-
-  shiny::observeEvent(input$run_button_confirmation, {
-
-    req(input$run_button_confirmation == TRUE)
-
-    # Validate input
-    # Messages
-    if (is.null(pa_files_input())) {
-      showNotification("Please upload a P/A file", type = "error")
-    }
-    if (!all(pa_validation_table()[, "validation"] == TRUE)) {
-      showNotification("Please upload valid P/A files", type = "error")
-    }
-
-    if (is.null(hist_layers_input())) {
-      showNotification("Please upload historical layers", type = "error")
-    }
-    if (!all(hist_validation_table()[, "validation"] == TRUE)) {
-      showNotification("Please upload valid historical layers", type = "error")
-    }
-
-    if ("future" %in% input$analysis_options_nr | "future" %in% input$analysis_options_sh){
-      if (is.null(proj_layers_input())) {
-        showNotification("Please upload future layers", type = "error")
-      }
-      if (!all(proj_validation_table()[, "validation"] == TRUE)) {
-        showNotification("Please upload valid future layers", type = "error")
-      }
-    }
-
-    if (is.null(c(input$analysis_options_nr, input$analysis_options_sh))){
-      showNotification("Select at least one option to compute from Native range and/or Suitable habitat", type = "error")
-    }
-
-    # Req
-    req(pa_files_input(), all(pa_validation_table()[, "validation"] == TRUE))
-    req(hist_layers_input(), all(hist_validation_table()[, "validation"] == TRUE))
-    if ("future" %in% input$analysis_options_nr | "future" %in% input$analysis_options_sh) {
-      req(proj_layers_input(), all(proj_validation_table()[, "validation"] == TRUE))
-    }
-    req(c(input$analysis_options_nr, input$analysis_options_sh))
-
-    # Create waiter
-    w <- waiter::Waiter$new(
-      html = tagList(
-        img(src = "logo_glossa.gif", height = "200px"),
-        h4("")
-      )
-    )
-    w$show()
-    # Get predictor variables for each sp
-    predictor_variables <- lapply(1:length(species_files_names()), function(i){
-      input[[paste0("pred_vars_", i)]]
-    })
-
-    # Run GLOSSA analysis
-    glossa_results <- glossa::glossa_analysis(
-      pa_files = pa_files_input()[,"datapath"],
-      historical_files = hist_layers_input()[,"datapath"],
-      future_files = proj_layers_input()[,"datapath"],
-      future_scenario_names = sub("\\.zip$", "", proj_layers_input()[,"name"]),
-      study_area_poly = study_area_poly(),
-      predictor_variables = predictor_variables,
-      decimal_digits = switch(input$round_digits + 1, NULL, input$decimal_digits),
-      scale_layers = input$scale_layers,
-      native_range = input$analysis_options_nr,
-      suitable_habitat = input$analysis_options_sh,
-      other_analysis = input$analysis_options_other,
-      seed = input$seed,
-      waiter = w
-    )
-    w$hide()
-
-    showNotification("GLOSSA analysis done!", duration = NULL, closeButton = TRUE, type = "message")
-
-    presence_absence_list(glossa_results$presence_absence_list)
-    covariate_list(glossa_results$covariate_list)
-    prediction_results(glossa_results$prediction_results)
-    other_results(glossa_results$other_results)
-    pa_cutoff(glossa_results$pa_cutoff)
-    habitat_suitability(glossa_results$habitat_suitability)
-
-  })
-
-  # reports server ----
-  # * Sp names report selectizer ----
-  observe({
-    req(presence_absence_list())
-    updatePickerInput(session, "sp", label = NULL, choices = names(presence_absence_list()$model_pa), choicesOpt = list(icon = rep("fa-solid fa-globe", length(names(presence_absence_list()$model_pa)))))
-  })
-
-  # * Prediction plot selectizers ----
-  # Update pred_plot_time picker
-  observe({
-    req(prediction_results())
-    updatePickerInput(session, "pred_plot_time", choices = names(prediction_results()[!unlist(lapply(prediction_results(),is.null))]))
-  })
-
-  # Update pred_plot_mode picker
-  observe({
-    req(input$pred_plot_time)
-    display_choices <- names(prediction_results()[[input$pred_plot_time]])
-    display_val <- input$pred_plot_mode
-    if (!is.null(display_val)){
-      if (!(display_val %in% display_choices)) {
-        display_val <- NULL
-      }
-    }
-    updatePickerInput(session, "pred_plot_mode", choices = display_choices, selected = display_val)
-  })
-
-  # Update pred_plot_value picker
-  observe({
-    req(input$pred_plot_mode)
-    if (input$pred_plot_time != "future") {
-      updatePickerInput(session, "pred_plot_value", choices = names(prediction_results()[[input$pred_plot_time]][[input$pred_plot_mode]][[input$sp]]))
+  # add presence/absence points
+  observeEvent(input$previsualization_plot_species, {
+    req(pa_data())
+    if(input$previsualization_plot_species != "None"){
+      previsualization_plot %>%
+        leaflet::setView(0, 0, zoom = 1) %>%
+        leaflet::clearMarkers() %>%
+        leaflet::addCircleMarkers(data = pa_data()[[input$previsualization_plot_species]], lat = ~decimalLatitude, lng = ~decimalLongitude,
+                                  color = ~ifelse(pa == 1, "green", "black"), radius = 5)
     } else {
-      req(input$pred_plot_scenario_future)
-      updatePickerInput(session, "pred_plot_value", choices = names(prediction_results()[[input$pred_plot_time]][[input$pred_plot_mode]][[input$sp]][[input$pred_plot_scenario_future]]))
+      previsualization_plot %>%
+        leaflet::clearMarkers()
     }
   })
 
-  # Update pred_plot_scenario_future picker
-  output$pred_plot_scenario_picker <- renderUI({
-    req(input$pred_plot_time == "future")
-    pickerInput("pred_plot_scenario_future", label = NULL, width = "90%", choices = names(prediction_results()[[input$pred_plot_time]][[input$pred_plot_mode]][[input$sp]]))
-  })
-
-  # Update pred_plot_year_past picker
-  output$pred_plot_year_past_slider <- renderUI({
-    req(input$pred_plot_time == "past")
-    sliderInput(inputId = "pred_plot_year_past", label = "Year", round = TRUE, step = 1, width = "90%", value = 1, min = 1, max = length(prediction_results()[[input$pred_plot_time]][[input$pred_plot_mode]][[input$sp]]))
-  })
-
-  # Update pred_plot_year_future picker
-  output$pred_plot_year_future_slider <- renderUI({
-    req(input$pred_plot_time == "future")
-    req(input$pred_plot_scenario_future)
-    sliderInput(inputId = "pred_plot_year_future", label = "Year", value = 1, min = 1, max = length(prediction_results()[[input$pred_plot_time]][[input$pred_plot_mode]][[input$sp]][[input$pred_plot_scenario_future]]))
-  })
-
-  # * Layers plot selectizer ----
-  observe({
-    req(covariate_list())
-    updatePickerInput(session, "layers_plot_time", choices = names(covariate_list()[!unlist(lapply(covariate_list(),is.null))]))
-  })
-
-  observe({
-    req(input$layers_plot_time)
-    if (input$layers_plot_time == "historical") {
-      req(input$layers_plot_scaled)
-      updatePickerInput(session, "layers_plot_cov", choices = names(covariate_list()[[input$layers_plot_time]][[input$layers_plot_scaled]]))
-    } else if (input$layers_plot_time == "past") {
-      updatePickerInput(session, "layers_plot_cov", choices = names(covariate_list()[[input$layers_plot_time]]))
-    } else if (input$layers_plot_time == "future") {
-      req(input$layers_plot_scenario)
-      updatePickerInput(session, "layers_plot_cov", choices = names(covariate_list()[[input$layers_plot_time]][[input$layers_plot_scenario]]))
+  # add environmental raster layers
+  observeEvent(input$previsualization_plot_layer, {
+    req(fit_layers())
+    if (input$previsualization_plot_layer != "None"){
+      previsualization_plot %>%
+        leaflet::clearImages() %>%
+        leaflet::addRasterImage(terra::crop(fit_layers()[input$previsualization_plot_layer], ext(-180, 180, -87, 87)),
+                                colors = c("#A1D4B1","#2BAF90","#F1A512","#DD4111","#8C0027"), opacity = 0.5)
+    } else {
+      previsualization_plot %>%
+        leaflet::clearImages()
     }
   })
 
-  output$layers_plot_scaled_picker <- renderUI({
-    req(input$layers_plot_time == "historical")
-    pickerInput("layers_plot_scaled", label = NULL, width = "90%", choices = names(covariate_list()[[input$layers_plot_time]]))
+  # add study area polygon
+  observeEvent(input$previsualization_plot_extent, {
+    req(study_area_poly())
+
+    if(!is.null(study_area_poly()[[1]]) & input$previsualization_plot_extent){
+      previsualization_plot %>%
+        leaflet::clearShapes() %>%
+        addPolygons(data = study_area_poly(), color = "#353839", fill = TRUE, fillColor = "353839", fillOpacity = 0.25)
+    } else{
+      previsualization_plot %>%
+        leaflet::clearShapes()
+    }
+  })
+  observeEvent(study_area_poly(), {
+    req(study_area_poly())
+    shinyWidgets::updatePrettySwitch(inputId = "previsualization_plot_extent", value = TRUE)
   })
 
-  output$layers_plot_scenario_picker <- renderUI({
-    req(input$layers_plot_time == "future")
-    pickerInput("layers_plot_scenario", label = NULL, width = "90%", choices = names(covariate_list()[[input$layers_plot_time]]))
-  })
 
-  output$layers_plot_year_past_slider <- renderUI({
-    req(input$layers_plot_time == "past")
-    sliderInput(inputId = "layers_plot_year_past", label = "Year", round = TRUE, step = 1, width = "90%", value = 1, min = 1, max = terra::nlyr(covariate_list()[[input$layers_plot_time]][[input$layers_plot_cov]]))
-  })
-
-  output$layers_plot_year_future_slider <- renderUI({
-    req(input$layers_plot_time == "future")
-    req(input$layers_plot_scenario)
-    sliderInput(inputId = "layers_plot_year_future", label = "Year", round = TRUE, step = 1, width = "90%", value = 1, min = 1, max = terra::nlyr(covariate_list()[[input$layers_plot_time]][[input$layers_plot_scenario]][[input$layers_plot_cov]]))
-  })
-
-  # * Functional responses plot selectizer ----
-  observe({
-    req(other_results())
-    req(other_results()[["response_curve"]])
-    req(input$sp)
-    updatePickerInput(session, "fr_plot_cov", choices = names(other_results()[["response_curve"]][[input$sp]]))
-  })
-
-  # * Variable importance plot selectizer ----
-  observe({
-    req(other_results())
-    req(other_results()[["variable_importance"]])
-    updatePickerInput(session, "varimp_plot_mode", choices = names(other_results()[["variable_importance"]]))
-  })
-
-  # * Cross-validation plot selectizer ----
-  observe({
-    req(other_results())
-    req(other_results()[["cross_validation"]])
-    req(input$sp)
-    updatePickerInput(session, "cv_plot_mode", choices = names(other_results()[["cross_validation"]]))
-  })
-
-  # * Sparkline box ----
+  # * Sparkline plots box ----
   output$spark_boxes <- renderUI({
     if (is.null(input$sp)){
       sparkline_data1 <- rep(0, 30)
@@ -563,15 +701,15 @@ function(input, output, session) {
       sparkline_data2 <- rep(0, 30)
       description1_2 <- "%"
 
-      if (input$pred_plot_time == "future" & !is.null(habitat_suitability()[[input$pred_plot_time]]) & !is.null(input$pred_plot_scenario_future)){
+      if (input$pred_plot_layers == "projections" & !is.null(habitat_suitability()[[input$pred_plot_layers]]) & !is.null(input$pred_plot_scenario)){
         # Check if future data along with input scenario are available
-        sparkline_data1 <- habitat_suitability()[[input$pred_plot_time]][["covered_area"]][[input$sp]][[input$pred_plot_scenario_future]]
-        sparkline_data2 <- habitat_suitability()[[input$pred_plot_time]][["suit_prob"]][[input$sp]][[input$pred_plot_scenario_future]]
-        description1_2 <- paste("%", input$pred_plot_scenario_future)
-      } else if (input$pred_plot_time != "future" & !is.null(habitat_suitability()[[input$pred_plot_time]])) {
-        sparkline_data1 <- habitat_suitability()[[input$pred_plot_time]][["covered_area"]][[input$sp]]
-        sparkline_data2 <- habitat_suitability()[[input$pred_plot_time]][["suit_prob"]][[input$sp]]
-        description1_2 <- paste("%", input$pred_plot_scenario_future)
+        sparkline_data1 <- habitat_suitability()[[input$pred_plot_layers]][["covered_area"]][[input$sp]][[input$pred_plot_scenario]]
+        sparkline_data2 <- habitat_suitability()[[input$pred_plot_layers]][["suit_prob"]][[input$sp]][[input$pred_plot_scenario]]
+        description1_2 <- paste("%", input$pred_plot_scenario)
+      } else if (input$pred_plot_layers != "projections" & !is.null(habitat_suitability()[[input$pred_plot_layers]])) {
+        sparkline_data1 <- habitat_suitability()[[input$pred_plot_layers]][["covered_area"]][[input$sp]]
+        sparkline_data2 <- habitat_suitability()[[input$pred_plot_layers]][["suit_prob"]][[input$sp]]
+        description1_2 <- paste("%", input$pred_plot_scenario)
       }
 
       sparkline_data3 <-  c(
@@ -605,7 +743,6 @@ function(input, output, session) {
     )
   })
 
-  # Plot reports
   # * Prediction plot ----
   prediction_plot <- reactive({
     prediction_layer <- NULL
@@ -613,14 +750,12 @@ function(input, output, session) {
     legend_label <- NULL
 
     if (!is.null(input$pred_plot_value)) {
-      if (input$pred_plot_time == "historical") {
-        prediction_layer <- prediction_results()[[input$pred_plot_time]][[input$pred_plot_mode]][[input$sp]][[input$pred_plot_value]]
-      } else if (input$pred_plot_time == "past") {
-        req(input$pred_plot_year_past)
-        prediction_layer <- prediction_results()[[input$pred_plot_time]][[input$pred_plot_mode]][[input$sp]][[input$pred_plot_year_past]][[input$pred_plot_value]]
-      } else if (input$pred_plot_time == "future") {
-        req(input$pred_plot_year_future)
-        prediction_layer <- prediction_results()[[input$pred_plot_time]][[input$pred_plot_mode]][[input$sp]][[input$pred_plot_scenario_future]][[input$pred_plot_year_future]][[input$pred_plot_value]]
+      if (input$pred_plot_layers == "fit_layers") {
+        prediction_layer <- projections_results()[[input$pred_plot_layers]][[input$pred_plot_model]][[input$sp]][[input$pred_plot_value]]
+      } else if (input$pred_plot_layers == "projections") {
+        req(input$pred_plot_year)
+        req(input$pred_plot_year <= length(projections_results()[[input$pred_plot_layers]][[input$pred_plot_model]][[input$sp]][[input$pred_plot_scenario]]))
+        prediction_layer <- projections_results()[[input$pred_plot_layers]][[input$pred_plot_model]][[input$sp]][[input$pred_plot_scenario]][[input$pred_plot_year]][[input$pred_plot_value]]
       }
       legend_label <- input$pred_plot_value
     }
@@ -629,7 +764,7 @@ function(input, output, session) {
       pa_points <- presence_absence_list()$model_pa[[input$sp]]
     }
 
-    glossa::generate_prediction_plot(prediction_layer, pa_points, legend_label, non_study_area_poly())
+    glossa::generate_prediction_plot(prediction_layer, pa_points, legend_label, inv_study_area_poly())
   })
   output$prediction_plot <- renderPlot({
     prediction_plot()
@@ -640,25 +775,33 @@ function(input, output, session) {
     p <- ggplot2::ggplot()
 
     if (!is.null(input$layers_plot_cov)){
-      if (input$layers_plot_time == "historical") {
-        plot_layers <- covariate_list()[[input$layers_plot_time]][[input$layers_plot_scaled]][[input$layers_plot_cov]]
-      } else if (input$layers_plot_time == "past") {
-        req(input$layers_plot_year_past)
-        plot_layers <- covariate_list()[[input$layers_plot_time]][[input$layers_plot_cov]][[input$layers_plot_year_past]]
-      } else if (input$layers_plot_time == "future") {
-        req(input$layers_plot_year_future)
-        plot_layers <- covariate_list()[[input$layers_plot_time]][[input$layers_plot_scenario]][[input$layers_plot_cov]][[input$layers_plot_year_future]]
-      }
       legend_label <- input$layers_plot_cov
+      if (input$layers_plot_mode == "fit_layers") {
+        plot_layers <- covariate_list()[[input$layers_plot_mode]][[input$layers_plot_cov]]
 
+        p <- p +
+          geom_spatraster(data = plot_layers) +
+          scale_fill_gradientn(colours = c("#A1D4B1","#2BAF90","#F1A512","#DD4111","#8C0027"), na.value = "white",
+                               name = legend_label)
+
+      } else if (input$layers_plot_mode == "projections") {
+        req(input$layers_plot_year)
+        req(input$layers_plot_year <= length(covariate_list()[[input$layers_plot_mode]][[input$layers_plot_scenario]]))
+        plot_layers <- covariate_list()[[input$layers_plot_mode]][[input$layers_plot_scenario]][[input$layers_plot_year]][[input$layers_plot_cov]]
+
+        p <- p +
+          geom_spatraster(data = plot_layers) +
+          scale_fill_gradientn(colours = c("#A1D4B1","#2BAF90","#F1A512","#DD4111","#8C0027"), na.value = "white",
+                               name = legend_label)
+      }
+    }
+
+    if (!is.null(inv_study_area_poly())){
       p <- p +
-        geom_spatraster(data = plot_layers) +
-        scale_fill_gradientn(colours = c("#A1D4B1","#2BAF90","#F1A512","#DD4111","#8C0027"),
-                             name = legend_label)
+        geom_sf(data = inv_study_area_poly(), color = "#353839", fill = "antiquewhite")
     }
 
     p +
-      geom_sf(data = non_study_area_poly(), color = "#353839", fill = "antiquewhite") +
       theme(
         panel.grid.major = element_line(
           color = gray(.5),
@@ -675,8 +818,12 @@ function(input, output, session) {
 
   # * Observations plot ----
   observations_plot <- reactive({
-    p <- ggplot2::ggplot() +
-      geom_sf(data = non_study_area_poly(), color = "#353839", fill = "antiquewhite")
+    p <- ggplot2::ggplot()
+
+    if (!is.null(inv_study_area_poly())){
+      p <- p +
+        geom_sf(data = inv_study_area_poly(), color = "#353839", fill = "antiquewhite")
+    }
 
     if (!is.null(input$sp)) {
       model_points <- presence_absence_list()$model_pa[[input$sp]]
@@ -766,9 +913,11 @@ function(input, output, session) {
     cv_plot()
   })
 
+  #=========================================================#
+  # Exports ----
+  #=========================================================#
 
   # * Export plots ----
-  # Export layers plot
   glossa::export_plot_server("export_previsualization_plot", prediction_plot())
   glossa::export_plot_server("export_pred_plot", prediction_plot())
   glossa::export_plot_server("export_layers_plot", cov_layers_plot())
@@ -777,20 +926,7 @@ function(input, output, session) {
   glossa::export_plot_server("export_varimp_plot", varimp_plot())
   glossa::export_plot_server("export_cv_plot", cv_plot())
 
-  # Exports server ----
-  # Update selectizers
-  observe({
-    req(presence_absence_list())
-    req(prediction_results())
-    updateSelectInput(session, "export_sp", choices = names(presence_absence_list()$model_pa))
-    export_time_periods <- names(prediction_results()[!unlist(lapply(prediction_results(),is.null))])
-    updateSelectInput(session, "export_time", choices = export_time_periods)
-    updateSelectInput(session, "export_mods", choices = unique(as.vector((unlist((sapply(prediction_results()[export_time_periods], names)))))))
-    updateSelectInput(session, "export_fields", choices = c("mean", "median", "sd", "q0.025", "q0.975", "diff", "potential_presences"))
-    updateSelectInput(session, "export_layer_format", choices = c("tif", "asc", "nc"))
-  })
-
-  # Exports downloadHandler
+  # * Export results downloadHandler ----
   output$export_button <- downloadHandler(
     filename = function() { paste("glossa_", format(Sys.time(), "%D_%X"), ".zip", sep="") },
     content = function(file) {
@@ -800,12 +936,12 @@ function(input, output, session) {
       color = waiter::transparent(0.8)
       )
       w$show()
-      export_files <- glossa_export(species = input$export_sp, mods = input$export_mods,
-                                    time = input$export_time, fields = input$export_fields,
+      export_files <- glossa_export(species = input$export_sp, models = input$export_models,
+                                    layer_results = input$export_results, fields = input$export_values,
                                     model_data = input$export_model_data, fr = input$export_fr,
                                     prob_cut = input$export_pa_cutoff, varimp = input$export_var_imp,
                                     cross_val = input$export_cv, layer_format = input$export_layer_format,
-                                    prediction_results = prediction_results(),
+                                    projections_results = projections_results(),
                                     presence_absence_list = presence_absence_list(),
                                     other_results = other_results(), pa_cutoff = pa_cutoff())
 
@@ -813,4 +949,11 @@ function(input, output, session) {
       zip::zip(zipfile = file, files = export_files, mode = "cherry-pick")
     }
   )
+
+  #=========================================================#
+  # Stop app ----
+  #=========================================================#
+  observeEvent(input$stop_app,{
+    stopApp()
+  })
 }

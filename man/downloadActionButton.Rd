@@ -2,7 +2,7 @@
 % Please edit documentation in R/utils.R
 \name{downloadActionButton}
 \alias{downloadActionButton}
-\title{Create Download Action Button}
+\title{Create a Download Action Button}
 \usage{
 downloadActionButton(
   outputId,

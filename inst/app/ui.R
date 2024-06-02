@@ -1,13 +1,17 @@
 # Header ----
 header <- bs4Dash::bs4DashNavbar(
-  # Logo
+  # * Logo and header options ----
   title = bs4Dash::dashboardBrand(
     title = strong("GLOSSA"),
     color = NULL,
-    href = "https://github.com/jmestret",
+    href = "https://github.com/jmestret/glossa",
     image = "logo_glossa.png",
     opacity = 1
   ),
+
+  # Logo on browser window
+  tags$head(tags$link(rel = "icon", type = "image/png", sizes = "32x32", href = "/logo_glossa.png")),
+
 
   # Header options
   titleWidth = NULL,
@@ -16,9 +20,9 @@ header <- bs4Dash::bs4DashNavbar(
   status = "white",
   border = TRUE,
   compact = FALSE,
-  sidebarIcon = shiny::icon("bars"),
+  sidebarIcon = icon("bars"),
 
-  # Right ui
+  # * Right ui buttons ----
   rightUi = tagList(
     # New analysis button
     tags$li(
@@ -33,36 +37,29 @@ header <- bs4Dash::bs4DashNavbar(
     ),
 
     # Help button
-    bs4Dash::bs4DropdownMenu(
-      type = "notifications",
-      badgeStatus = NULL,
-      icon = icon("question"),
-      headerText = strong("Help"),
+    tags$li(
+      class = 'dropdown',
+      bs4Dash::actionButton(
+        inputId = "show_help",
+        label = NULL,
+        icon = icon("question"),
+        status = "secondary",
+        outline = TRUE,
+        style = "border: none"
+      )
+    ),
 
-      bs4Dash::notificationItem(
-        text = "Data upload and analysis setup",
-        icon = icon("circle-plus", class = "fa-solid"),
-        status = "primary"
-      ),
-      bs4Dash::notificationItem(
-        text = "Plots and results from the analysis",
-        icon = icon("chart-simple"),
-        status = "primary"
-      ),
-      bs4Dash::notificationItem(
-        text = "Download your results",
-        icon = icon("download"),
-        status = "primary"
-      ),
-      bs4Dash::notificationItem(
-        text = "Frequently asked questions",
-        icon = icon("circle-question", class = "fa-solid"),
-        status = "primary"
-      ),
-      bs4Dash::notificationItem(
-        text = "Read or quick start guide",
-        icon = icon("book"),
-        status = "primary"
+    # Stop app button
+    tags$li(
+      class = 'dropdown',
+      bs4Dash::actionButton(
+        inputId = "stop_app",
+        label = NULL,
+        icon = icon("power-off"),
+        status = "danger",
+        outline = TRUE,
+        style = "border: none",
+        onclick = "setTimeout(function(){window.close();},500);"
       )
     )
   )
@@ -80,6 +77,7 @@ sidebar <- bs4Dash::bs4DashSidebar(
   id = "sidebar",
   customArea = NULL,
 
+  # * Sidebar tabs ----
   bs4Dash::sidebarMenu(
     id = "sidebar_menu",
 
@@ -91,7 +89,7 @@ sidebar <- bs4Dash::bs4DashSidebar(
     ),
 
     bs4Dash::sidebarHeader("Modelling"),
-    # Input tab
+    # New Analysis tab
     bs4Dash::menuItem(
       tabName = "new_analysis",
       icon = icon("circle-plus", class = "fa-solid"),
@@ -120,11 +118,11 @@ sidebar <- bs4Dash::bs4DashSidebar(
       text = "Documentation"
     ),
 
-    # Paper tab
+    # How to cite tab
     bs4Dash::menuItem(
-      tabName = "papers",
+      tabName = "how_to_cite",
       icon = icon("bookmark", class = "fa-solid"),
-      text = "Publications"
+      text = "How to cite"
     ),
 
     # Updates tab
@@ -150,17 +148,17 @@ sidebar <- bs4Dash::bs4DashSidebar(
   )
 )
 
-# Body ----
+# Body tab ----
 body <- bs4Dash::bs4DashBody(
-  waiter::useWaiter(), # include dependencies
+  waiter::useWaiter(), # include waiter dependencies
 
   bs4Dash::tabItems(
     # * home tab ----
     bs4Dash::tabItem(
       tabName = "home",
       # Start first row
-      shiny::fluidRow(
-        # Welcome box
+      fluidRow(
+        #  ** Welcome box ----
         bs4Dash::box(
           title = strong("Welcome to GLOSSA"),
           status = NULL,
@@ -172,11 +170,12 @@ body <- bs4Dash::bs4DashBody(
           headerBorder = FALSE,
           elevation = 2,
           label = icon("handshake", class = "fa-regular", style = "font-size:2rem"),
-          shiny::fluidRow(
+
+          fluidRow(
             # welcome text
             bs4Dash::column(
               width = 6,
-              "Welcome to GLOSSA (GLobal Ocean Species Spatiotemporal Analysis). Explore marine species distributions worldwide, from past to future, across diverse climate scenarios."
+              "Welcome to GLOSSA (GLObal Species Spatiotemporal Analysis). Explore species distributions worldwide, from past to future, across diverse climate scenarios."
             ),
             # welcome figure
             bs4Dash::column(
@@ -185,7 +184,8 @@ body <- bs4Dash::bs4DashBody(
               img(src = "logo_glossa.png", height = "30%")
             )
           ),
-          shiny::fluidRow(
+
+          fluidRow(
             div(
               style = "position:absolute; bottom:10px; left:50%; transform: translateX(-50%); width:100%",
               bs4Dash::column(
@@ -204,9 +204,9 @@ body <- bs4Dash::bs4DashBody(
           )
         ), # End welcome box
 
-        # Demo box
+        # ** Demo box ----
         bs4Dash::box(
-          title = strong("Demo Run"),
+          title = strong("Getting Started with GLOSSA"),
           status = NULL,
           width = 3,
           height = 250,
@@ -216,14 +216,15 @@ body <- bs4Dash::bs4DashBody(
           headerBorder = FALSE,
           elevation = 2,
           label = icon("rocket", style = "font-size:2rem"),
-          shiny::fluidRow(
+
+          fluidRow(
             bs4Dash::column(
               width = 12,
-              "New to GLOSSA? Start with our quick demo. See GLOSSA in action with our toy example — explore marine species distribution modeling in minutes"
+              "New to GLOSSA? Check out our quick demo video to see GLOSSA in action. Watch how easily you can model species distribution in just a few minutes."
             )
           ),
 
-          shiny::fluidRow(
+          fluidRow(
             div(
               style = "position:absolute; bottom:10px; left:50%; transform: translateX(-50%); width:100%",
               bs4Dash::column(
@@ -231,7 +232,7 @@ body <- bs4Dash::bs4DashBody(
                 align = "center",
                 bs4Dash::actionButton(
                   inputId = "try_demo",
-                  label = "View Example Report",
+                  label = "Watch Demo",
                   icon = NULL,
                   status = "secondary",
                   outline = FALSE,
@@ -243,7 +244,7 @@ body <- bs4Dash::bs4DashBody(
           )
         ), # End demo box
 
-        # Group box
+        # ** Group box ----
         bs4Dash::box(
           title = strong("Meet Our Research Team"),
           status = NULL,
@@ -255,14 +256,15 @@ body <- bs4Dash::bs4DashBody(
           headerBorder = FALSE,
           elevation = 2,
           label = icon("people-group", style = "font-size:2rem"),
-          shiny::fluidRow(
+
+          fluidRow(
             bs4Dash::column(
               width = 12,
               "Discover the team behind GLOSSA at the iMARES group, ICM-CSIC, Barcelona, Spain. Get to know the developers on GitHub. Click below to explore our research group."
             )
           ),
 
-          shiny::fluidRow(
+          fluidRow(
             div(
               style = "position:absolute; bottom:10px; left:50%; transform: translateX(-50%); width:100%",
               bs4Dash::column(
@@ -284,8 +286,8 @@ body <- bs4Dash::bs4DashBody(
       ), # End first row
 
       # Start second row
-      shiny::fluidRow(
-        # Documentation and guidelines
+      fluidRow(
+        # ** Documentation and guidelines ----
         bs4Dash::box(
           title = strong("Documentation and Guidelines"),
           status = NULL,
@@ -297,14 +299,15 @@ body <- bs4Dash::bs4DashBody(
           headerBorder = FALSE,
           elevation = 2,
           label = icon("book", style = "font-size:2rem"),
-          shiny::fluidRow(
+
+          fluidRow(
             bs4Dash::column(
               width = 12,
               "Curious about data preparation, result exportation, and our modeling procedure? Dive into our comprehensive GLOSSA documentation. Discover step-by-step tutorials, example datasets, and FAQs for optimized utilization. Begin your journey now to unleash GLOSSA's full potential!"
             )
           ),
 
-          shiny::fluidRow(
+          fluidRow(
             div(
               style = "position:absolute; bottom:10px; left:50%; transform: translateX(-50%); width:100%",
               bs4Dash::column(
@@ -324,7 +327,7 @@ body <- bs4Dash::bs4DashBody(
           )
         ), # End documentation and guidelines
 
-        # Download data tutorials
+        # ** Download data tutorials ----
         bs4Dash::box(
           title = strong("Download and Process Data: GBIF and ISIMIP"),
           status = NULL,
@@ -336,20 +339,21 @@ body <- bs4Dash::bs4DashBody(
           headerBorder = FALSE,
           elevation = 2,
           label = icon("globe", style = "font-size:2rem"),
-          shiny::fluidRow(
+
+          fluidRow(
             bs4Dash::column(
               width = 12,
               "Prepare your data effectively for GLOSSA with our guide. Learn how to download GBIF presence data and environmental layers from ISIMIP. Follow our simplified processing guidelines for smooth integration with the GLOSSA modeling framework."
             )
           ),
 
-          shiny::fluidRow(
+          fluidRow(
             div(
               style = "position:absolute; bottom:10px; left:50%; transform: translateX(-50%); width:100%",
               bs4Dash::column(
                 width = 12,
                 align = "center",
-                shiny::fluidRow(
+                fluidRow(
                   bs4Dash::column(
                     width = 6,
                     bs4Dash::actionButton(
@@ -378,20 +382,19 @@ body <- bs4Dash::bs4DashBody(
               )
             )
           )
-        ) # End download data tutorials
+        ) # End download data tutorials box
       ) # End second row
     ),
 
-    # * new_analysis tab ----
+    # * New Analysis tab ----
     bs4Dash::tabItem(
       tabName = "new_analysis",
 
-
       # Data upload and visualization
-      shiny::fluidRow(
+      fluidRow(
         bs4Dash::column(
           width = 6,
-          shiny::fluidRow(
+          fluidRow(
             id = "data_upload",
             bs4Dash::box(
               title = strong("Data upload"),
@@ -404,13 +407,16 @@ body <- bs4Dash::bs4DashBody(
               collapsible = FALSE,
               headerBorder = FALSE,
               elevation = 2,
-              label = actionButton(
+              label = shiny::actionButton(
                 "data_upload_info",
                 label = NULL,
                 icon = icon("circle-info", class = "fa-solid fa-circle-info", style = "color:#007bff;"),
-                style = "background-color: transparent; border: none; padding: 0;"
+                class = "btn btn-default action-button btn-xs",
+                style="background-color:transparent;border-radius:0px;border-width:0px"
               ),
 
+              # ** Sidebar options ----
+              # Advanced options
               sidebar = bs4Dash::boxSidebar(
                 startOpen = FALSE,
                 id = "advanced_options_sidebar",
@@ -441,7 +447,7 @@ body <- bs4Dash::bs4DashBody(
                 ),
 
                 shinyWidgets::pickerInput(
-                  inputId = "pred_plot_mode",
+                  inputId = "model_choice",
                   label = "Model",
                   choices = c("BART"),
                   selected = "BART",
@@ -454,9 +460,10 @@ body <- bs4Dash::bs4DashBody(
                   value = NULL,
                   width = "90%"
                 )
-              ),
+              ), # End of sidebar options
 
-              shiny::fluidRow(
+              # ** Data upload ----
+              fluidRow(
                 bs4Dash::column(
                   width = 3,
                   glossa::file_input_area_ui(
@@ -468,11 +475,10 @@ body <- bs4Dash::bs4DashBody(
                     icon_name = "map-location-dot"
                   )
                 ),
-
                 bs4Dash::column(
                   width = 3,
                   glossa::file_input_area_ui(
-                    "hist_layers",
+                    "fit_layers",
                     label = "Environmental data",
                     button_label = "Add ZIP layers",
                     multiple = FALSE,
@@ -484,43 +490,42 @@ body <- bs4Dash::bs4DashBody(
                   width = 3,
                   glossa::file_input_area_ui(
                     "proj_layers",
-                    label = "Projection layers",
+                    label = "projections layers",
                     button_label = "Add ZIP layers (optional)",
                     multiple = TRUE,
                     accept = ".zip",
                     icon_name = "forward"
                   )
                 ),
-
                 bs4Dash::column(
                   width = 3,
                   glossa::file_input_area_ui(
-                    "extent_poly",
+                    "study_area_poly",
                     label = "Study area",
                     button_label = "Add polygon (optional)",
-                    multiple = TRUE,
+                    multiple = FALSE,
                     accept = c(".gpkg", ".shp"),
                     icon_name = "crop"
                   )
                 )
               ),
 
-              strong("Select one or more options to compute"),
+              # ** Analysis options ----
+              tags$span(strong("Select one or more options to compute"), shiny::actionButton("analysis_options_options_info", label = NULL, icon = icon("circle-info", class = "fa-solid fa-circle-info", style = "color:#007bff;"), class = "btn btn-default action-button btn-xs", style="background-color:transparent;border-radius:0px;border-width:0px")),
 
               tags$style(HTML("
               .pretty .state label span {
               font-weight: normal !important;
               }")),
-
               fluidRow(
                 style = "display: flex; justify-content: center; flex-wrap: wrap",
                 bs4Dash::column(
                   width = 4,
                   prettyCheckboxGroup(
                     inputId = "analysis_options_nr",
-                    label = tags$span("Native range", shiny::actionButton("analysis_options_nr_info", label = "", icon = icon("circle-info", class = "fa-solid fa-circle-info", style = "color:#007bff;"), class = "btn btn-default action-button btn-xs", style="background-color:transparent;border-radius:0px;border-width:0px")),
-                    choiceNames = c("Aggregated prediction", "Study projections", "Non-study projections"),
-                    choiceValues = c("historical", "past", "future"),
+                    label = tags$span("Native range", shiny::actionButton("analysis_options_nr_info", label = NULL, icon = icon("circle-info", class = "fa-solid fa-circle-info", style = "color:#007bff;"), class = "btn btn-default action-button btn-xs", style="background-color:transparent;border-radius:0px;border-width:0px")),
+                    choiceNames = c("Model fitting", "Model prediction"),
+                    choiceValues = c("fit_layers", "projections"),
                     selected = NULL,
                     status = "primary",
                     shape = "curve"
@@ -530,9 +535,9 @@ body <- bs4Dash::bs4DashBody(
                   width = 4,
                   prettyCheckboxGroup(
                     inputId = "analysis_options_sh",
-                    label = "Suitable habitat",
-                    choiceNames = c("Aggregated prediction", "Study projections", "Non-study projections"),
-                    choiceValues = c("historical", "past", "future"),
+                    label = tags$span("Suitable habitat", shiny::actionButton("analysis_options_sh_info", label = NULL, icon = icon("circle-info", class = "fa-solid fa-circle-info", style = "color:#007bff;"), class = "btn btn-default action-button btn-xs", style="background-color:transparent;border-radius:0px;border-width:0px")),
+                    choiceNames = c("Model fitting", "Model prediction"),
+                    choiceValues = c("fit_layers", "projections"),
                     selected = NULL,
                     status = "primary",
                     shape = "curve"
@@ -542,7 +547,7 @@ body <- bs4Dash::bs4DashBody(
                   width = 4,
                   prettyCheckboxGroup(
                     inputId = "analysis_options_other",
-                    label = "Others",
+                    label = tags$span("Others", shiny::actionButton("analysis_options_others_info", label = NULL, icon = icon("circle-info", class = "fa-solid fa-circle-info", style = "color:#007bff;"), class = "btn btn-default action-button btn-xs", style="background-color:transparent;border-radius:0px;border-width:0px")),
                     choiceNames = c("Functional repsonses", "Cross-validation"),
                     choiceValues = c("functional_responses", "cross_validation"),
                     selected = NULL,
@@ -565,7 +570,18 @@ body <- bs4Dash::bs4DashBody(
                   )
                 ),
                 bs4Dash::column(
-                  width = 6,
+                  width = 3,
+                  bs4Dash::actionButton(
+                    "reset_input",
+                    "Reset",
+                    icon = NULL,
+                    status = "danger",
+                    width = "100%",
+                    outline = TRUE
+                  )
+                ),
+                bs4Dash::column(
+                  width = 3,
                   bs4Dash::actionButton(
                     "run_button",
                     "Run Job",
@@ -582,20 +598,20 @@ body <- bs4Dash::bs4DashBody(
         bs4Dash::column(
           width = 6,
 
-          # Prediction map
-          shiny::fluidRow(
+          # ** Previsualization map ----
+          fluidRow(
             bs4Dash::box(
               title = strong("Previsualization"),
               status = NULL,
               width = 12,
-              height = 455,
+              height = 430,
               solidHeader = FALSE,
               background = NULL,
               maximizable = TRUE,
               collapsible = FALSE,
               headerBorder = FALSE,
               elevation = 2,
-              label = glossa::export_plot_ui("export_previsualization_plot"),
+              label = NULL,
 
               sidebar = bs4Dash::boxSidebar(
                 startOpen = FALSE,
@@ -632,10 +648,11 @@ body <- bs4Dash::bs4DashBody(
       ), # End first row
 
       # Start second row
-      shiny::fluidRow(
+      fluidRow(
+        # ** Select predictor variables ----
         bs4Dash::column(
           width = 6,
-          shiny::fluidRow(
+          fluidRow(
             bs4Dash::box(
               title = strong("Predictor variables"),
               status = NULL,
@@ -645,7 +662,13 @@ body <- bs4Dash::bs4DashBody(
               collapsible = FALSE,
               headerBorder = FALSE,
               elevation = 2,
-              label = NULL,
+              label = shiny::actionButton(
+                "predictor_variables_info",
+                label = NULL,
+                icon = icon("circle-info", class = "fa-solid fa-circle-info", style = "color:#007bff;"),
+                class = "btn btn-default action-button btn-xs",
+                style="background-color:transparent;border-radius:0px;border-width:0px"
+              ),
 
               bs4Dash::column(
                 width = 12,
@@ -655,9 +678,10 @@ body <- bs4Dash::bs4DashBody(
           )
         ),
 
+        # ** File validation table ----
         bs4Dash::column(
           width = 6,
-          shiny::fluidRow(
+          fluidRow(
             bs4Dash::box(
               title = strong("Uploaded files"),
               status = NULL,
@@ -679,11 +703,11 @@ body <- bs4Dash::bs4DashBody(
       ) # End second row
     ),
 
-    # * reports tab ----
+    # * Reports tab ----
     bs4Dash::tabItem(
       tabName = "reports",
 
-      shiny::fluidRow(
+      fluidRow(
         bs4Dash::box(
           title = NULL,
           status = NULL,
@@ -696,6 +720,7 @@ body <- bs4Dash::bs4DashBody(
           elevation = 2,
           label = NULL,
 
+          # ** Select species ----
           bs4Dash::column(
             width = 12,
             shinyWidgets::pickerInput(
@@ -707,6 +732,7 @@ body <- bs4Dash::bs4DashBody(
           )
         ),
 
+        # ** Sparkline plots ----
         bs4Dash::column(
           width = 8,
           uiOutput("spark_boxes")
@@ -714,12 +740,12 @@ body <- bs4Dash::bs4DashBody(
       ),
 
 
-      shiny::fluidRow(
+      fluidRow(
         bs4Dash::column(
           width = 8,
 
-          # Prediction map
-          shiny::fluidRow(
+          # ** Prediction map ----
+          fluidRow(
             bs4Dash::box(
               title = strong("GLOSSA predictions"),
               status = NULL,
@@ -739,14 +765,14 @@ body <- bs4Dash::bs4DashBody(
                 background = "#adb5bd",
                 icon = icon("ellipsis", class = "fa-solid fa-ellipsis", style = "color:#3b444b;"),
                 shinyWidgets::pickerInput(
-                  inputId = "pred_plot_time",
+                  inputId = "pred_plot_layers",
                   label = NULL,
                   choices = NULL,
                   width = "90%"
                 ),
 
                 shinyWidgets::pickerInput(
-                  inputId = "pred_plot_mode",
+                  inputId = "pred_plot_model",
                   label = NULL,
                   choices = NULL,
                   width = "90%"
@@ -760,11 +786,9 @@ body <- bs4Dash::bs4DashBody(
                   options = list(size = 5)
                 ),
 
-                uiOutput("pred_plot_scenario_picker"), # Only shows for future prediction
+                uiOutput("pred_plot_scenario_picker"), # Only shows for projections
 
-                uiOutput("pred_plot_year_past_slider"), # Only shows for past prediction
-                uiOutput("pred_plot_year_future_slider"), # Only shows for future prediction
-
+                uiOutput("pred_plot_year_slider"), # Only shows for projections
 
                 shinyWidgets::prettySwitch(
                   inputId = "pa_points",
@@ -779,9 +803,10 @@ body <- bs4Dash::bs4DashBody(
           )
         ),
 
+        # ** Environmental data plot ----
         bs4Dash::column(
           width = 4,
-          shiny::fluidRow(
+          fluidRow(
             bs4Dash::box(
               title = strong("Environmental variables"),
               status = NULL,
@@ -801,7 +826,7 @@ body <- bs4Dash::bs4DashBody(
                 background = "#adb5bd",
                 icon = icon("ellipsis", class = "fa-solid fa-ellipsis", style = "color:#3b444b;"),
                 shinyWidgets::pickerInput(
-                  inputId = "layers_plot_time",
+                  inputId = "layers_plot_mode",
                   label = NULL,
                   choices = NULL,
                   width = "90%"
@@ -815,19 +840,18 @@ body <- bs4Dash::bs4DashBody(
                   options = list(size = 5)
                 ),
 
-                uiOutput("layers_plot_scaled_picker"), # Only shows for historical prediction
+                uiOutput("layers_plot_scenario_picker"), # Only shows for projections
 
-                uiOutput("layers_plot_scenario_picker"), # Only shows for future prediction
-
-                uiOutput("layers_plot_year_past_slider"), # Only shows for past prediction
-                uiOutput("layers_plot_year_future_slider"), # Only shows for future prediction
+                uiOutput("layers_plot_year_slider"), # Only shows for projections
 
               ),
 
               plotOutput("cov_layers_plot", height = "100%")
             )
           ),
-          shiny::fluidRow(
+
+          # ** Deleted occurrences plot ----
+          fluidRow(
             bs4Dash::box(
               title = strong("Presence validation"),
               status = NULL,
@@ -854,7 +878,8 @@ body <- bs4Dash::bs4DashBody(
         )
       ),
 
-      shiny::fluidRow(
+      fluidRow(
+        # ** FUnctional responses ----
         bs4Dash::box(
           title = strong("Functional responses"),
           status = NULL,
@@ -885,6 +910,7 @@ body <- bs4Dash::bs4DashBody(
           plotOutput("fr_plot", height = "100%")
         ),
 
+        # ** Variable importance ----
         bs4Dash::box(
           title = strong("Variable importance"),
           status = NULL,
@@ -914,6 +940,7 @@ body <- bs4Dash::bs4DashBody(
           plotOutput("varimp_plot", height = "100%")
         ),
 
+        # ** Cross-validation ----
         bs4Dash::box(
           title = strong("Cross-validation"),
           status = NULL,
@@ -945,11 +972,11 @@ body <- bs4Dash::bs4DashBody(
         )
       )
     ),
-    # * exports tab ----
+    # * Exports tab ----
     bs4Dash::tabItem(
       tabName = "exports",
 
-      shiny::fluidRow(
+      fluidRow(
         bs4Dash::column(
           width = 6, offset = 3,
           bs4Dash::box(id = "export_details",
@@ -972,23 +999,23 @@ body <- bs4Dash::bs4DashBody(
                        ),
 
                        selectInput(
-                         "export_time",
-                         label = "Time period",
+                         "export_results",
+                         label = "Results",
                          choices = NULL,
                          selected = NULL,
                          multiple = TRUE
                        ),
 
                        selectInput(
-                         "export_mods",
-                         label = "Model prediction",
+                         "export_models",
+                         label = "Model",
                          choices = NULL,
                          selected = NULL,
                          multiple = TRUE
                        ),
 
                        selectInput(
-                         "export_fields",
+                         "export_values",
                          label = "Fields",
                          choices = NULL,
                          selected = NULL,
@@ -1051,7 +1078,99 @@ body <- bs4Dash::bs4DashBody(
           ) # End box
         ) # End column
       ) # End fluidRow
-    ) # End exports tab
+    ), # End exports tab
+
+    # * How to cite tab ----
+    bs4Dash::tabItem(
+      tabName = "how_to_cite",
+
+      fluidRow(
+        bs4Dash::column(
+          width = 8, offset = 2,
+          bs4Dash::box(title = NULL,
+                       status = NULL,
+                       width = 12,
+                       solidHeader = FALSE,
+                       background = NULL,
+                       collapsible = FALSE,
+                       headerBorder = FALSE,
+                       elevation = 2,
+                       label = NULL,
+
+                       shiny::includeMarkdown("Rmd/how_to_cite.Rmd")
+          ) # End box
+        ) # End column
+      ) # End fluidRow
+    ), # End how_to_cite tab
+
+    # * Lastest updates tab ----
+    bs4Dash::tabItem(
+      tabName = "updates",
+
+      fluidRow(
+        bs4Dash::column(
+          width = 8, offset = 2,
+          bs4Dash::box(title = NULL,
+                       status = NULL,
+                       width = 12,
+                       solidHeader = FALSE,
+                       background = NULL,
+                       collapsible = FALSE,
+                       headerBorder = FALSE,
+                       elevation = 2,
+                       label = NULL,
+
+                       shiny::includeMarkdown("Rmd/lastest_updates.Rmd")
+          ) # End box
+        ) # End column
+      ) # End fluidRow
+    ),
+
+    # * FAQs tab ----
+    bs4Dash::tabItem(
+      tabName = "faqs",
+
+      fluidRow(
+        bs4Dash::column(
+          width = 8, offset = 2,
+          bs4Dash::box(title = NULL,
+                       status = NULL,
+                       width = 12,
+                       solidHeader = FALSE,
+                       background = NULL,
+                       collapsible = FALSE,
+                       headerBorder = FALSE,
+                       elevation = 2,
+                       label = NULL,
+
+                       shiny::includeMarkdown("Rmd/faqs.Rmd")
+          ) # End box
+        ) # End column
+      ) # End fluidRow
+    ),
+
+    # * Contact us tab ----
+    bs4Dash::tabItem(
+      tabName = "contact",
+
+      fluidRow(
+        bs4Dash::column(
+          width = 8, offset = 2,
+          bs4Dash::box(title = NULL,
+                       status = NULL,
+                       width = 12,
+                       solidHeader = FALSE,
+                       background = NULL,
+                       collapsible = FALSE,
+                       headerBorder = FALSE,
+                       elevation = 2,
+                       label = NULL,
+
+                       shiny::includeMarkdown("Rmd/contact_us.Rmd")
+          ) # End box
+        ) # End column
+      ) # End fluidRow
+    ) # End contact tab
   )
 )
 
@@ -1063,12 +1182,14 @@ bs4Dash::bs4DashPage(
   controlbar = NULL,
   title = NULL,
   freshTheme = NULL,
+  # waiter pre-loader
   preloader = list(html = tagList(img(src = "logo_glossa.gif", height = "200px"), h4("Loading ...")), color = "#3b444b"),
   options = NULL,
   fullscreen = FALSE,
   help = NULL,
-  dark = FALSE,
+  dark = NULL,
   scrollToTop = FALSE,
+  # authors and corporation logos
   footer = bs4Dash::bs4DashFooter	(
     fixed = FALSE,
     left = span(

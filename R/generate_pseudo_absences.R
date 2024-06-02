@@ -1,31 +1,36 @@
-#' Generate pseudo-absence points based on presence points, covariates and study area polygon
+#' Generate pseudo-absence points based on presence points, covariates, and study area polygon
 #'
 #' This function generates pseudo-absence points within the study area.
 #'
-#' @param presences Data frame containing presence points
-#' @param sf_poly Spatial polygon defining the study area
-#' @param raster_stack  SpatRaster containing covariate data
-#' @param coords Character vector specifying the column names for latitude and longitude
-#' @param digits Number of decimal digits to round for the coordinates
-#' @param attempts Number of attempts to generate exact pseudo-absences
+#' @param presences Data frame containing presence points.
+#' @param study_area Spatial polygon defining the study area.
+#' @param raster_stack SpatRaster containing covariate data.
+#' @param coords Character vector specifying the column names for latitude and longitude.
+#' @param digits Number of decimal digits to round for the coordinates.
+#' @param attempts Number of attempts to generate exact pseudo-absences.
 #'
-#' @return Data frame containing both presence and pseudo-absence points
+#' @return Data frame containing both presence and pseudo-absence points.
 #'
 #' @export
-generate_pseudo_absences <- function(presences, sf_poly, raster_stack, coords = c("decimalLongitude", "decimalLatitude"), digits = 4, attempts = 50) {
+generate_pseudo_absences <- function(presences, study_area, raster_stack, coords = c("decimalLongitude", "decimalLatitude"), digits = 4, attempts = 50) {
 
   # Check inputs
-  stopifnot(inherits(sf_poly, "sf") || inherits(sf_poly, "sfc"))
+  if (!is.null(study_area)) {
+    stopifnot(inherits(study_area, "sf") || inherits(study_area, "sfc"))
+  }
   stopifnot(inherits(raster_stack, "SpatRaster"))
 
   # Initialize variables
   n_presences <- nrow(presences)
   absences <- data.frame(X = numeric(), Y = numeric())
   colnames(absences) <- coords
-  crs <- sf::st_crs(sf_poly)
-  convex_hull <- sf::st_convex_hull(sf::st_union(sf_poly))
-  bbox_hull <- sf::st_bbox(convex_hull)
-  bounding_box <- sf::st_bbox(sf_poly)
+  if(is.null(study_area)){
+    crs <- terra::crs(raster_stack)
+    bounding_box <- sf::st_bbox(as.vector(terra::ext(raster_stack))[c("xmin", "ymin", "xmax", "ymax")])
+  } else {
+    crs <- sf::st_crs(study_area)
+    bounding_box <- sf::st_bbox(study_area)
+  }
   bbox_hull_poly <- sf::st_as_sfc(bounding_box) %>%
     sf::st_set_crs(crs)
 
@@ -35,15 +40,16 @@ generate_pseudo_absences <- function(presences, sf_poly, raster_stack, coords = 
   curr_attempt <- 0
   while (nrow(absences) < n_presences & curr_attempt < attempts) {
     # Sample points from the bounding box
-    sf::st_crs(sf_poly) <-crs # Set crs for sampling
     new_abs <- sf::st_sample(bbox_hull_poly, size = n_presences - nrow(absences), type = "random", exact = TRUE, oriented=TRUE)
 
     # Remove points outside the study area polygon
-    # Set CRS to NA to avoid sf annoying messages
-    sf::st_crs(sf_poly) <- NA
-    sf::st_crs(new_abs) <- NA
-    absences_inside_pol <- sapply(sf::st_intersects(new_abs, sf_poly), any)
-    new_abs <- new_abs[absences_inside_pol]
+    if (!is.null(study_area)){
+      # Set CRS to NA to avoid sf annoying messages
+      sf::st_crs(study_area) <- NA
+      sf::st_crs(new_abs) <- NA
+      absences_inside_pol <- sapply(sf::st_intersects(new_abs, study_area), any)
+      new_abs <- new_abs[absences_inside_pol]
+    }
 
     # Convert to data frame and round coordinates
     new_abs <- as.data.frame(sf::st_coordinates(new_abs))
@@ -81,8 +87,8 @@ generate_pseudo_absences <- function(presences, sf_poly, raster_stack, coords = 
   absences$species <- presences$species
 
   # Extract covariate values for absences
-  #design_matrix <- terra::extract(raster_stack, absences[, coords])
-  #absences <- cbind(absences, design_matrix)
+  #absences <- extract_noNA_cov_values(absences, raster_stack) %>%
+  #  dplyr::select(!ID)
 
   # Set presence/absence indicator
   presences$pa <- 1

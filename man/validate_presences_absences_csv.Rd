@@ -4,7 +4,7 @@
 \alias{validate_presences_absences_csv}
 \title{Validate presences/absences CSV file}
 \usage{
-validate_presences_absences_csv(file_path)
+validate_presences_absences_csv(file_input, show_modal = FALSE)
 }
 \arguments{
 \item{file_path}{The file path to the CSV file.}

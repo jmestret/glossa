@@ -2,12 +2,12 @@
 % Please edit documentation in R/bart_functions.R
 \name{pa_optimal_cutoff}
 \alias{pa_optimal_cutoff}
-\title{Optimal cutoff for presence-absence prediction}
+\title{Optimal Cutoff for Presence-Absence Prediction}
 \usage{
 pa_optimal_cutoff(pa_coords, layers, model, seed = NULL)
 }
 \arguments{
-\item{pa_coords}{Dataframe with coordinates of presences and absences and column indicating if presence or absence.}
+\item{pa_coords}{Data frame with coordinates of presences and absences, and a column indicating presence or absence.}
 
 \item{layers}{A list of layer names to extract from the raster stack.}
 

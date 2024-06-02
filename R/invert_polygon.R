@@ -1,9 +1,9 @@
 #' Invert a polygon
-#
+#'
 #' This function inverts a polygon.
-#
+#'
 #' @param sf_poly An sf polygon to be inverted.
-#' @param bbox Optionally provide yourself the resulting bounding box.
+#' @param bbox Optionally provide the resulting bounding box.
 #' @return An sf polygon representing the inverted area.
 #'
 #' @export

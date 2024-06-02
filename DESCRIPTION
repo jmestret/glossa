@@ -28,10 +28,10 @@ Imports:
     ggplot2,
     htmltools,
     jsonlite,
+    leaflet,
     magrittr,
     matrixStats,
     mcp,
-    rnaturalearth,
     sf,
     shinyWidgets,
     sparkline,
@@ -44,7 +44,6 @@ Imports:
 Suggests:
 	knitr,
 	rmarkdown,
-	rnaturalearthdata,
 	testthat,
 	tidyverse
 VignetteBuilder: knitr

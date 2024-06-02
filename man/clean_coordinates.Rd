@@ -6,7 +6,7 @@
 \usage{
 clean_coordinates(
   data,
-  sf_poly,
+  study_area,
   overlapping = FALSE,
   decimal_digits = NULL,
   coords = c("decimalLongitude", "decimalLatitude")
@@ -15,7 +15,7 @@ clean_coordinates(
 \arguments{
 \item{data}{A data frame containing presence/absence data with columns "decimalLongitude" and "decimalLatitude".}
 
-\item{sf_poly}{A spatial polygon representing the boundaries within which coordinates should be kept.}
+\item{study_area}{A spatial polygon representing the boundaries within which coordinates should be kept.}
 
 \item{overlapping}{Logical indicating whether points overlapping the polygon should be kept (TRUE) or removed (FALSE).}
 

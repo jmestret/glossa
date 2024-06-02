@@ -1,0 +1,30 @@
+---
+title: "Contact us"
+output: html_document
+---
+
+<style>
+body {
+text-align: justify}
+</style>
+
+## **Contact us**
+
+We value your feedback and are here to help you with any questions, support needs or collaboration requests. Please use the following means to get in touch with us:
+
+####  **GitHub**
+
+For issues, feature requests, questions, or general feedback, please use the Issues tab on our GitHub repository:
+- [GLOSSA GitHub issues](https://github.com/jmestret/glossa/issues)
+
+### **Email**
+
+For special support or collaboration requests, please contact us via email:
+- [who@csic.com](mailto:who@csic.com)
+
+### **X (Twitter)**
+
+Follow our research group on Twitter for the latest news and updates:
+- Twitter: [@iMARES_group](https://x.com/iMARES_group)
+
+Thank you for your support!

@@ -4,17 +4,17 @@
 \alias{layer_mask}
 \title{Apply Polygon Mask to Raster Layers}
 \usage{
-layer_mask(layers, sf_poly)
+layer_mask(layers, study_area)
 }
 \arguments{
 \item{layers}{A SpatRaster object or stack of raster layers to be processed.}
 
-\item{sf_poly}{A spatial polygon (`sf` or `sp` object) used to mask the raster layers.}
+\item{study_area}{A spatial polygon (`sf` or `sp` object) used to mask the raster layers.}
 }
 \value{
-A `Raster*` object representing the masked raster layers.
+A `SpatRaster` object representing the masked raster layers.
 }
 \description{
-This function crops and extends raster layers to a sf_poly extent (bbox) defined by longitude
+This function crops and extends raster layers to a study area extent (bbox) defined by longitude
 and latitude then applies a mask based on a provided spatial polygon to remove areas outside the polygon.
 }

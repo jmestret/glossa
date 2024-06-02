@@ -2,7 +2,7 @@
 % Please edit documentation in R/bart_functions.R
 \name{response_curve_bart}
 \alias{response_curve_bart}
-\title{Calculate response curve using BART model}
+\title{Calculate Response Curve Using BART Model}
 \usage{
 response_curve_bart(bart_model, data, predictor_names)
 }

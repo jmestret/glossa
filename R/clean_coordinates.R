@@ -4,7 +4,9 @@
 #'
 #' @param x A dataframe object.
 #' @param coords Names of the coordinate columns used for identifying duplicate points.
+#'
 #' @return A dataframe without duplicated points.
+#'
 #' @export
 remove_duplicate_points <- function(x, coords = c("decimalLongitude", "decimalLatitude")) {
   # Check if x is a dataframe
@@ -36,14 +38,14 @@ remove_duplicate_points <- function(x, coords = c("decimalLongitude", "decimalLa
 #' depending on the 'overlapping' parameter.
 #'
 #' @param x A dataframe object with points.
-#' @param sf_poly Polygon object (sf object) to define the region for point removal.
+#' @param study_area Polygon object (sf object) to define the region for point removal.
 #' @param overlapping Logical indicating whether to remove points within (TRUE) or outside (FALSE) the polygon.
 #' @param coords Character vector specifying the column names for longitude and latitude.
 #'
 #' @return A data.frame containing the filtered points.
 #'
 #' @export
-remove_points_poly <- function(x, sf_poly, overlapping = TRUE, coords = c("decimalLongitude", "decimalLatitude")) {
+remove_points_poly <- function(x, study_area, overlapping = TRUE, coords = c("decimalLongitude", "decimalLatitude")) {
   # Check if x is a dataframe
   if (!is.data.frame(x)) {
     stop("Argument 'x' must be a data.frame object.")
@@ -51,16 +53,16 @@ remove_points_poly <- function(x, sf_poly, overlapping = TRUE, coords = c("decim
 
   # Convert dataframe to sf object and set CRS
   x <- sf::st_as_sf(x, coords = coords)
-  x <- sf::st_set_crs(x, sf::st_crs(sf_poly))
+  x <- sf::st_set_crs(x, sf::st_crs(study_area))
 
   # Ensure consistent handling of spatial attributes
   sf::st_agr(x) <- "constant"
 
   # Filter points based on overlapping parameter
   if (overlapping) {
-    filtered_points <- x[!sapply(sf::st_intersects(x, sf_poly), any), ]
+    filtered_points <- x[!sapply(sf::st_intersects(x, study_area), any), ]
   } else {
-    filtered_points <- x[sapply(sf::st_intersects(x, sf_poly), any), ]
+    filtered_points <- x[sapply(sf::st_intersects(x, study_area), any), ]
   }
 
   # Convert back to data.frame
@@ -78,16 +80,17 @@ remove_points_poly <- function(x, sf_poly, overlapping = TRUE, coords = c("decim
 #' This function cleans coordinates of presence/absence data by removing NA coordinates, rounding coordinates if specified, removing duplicated points, and removing points outside specified spatial polygon boundaries.
 #'
 #' @param data A data frame containing presence/absence data with columns "decimalLongitude" and "decimalLatitude".
-#' @param sf_poly A spatial polygon representing the boundaries within which coordinates should be kept.
+#' @param study_area A spatial polygon representing the boundaries within which coordinates should be kept.
 #' @param overlapping Logical indicating whether points overlapping the polygon should be kept (TRUE) or removed (FALSE).
 #' @param decimal_digits Number of digits to round the coordinates to, if it is not NULL.
 #' @param coords Character vector specifying the column names for longitude and latitude.
 #'
 #' @return A cleaned data frame containing presence/absence data with valid coordinates.
+#'
 #' @details This function takes a data frame containing presence/absence data with longitude and latitude coordinates, a spatial polygon representing boundaries within which to keep points, and parameters for rounding coordinates and handling duplicated points. It returns a cleaned data frame with valid coordinates within the specified boundaries.
 #'
 #' @export
-clean_coordinates <- function(data, sf_poly, overlapping = FALSE, decimal_digits = NULL, coords = c("decimalLongitude", "decimalLatitude")) {
+clean_coordinates <- function(data, study_area, overlapping = FALSE, decimal_digits = NULL, coords = c("decimalLongitude", "decimalLatitude")) {
   # Assumptions:
   # - 'land_mask' is a spatial polygon representing the land boundaries
   # - Coordinates are in WGS84 (EPSG:4326) coordinate system
@@ -104,11 +107,11 @@ clean_coordinates <- function(data, sf_poly, overlapping = FALSE, decimal_digits
   # Remove duplicated points
   data <- remove_duplicate_points(data, coords = coords)
 
-  # Remove points outside the ocean boundaries
-  data <- remove_points_poly(data,
-                             sf_poly = sf_poly,
-                             overlapping = overlapping,
-                             coords = coords)
+  # Remove points outside the study area
+  if (!is.null(study_area)){
+    data <- remove_points_poly(data, study_area = study_area,
+                               overlapping = overlapping, coords = coords)
+  }
 
   return(data)
 }

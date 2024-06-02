@@ -2,11 +2,11 @@
 % Please edit documentation in R/generate_pseudo_absences.R
 \name{generate_pseudo_absences}
 \alias{generate_pseudo_absences}
-\title{Generate pseudo-absence points based on presence points, covariates and study area polygon}
+\title{Generate pseudo-absence points based on presence points, covariates, and study area polygon}
 \usage{
 generate_pseudo_absences(
   presences,
-  sf_poly,
+  study_area,
   raster_stack,
   coords = c("decimalLongitude", "decimalLatitude"),
   digits = 4,
@@ -14,20 +14,20 @@ generate_pseudo_absences(
 )
 }
 \arguments{
-\item{presences}{Data frame containing presence points}
+\item{presences}{Data frame containing presence points.}
 
-\item{sf_poly}{Spatial polygon defining the study area}
+\item{study_area}{Spatial polygon defining the study area.}
 
-\item{raster_stack}{SpatRaster containing covariate data}
+\item{raster_stack}{SpatRaster containing covariate data.}
 
-\item{coords}{Character vector specifying the column names for latitude and longitude}
+\item{coords}{Character vector specifying the column names for latitude and longitude.}
 
-\item{digits}{Number of decimal digits to round for the coordinates}
+\item{digits}{Number of decimal digits to round for the coordinates.}
 
-\item{attempts}{Number of attempts to generate exact pseudo-absences}
+\item{attempts}{Number of attempts to generate exact pseudo-absences.}
 }
 \value{
-Data frame containing both presence and pseudo-absence points
+Data frame containing both presence and pseudo-absence points.
 }
 \description{
 This function generates pseudo-absence points within the study area.

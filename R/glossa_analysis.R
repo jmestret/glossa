@@ -1,26 +1,27 @@
 #' Main Analysis Function for Glossa Package
 #'
 #' This function wraps all the analysis that the Glossa package performs. It processes presence-absence data,
-#' environmental covariates, and performs species distribution modeling and prediction under historical, past, and future scenarios.
+#' environmental covariates, and performs species distribution modeling and projections under past and future scenarios.
 #'
-#' @param pa_files A list of file paths containing presence-absence data.
-#' @param historical_files A list of file paths containing historical environmental layers.
-#' @param future_files A list of file paths containing future scenario environmental layers.
-#' @param future_scenario_names A vector of names corresponding to future scenarios.
+#' @param pa_data A list of data frames containing presence-absence data.
+#' @param fit_layers A SpatRaster stack containing model fitting environmental layers.
+#' @param proj_files A list of file paths containing environmental layers for projection scenarios.
+#' @param study_area_poly A spatial polygon defining the study area.
+#' @param predictor_variables A list of predictor variables to be used in the analysis.
 #' @param decimal_digits Integer; number of digits to round coordinates to if not NULL.
-#' @param scale_layers Logical; if TRUE, covariate layers will be scaled based on historical data.
-#' @param native_range A vector of scenarios ('historical', 'past', 'future') where native range modeling should be performed.
-#' @param suitable_habitat A vector of scenarios ('historical', 'past', 'future') where habitat suitability modeling should be performed.
+#' @param scale_layers Logical; if TRUE, covariate layers will be scaled based on fit layers.
+#' @param native_range A vector of scenarios ('fit_layers', 'projections') where native range modeling should be performed.
+#' @param suitable_habitat A vector of scenarios ('fit_layers', 'projections') where habitat suitability modeling should be performed.
 #' @param other_analysis A vector of additional analyses to perform (e.g., 'variable_importance', 'response_curve', 'cross_validation').
 #' @param seed Optional; an integer seed for reproducibility of results.
 #' @param waiter Optional; a waiter instance to update progress in a Shiny application.
 #'
-#' @return A list containing structured outputs from each major section of the analysis including model data, predictions,
+#' @return A list containing structured outputs from each major section of the analysis, including model data, projections,
 #' variable importance scores, and habitat suitability assessments.
 #'
 #' @export
 glossa_analysis <- function(
-    pa_files = NULL, historical_files = NULL, future_files = NULL, future_scenario_names = NULL,
+    pa_data = NULL, fit_layers = NULL, proj_files = NULL,
     study_area_poly = NULL, predictor_variables = NULL, decimal_digits = NULL, scale_layers = FALSE,
     native_range = NULL, suitable_habitat = NULL, other_analysis = NULL,
     seed = NA, waiter = NULL) {
@@ -40,27 +41,20 @@ glossa_analysis <- function(
     seed <- NULL
   }
 
-  # Load study area mask
+  # Check format of study area mask
   sf::sf_use_s2(FALSE)
-  if (is.null(study_area_poly)){
-    study_area_poly <- rnaturalearth::ne_countries(scale = "medium", returnclass = "sf") %>%
-      sf::st_as_sfc() %>%
-      sf::st_union() %>%
-      sf::st_make_valid() %>%
-      sf::st_wrap_dateline() %>%
-      invert_polygon(bbox = c(xmin = -180, ymin =-90, xmax = 180, ymax = 90))
-  } else {
+  if (!is.null(study_area_poly)){
     stopifnot(inherits(study_area_poly, "sf") || inherits(study_area_poly, "sfc"))
+    non_study_area_poly <- invert_polygon(study_area_poly)
   }
-  non_study_area_poly <- invert_polygon(study_area_poly)
 
   # Initialize empty output
   presence_absence_list <- list(raw_pa = NULL, clean_pa = NULL, model_pa = NULL)
-  covariate_list <- list(historical = NULL, past = NULL, future = NULL)
-  prediction_results <- list(historical = NULL, past = NULL, future = NULL)
+  covariate_list <- list(fit_layers = NULL, projections = NULL)
+  projections_results <- list(fit_layers = NULL, projections = NULL)
   other_results <- list(variable_importance = NULL, response_curve = NULL, cross_validation = NULL)
   pa_cutoff <- list(native_range = NULL, suitable_habitat = NULL)
-  habitat_suitability <- list(historical = NULL, past = NULL, future = NULL)
+  habitat_suitability <- list(fit_layers = NULL, projections = NULL)
   design_matrix <- list()
 
   #=========================================================#
@@ -71,47 +65,37 @@ glossa_analysis <- function(
   print("Loading input data...")
 
   # * Load presence(/absence) data ----
-  presence_absence_list$raw_pa <- lapply(pa_files, read_glossa_pa)
-
-  # Place species names
-  sp_names <- sapply(presence_absence_list$raw_pa, function(x) {
-    paste0(unique(x[, "species"]), collapse = "")
-  })
-  sp_names[which(duplicated(sp_names))] <- paste0(sp_names[which(duplicated(sp_names))], which(duplicated(sp_names)))
-  names(pa_files) <- sp_names
-  names(presence_absence_list$raw_pa) <- sp_names
+  presence_absence_list$raw_pa <- pa_data
+  sp_names <- names(presence_absence_list$raw_pa)
 
   # * Load covariate layers ----
-  # Historical layers
-  covariate_list$past <- read_glossa_layers(historical_files)
-  cov_names <- names(covariate_list$past)
+  # Fit layers
+  covariate_list$fit_layers <- fit_layers
+  cov_names <- names(covariate_list$fit_layers)
 
-  # Future layers
-  if ("future" %in% native_range | "future" %in% suitable_habitat){
-    if (length(future_files) <= 0){
-      stop("Error: No future layers provided.")
+  # projections layers
+  if ("projections" %in% native_range | "projections" %in% suitable_habitat){
+    if (length(proj_files) <= 0){
+      stop("Error: No projections layers provided.")
     }
-    covariate_list$future <- lapply(future_files, read_glossa_layers)
-    if (is.null(future_scenario_names)){
-      names(covariate_list$future) <- sub("\\.zip$", "", basename(future_files))
-    } else {
-      names(covariate_list$future) <- future_scenario_names
-    }
+    covariate_list$projections <- lapply(proj_files, read_glossa_projections_layers)
+    pred_scenario <- names(covariate_list$projections)
 
-    same_fut_cov <- all(sapply(covariate_list$future, function(x){
-      all(names(x) == names(covariate_list$past))
+
+    # Check for same layers for fitting and projections
+    same_fit_pred_layers <- all(sapply(covariate_list$projections, function(x){
+      all(names(x) == names(covariate_list$fit_layers))
     }))
-
-    if (!same_fut_cov){
-      stop("Error: Future covariate layers differ in the covariate names from historical layers.")
+    if (!same_fit_pred_layers){
+      stop("Error: projection layers differ in the covariate names from fit layers.")
     }
   }
 
   # * Select predictor variables ----
   if (is.null(predictor_variables)){
-    predictor_variables <- lapply(seq_along(presence_absence_list$raw_pa), function(x) names(covariate_list$past))
+    predictor_variables <- lapply(seq_along(presence_absence_list$raw_pa), function(x) names(covariate_list$fit_layers))
   }
-  names(predictor_variables) <- names(presence_absence_list$raw_pa)
+  names(predictor_variables) <- sp_names
 
   load_data_time <- Sys.time()
   print(paste("Load data execution time:", difftime(load_data_time, start_time, units = "secs"), "secs"))
@@ -126,7 +110,7 @@ glossa_analysis <- function(
   presence_absence_list$clean_pa <- lapply(presence_absence_list$raw_pa, function(x){
     clean_coordinates(
       data = x,
-      sf_poly = study_area_poly,
+      study_area = study_area_poly,
       overlapping = FALSE,
       decimal_digits = decimal_digits,
       coords = c("decimalLongitude", "decimalLatitude")
@@ -143,75 +127,65 @@ glossa_analysis <- function(
   if (!is.null(waiter)){waiter$update(html = tagList(img(src = "logo_glossa.gif", height = "200px"), h4("Processing covariate layers...")))}
   print("Processing covariate layers...")
 
-  # * Process historical covariate layers ----
-  covariate_list$past <- lapply(covariate_list$past, function(x){
-    layer_mask(layers = x, sf_poly = study_area_poly)
-  })
-
-  # Get mean historical layer for model fitting or functional responses
-  if (!(scale_layers) | "functional_responses" %in% other_analysis) {
-    covariate_list$historical$not_scaled <- lapply(covariate_list$past, function(x){
-      terra::mean(x, na.rm = TRUE)
-    })
+  # * Process environmental layers for model fitting ----
+  if (!is.null(study_area_poly)){
+    covariate_list$fit_layers <- layer_mask(layers = covariate_list$fit_layers, study_area = study_area_poly)
   }
 
   if (scale_layers) {
-    # Compute mean and sd of the historical time series for each environmental variable
-    historical_mean <- lapply(covariate_list$past, function(x){
-      mean(as.vector(x), na.rm = TRUE)
-    })
+    # If need to compute functional responses save not scaled layers
+    if ("functional_responses" %in% other_analysis){
+      no_scaled_layers <- covariate_list$fit_layers
+    }
+    # Compute mean and sd of the fit_layers model fitting layers for each environmental variable
+    fit_layers_mean <- terra::global(covariate_list$fit_layers, "mean", na.rm = TRUE)
+    fit_layers_sd <- terra::global(covariate_list$fit_layers, "sd", na.rm = TRUE)
 
-    historical_sd <- lapply(covariate_list$past, function(x){
-      sd(as.vector(x), na.rm = TRUE)
-    })
-
-    # Scale historical layers with historical mean and sd
-    covariate_list$past <- lapply(seq_along(covariate_list$past), function(x, n, i){
-      terra::scale(x[[n[i]]], center = historical_mean[[n[i]]], scale = historical_sd[[n[i]]])},
-      x = covariate_list$past,
-      n = names(covariate_list$past))
-    names(covariate_list$past) <- names(historical_mean)
-
-    # Get mean of scaled historical layers for model fitting
-    covariate_list$historical$scaled <- lapply(covariate_list$past, function(x){
-      terra::mean(x, na.rm = TRUE)
-    })
+    # Scale fit layers with fit_layers mean and sd
+    covariate_list$fit_layers <- lapply(1:terra::nlyr(covariate_list$fit_layers), function(x, i){
+      terra::scale(
+        x[[i]],
+        center = fit_layers_mean[i,],
+        scale = fit_layers_sd[i, ]
+      )
+    }, x = covariate_list$fit_layers)
+    covariate_list$fit_layers <- terra::rast(covariate_list$fit_layers)
   }
 
-  # If not predicting to past free memory emptying layers
-  if (!"past" %in% native_range & !"past" %in% suitable_habitat) {
-    covariate_list$past <- NULL
-  }
-
-  # * Process future covariate layers ----
-  if ("future" %in% native_range | "future" %in% suitable_habitat) {
-    covariate_list$future <- lapply(covariate_list$future, function(scenario){
-      scenario <- lapply(scenario, function(x){
-        layer_mask(layers = x, sf_poly = study_area_poly)
+  # * Process projections environmental layers ----
+  if ("projections" %in% native_range | "projections" %in% suitable_habitat) {
+    # Mask polygon if provided
+    if (!is.null(study_area_poly)){
+      covariate_list$projections <- lapply(covariate_list$projections, function(scenario){
+        scenario <- lapply(scenario, function(x){
+          layer_mask(layers = x, study_area = study_area_poly)
+        })
       })
-    })
+    }
 
+    # Scale layers with fit_layers mean and sd
     if (scale_layers){
-      covariate_list$future <- lapply(covariate_list$future, function(scenario){
-        scenario <- lapply(seq_along(scenario), function(x, n, i){
-          terra::scale(x[[n[i]]], center = historical_mean[[n[i]]], scale = historical_sd[[n[i]]])},
-          x = scenario,
-          n = names(scenario))
-        names(scenario) <- names(historical_mean)
-        return(scenario)
+      covariate_list$projections <- lapply(covariate_list$projections, function(scenario){
+        scenario <- lapply(scenario, function(year){
+          year <- lapply(1:terra::nlyr(year), function(x, i){
+            terra::scale(
+              x[[i]],
+              center = fit_layers_mean[i,],
+              scale = fit_layers_sd[i, ]
+            )
+          }, x = covariate_list$fit_layers)
+          year <- terra::rast(year)
+          return(year)
+        })
       })
     }
   }
 
-  # Choose layers for analysis
-  if (scale_layers) {
-    layers <-  terra::rast(covariate_list$historical$scaled)
-  } else {
-    layers <- terra::rast(covariate_list$historical$not_scaled)
-  }
-
   process_layers_time <- Sys.time()
   print(paste("Layer processing execution time:", difftime(process_layers_time, clean_coords_time, units = "secs"), "secs"))
+
+  layers <- covariate_list$fit_layers
+
 
   #=========================================================#
   # 4. Remove presences/absences with NA values in covariates ----
@@ -306,67 +280,40 @@ glossa_analysis <- function(
     print(paste("P/A cutoff execution time:", difftime(pa_cutoff_nr_time, var_imp_nr_time, units = "mins"), "mins"))
 
 
-    # * Historical prediction ----
-    if ("historical" %in% native_range) {
-      if (!is.null(waiter)){waiter$update(html = tagList(img(src = "logo_glossa.gif", height = "200px"), h4("Predicting historical native range...")))}
-      prediction_results$historical$native_range <- lapply(names(models_native_range), function(sp) {
-        predict_bart(
-          models_native_range[[sp]],
-          c(layers[[predictor_variables[[sp]]]], coords_layer),
-          pa_cutoff$native_range[[sp]]
-        )
-      })
-      names(prediction_results$historical$native_range) <- names(models_native_range)
-    }
+    # * fit_layers projections ----
+    if (!is.null(waiter)){waiter$update(html = tagList(img(src = "logo_glossa.gif", height = "200px"), h4("Predicting native range for fit layer...")))}
+    projections_results$fit_layers$native_range <- lapply(names(models_native_range), function(sp) {
+      predict_bart(
+        models_native_range[[sp]],
+        c(layers[[predictor_variables[[sp]]]], coords_layer),
+        pa_cutoff$native_range[[sp]]
+      )
+    })
+    names(projections_results$fit_layers$native_range) <- names(models_native_range)
+
 
     hist_nr_time <- Sys.time()
-    print(paste("Historical prediction execution time:", difftime(hist_nr_time, pa_cutoff_nr_time, units = "mins"), "mins"))
+    print(paste("projections on fit layers execution time:", difftime(hist_nr_time, pa_cutoff_nr_time, units = "mins"), "mins"))
 
-    # * Past prediction ----
-    if ("past" %in% native_range) {
-      if (!is.null(waiter)){waiter$update(html = tagList(img(src = "logo_glossa.gif", height = "200px"), h4("Predicting past native range...")))}
-      prediction_results$past$native_range <- lapply(names(models_native_range), function(sp) {
-        prediction <- lapply(1:terra::nlyr(covariate_list$past[[1]]), function(i){
-          # Stack covariates by year
-          pred_layers <- lapply(covariate_list$past, function(y){
-            return(y[[i]])
-          })
-          pred_layers <- terra::rast(pred_layers)
-          pred_layers <- c(pred_layers[[predictor_variables[[sp]]]], coords_layer)
-
-          predict_bart(models_native_range[[sp]], pred_layers, pa_cutoff$native_range[[sp]])
-        })
-        return(prediction)
-      })
-      names(prediction_results$past$native_range) <- names(models_native_range)
-    }
-
-    past_nr_time <- Sys.time()
-    print(paste("Past prediction execution time:", difftime(past_nr_time, hist_nr_time, units = "mins"), "mins"))
-
-    # * Future prediction ----
-    if ("future" %in% native_range){
-      if (!is.null(waiter)){waiter$update(html = tagList(img(src = "logo_glossa.gif", height = "200px"), h4("Predicting future native range...")))}
-      prediction_results$future$native_range <- lapply(names(models_native_range), function(sp) {
-        prediction <- lapply(covariate_list$future, function(future_scenario){
-          prediction_scenario <- lapply(1:terra::nlyr(future_scenario[[1]]), function(i){
-            # Stack covariates by year
-            pred_layers <- lapply(future_scenario, function(y){
-              return(y[[i]])
-            })
-            pred_layers <- terra::rast(pred_layers)
+    # * Spatial projections to new scenarios/times ----
+    if ("projections" %in% native_range){
+      if (!is.null(waiter)){waiter$update(html = tagList(img(src = "logo_glossa.gif", height = "200px"), h4("Predicting other secenarios native range...")))}
+      projections_results$projections$native_range <- lapply(names(models_native_range), function(sp) {
+        projections <- lapply(covariate_list$projections, function(scenario){
+          projections_scenario <- lapply(scenario, function(pred_layers){
+            #  Covariates by year
             pred_layers <- c(pred_layers[[predictor_variables[[sp]]]], coords_layer)
 
             predict_bart(models_native_range[[sp]], pred_layers, pa_cutoff$native_range[[sp]])
           })
-          return(prediction_scenario)
+          return(projections_scenario)
         })
       })
-      names(prediction_results$future$native_range) <- names(models_native_range)
+      names(projections_results$projections$native_range) <- names(models_native_range)
     }
 
-    fut_nr_time <- Sys.time()
-    print(paste("Future prediction execution time:", difftime(fut_nr_time, past_nr_time, units = "mins"), "mins"))
+    pred_nr_time <- Sys.time()
+    print(paste("Native range projections execution time:", difftime(pred_nr_time, hist_nr_time, units = "mins"), "mins"))
 
     # Free memory by removing fitted models
     rm(models_native_range)
@@ -417,116 +364,62 @@ glossa_analysis <- function(
     pa_cutoff_sh_time <- Sys.time()
     print(paste("P/A cutoff execution time:", difftime(pa_cutoff_sh_time, var_imp_sh_time, units = "mins"), "mins"))
 
-    # * Historical prediction ----
-    if ("historical" %in% suitable_habitat) {
-      if (!is.null(waiter)){waiter$update(html = tagList(img(src = "logo_glossa.gif", height = "200px"), h4("Predicting historical suitable habitat...")))}
-      prediction_results$historical$suitable_habitat <- lapply(names(models_suitable_habitat), function(sp) {
-        predict_bart(
-          models_suitable_habitat[[sp]],
-          layers[[predictor_variables[[sp]]]],
-          pa_cutoff$suitable_habitat[[sp]]
-        )
-      })
-      names(prediction_results$historical$suitable_habitat) <- names(models_suitable_habitat)
-    }
+    # * fit_layers projections ----
+    if (!is.null(waiter)){waiter$update(html = tagList(img(src = "logo_glossa.gif", height = "200px"), h4("Predicting suitable habitat for fit layers...")))}
+    projections_results$fit_layers$suitable_habitat <- lapply(names(models_suitable_habitat), function(sp) {
+      predict_bart(
+        models_suitable_habitat[[sp]],
+        layers[[predictor_variables[[sp]]]],
+        pa_cutoff$suitable_habitat[[sp]]
+      )
+    })
+    names(projections_results$fit_layers$suitable_habitat) <- names(models_suitable_habitat)
 
     hist_sh_time <- Sys.time()
-    print(paste("Historical prediction execution time:", difftime(hist_sh_time, pa_cutoff_sh_time, units = "mins"), "mins"))
+    print(paste("projections on fit layers execution time:", difftime(hist_sh_time, pa_cutoff_sh_time, units = "mins"), "mins"))
 
-    # * Past prediction ----
-    if ("past" %in% suitable_habitat) {
-      if (!is.null(waiter)){waiter$update(html = tagList(img(src = "logo_glossa.gif", height = "200px"), h4("Predicting past suitable habitat...")))}
-      prediction_results$past$suitable_habitat <- lapply(names(models_suitable_habitat), function(sp) {
-        prediction <- lapply(1:terra::nlyr(covariate_list$past[[1]]), function(i){
-          # Stack covariates by year
-          pred_layers <- lapply(covariate_list$past, function(y){
-            return(y[[i]])
-          })
-          pred_layers <- terra::rast(pred_layers)
-          pred_layers <- pred_layers[[predictor_variables[[sp]]]]
-
-          predict_bart(models_suitable_habitat[[sp]], pred_layers, pa_cutoff$suitable_habitat[[sp]])
-        })
-        return(prediction)
-      })
-      names(prediction_results$past$suitable_habitat) <- names(models_suitable_habitat)
-    }
-
-    past_sh_time <- Sys.time()
-    print(paste("Past prediction execution time:", difftime(past_sh_time, hist_sh_time, units = "mins"), "mins"))
-
-    # * Future prediction ----
-    if ("future" %in% suitable_habitat){
-      if (!is.null(waiter)){waiter$update(html = tagList(img(src = "logo_glossa.gif", height = "200px"), h4("Predicting future suitable habitat...")))}
-      prediction_results$future$suitable_habitat <- lapply(names(models_suitable_habitat), function(sp) {
-        prediction <- lapply(covariate_list$future, function(future_scenario){
-          prediction_scenario <- lapply(1:terra::nlyr(future_scenario[[1]]), function(i){
-            # Stack covariates by year
-            pred_layers <- lapply(future_scenario, function(y){
-              return(y[[i]])
-            })
-            pred_layers <- terra::rast(pred_layers)
+    # * Spatial projections to new scenarios/times ----
+    if ("projections" %in% suitable_habitat){
+      if (!is.null(waiter)){waiter$update(html = tagList(img(src = "logo_glossa.gif", height = "200px"), h4("Predicting other scenarios suitable habitat...")))}
+      projections_results$projections$suitable_habitat <- lapply(names(models_suitable_habitat), function(sp) {
+        projections <- lapply(covariate_list$projections, function(scenario){
+          projections_scenario <- lapply(scenario, function(pred_layers){
             pred_layers <- pred_layers[[predictor_variables[[sp]]]]
-
             predict_bart(models_suitable_habitat[[sp]], pred_layers, pa_cutoff$suitable_habitat[[sp]])
           })
-          return(prediction_scenario)
+          return(projections_scenario)
         })
       })
-      names(prediction_results$future$suitable_habitat) <- names(models_suitable_habitat)
+      names(projections_results$projections$suitable_habitat) <- names(models_suitable_habitat)
     }
 
-    fut_sh_time <- Sys.time()
-    print(paste("Future prediction execution time:", difftime(fut_sh_time, past_sh_time, units = "mins"), "mins"))
+    pred_sh_time <- Sys.time()
+    print(paste("Suitable habitat projections execution time:", difftime(pred_sh_time, hist_sh_time, units = "mins"), "mins"))
 
     # * Habitat suitability change ----
     if (!is.null(waiter)){waiter$update(html = tagList(img(src = "logo_glossa.gif", height = "200px"), h4("Computing habitat suitability change...")))}
-    if ("historical" %in% suitable_habitat) {
+    # Covered area
+    habitat_suitability$fit_layers$covered_area <- lapply(names(models_suitable_habitat), function(sp){
+      layer <- projections_results$fit_layers$suitable_habitat[[sp]]["mean"]
+      area <- terra::ifel(layer > pa_cutoff$suitable_habitat[[sp]], layer, NA)
+      area <- sum(terra::values(terra::cellSize(area, mask = TRUE, unit = "km"), na.rm = TRUE))
+      return(area)
+    })
+    names(habitat_suitability$fit_layers$covered_area) <- names(models_suitable_habitat)
+
+    # Mean suitability probability
+    habitat_suitability$fit_layers$suit_prob <- lapply(names(models_suitable_habitat), function(sp){
+      layer <- projections_results$fit_layers$suitable_habitat[[sp]]
+      prob <- terra::global(layer["mean"], mean, na.rm = TRUE)
+      return(as.numeric(prob))
+    })
+    names(habitat_suitability$fit_layers$suit_prob) <- names(models_suitable_habitat)
+
+    if ("projections" %in% suitable_habitat) {
       # Covered area
-      habitat_suitability$historical$covered_area <- lapply(names(models_suitable_habitat), function(sp){
-        layer <- prediction_results$historical$suitable_habitat[[sp]]["mean"]
-        area <- terra::ifel(layer > pa_cutoff$suitable_habitat[[sp]], layer, NA)
-        area <- sum(terra::values(terra::cellSize(area, mask = TRUE, unit = "km"), na.rm = TRUE))
-        return(area)
-      })
-      names(habitat_suitability$historical$covered_area) <- names(models_suitable_habitat)
-
-      # Mean suitability probability
-      habitat_suitability$historical$suit_prob <- lapply(names(models_suitable_habitat), function(sp){
-        layer <- prediction_results$historical$suitable_habitat[[sp]]
-        prob <- terra::global(layer["mean"], mean, na.rm = TRUE)
-        return(as.numeric(prob))
-      })
-      names(habitat_suitability$historical$suit_prob) <- names(models_suitable_habitat)
-    }
-
-    if ("past" %in% suitable_habitat) {
-      # Covered area
-      habitat_suitability$past$covered_area <- lapply(names(models_suitable_habitat), function(sp){
-        covered_area <- sapply(prediction_results$past$suitable_habitat[[sp]], function(layer) {
-          layer <- layer["mean"]
-          area <- terra::ifel(layer > pa_cutoff$suitable_habitat[[sp]], layer, NA)
-          area <- sum(terra::values(terra::cellSize(area, mask = TRUE, unit = "km"), na.rm = TRUE))
-          return(area)
-        })
-      })
-      names(habitat_suitability$past$covered_area) <- names(models_suitable_habitat)
-
-      # Mean suitability probability
-      habitat_suitability$past$suit_prob <- lapply(names(models_suitable_habitat), function(sp){
-        suit_prob <- sapply(prediction_results$past$suitable_habitat[[sp]], function(layer) {
-          prob <- terra::global(layer["mean"], mean, na.rm = TRUE)
-          return(as.numeric(prob))
-        })
-      })
-      names(habitat_suitability$past$suit_prob) <- names(models_suitable_habitat)
-    }
-
-    if ("future" %in% suitable_habitat) {
-      # Covered area
-      habitat_suitability$future$covered_area <- lapply(names(models_suitable_habitat), function(sp){
-        covered_area_scenarios <- lapply(prediction_results$future$suitable_habitat[[sp]], function(future_scenario) {
-          covered_area <- sapply(future_scenario, function(layer) {
+      habitat_suitability$projections$covered_area <- lapply(names(models_suitable_habitat), function(sp){
+        covered_area_scenarios <- lapply(projections_results$projections$suitable_habitat[[sp]], function(scenario) {
+          covered_area <- sapply(scenario, function(layer) {
             layer <- layer["mean"]
             area <- terra::ifel(layer > pa_cutoff$suitable_habitat[[sp]], layer, NA)
             area <- sum(terra::values(terra::cellSize(area, mask = TRUE, unit = "km"), na.rm = TRUE))
@@ -534,22 +427,22 @@ glossa_analysis <- function(
           })
         })
       })
-      names(habitat_suitability$future$covered_area) <- names(models_suitable_habitat)
+      names(habitat_suitability$projections$covered_area) <- names(models_suitable_habitat)
 
       # Mean suitability probability
-      habitat_suitability$future$suit_prob <- lapply(names(models_suitable_habitat), function(sp){
-        suit_prob_scenarios <- lapply(prediction_results$future$suitable_habitat[[sp]], function(future_scenario) {
-          suit_prob <- sapply(future_scenario, function(layer) {
+      habitat_suitability$projections$suit_prob <- lapply(names(models_suitable_habitat), function(sp){
+        suit_prob_scenarios <- lapply(projections_results$projections$suitable_habitat[[sp]], function(scenario) {
+          suit_prob <- sapply(scenario, function(layer) {
             prob <- terra::global(layer["mean"], mean, na.rm = TRUE)
             return(as.numeric(prob))
           })
         })
       })
-      names(habitat_suitability$future$suit_prob) <- names(models_suitable_habitat)
+      names(habitat_suitability$projections$suit_prob) <- names(models_suitable_habitat)
     }
 
     hab_sh_time <- Sys.time()
-    print(paste("Habitat suitability execution time:", difftime(hab_sh_time, fut_sh_time, units = "mins"), "mins"))
+    print(paste("Habitat suitability execution time:", difftime(hab_sh_time, pred_sh_time, units = "mins"), "mins"))
 
     # Free memory by removing fitted models
     if (scale_layers | !"functional_responses" %in% other_analysis){
@@ -569,10 +462,15 @@ glossa_analysis <- function(
     if (!is.null(waiter)){waiter$update(html = tagList(img(src = "logo_glossa.gif", height = "200px"), h4("Computing functional responses...")))}
     print("Computing functional responses...")
 
-    layers <- terra::rast(covariate_list$historical$not_scaled)
+    if (scale_layers){
+      fr_layers <- no_scaled_layers
+    } else {
+      fr_layers <- layers
+    }
+
     other_results$response_curve <- lapply(names(presence_absence_list$model_pa), function(i){
       x <- presence_absence_list$model_pa[[i]]
-      pred_layers <- layers[[predictor_variables[[i]]]]
+      pred_layers <- fr_layers[[predictor_variables[[i]]]]
       fit_data <- extract_noNA_cov_values(x, pred_layers)
       fit_data <- fit_data %>%
         select(pa, !names(x))
@@ -614,12 +512,6 @@ glossa_analysis <- function(
     if (!is.null(waiter)){waiter$update(html = tagList(img(src = "logo_glossa.gif", height = "200px"), h4("Performing cross-validation...")))}
     print("Performing cross-validation...")
 
-    if (scale_layers) {
-      layers <-  terra::rast(covariate_list$historical$scaled)
-    } else {
-      layers <- terra::rast(covariate_list$historical$not_scaled)
-    }
-
     if (!is.null(native_range)){
       other_results$cross_validation$native_range <- lapply(names(presence_absence_list$model_pa), function(i){
         cv_bart(pa_coords = presence_absence_list$model_pa[[i]],
@@ -645,7 +537,6 @@ glossa_analysis <- function(
   }
 
 
-
   #=========================================================#
   # 10. Finalizing -----
   #=========================================================#
@@ -662,7 +553,7 @@ glossa_analysis <- function(
   return(list(
     presence_absence_list = presence_absence_list,
     covariate_list = covariate_list,
-    prediction_results = prediction_results,
+    projections_results = projections_results,
     other_results = other_results,
     pa_cutoff = pa_cutoff,
     habitat_suitability = habitat_suitability

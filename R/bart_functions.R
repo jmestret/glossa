@@ -1,9 +1,9 @@
-#' Fit a BART model using environmental covariates
+#' Fit a BART Model Using Environmental Covariates
 #'
 #' This function fits a Bayesian Additive Regression Trees (BART) model using
 #' environmental covariate layers.
 #'
-#' @param pa_coords Dataframe with coordinates of presences and absences and column indicating if presence or absence.
+#' @param pa_coords Data frame with coordinates of presences and absences, and a column indicating presence or absence.
 #' @param layers A list of layer names to extract from the raster stack.
 #' @param seed Random seed for reproducibility.
 #'
@@ -27,30 +27,30 @@ fit_bart_model <- function(pa_coords, layers, seed = NULL) {
 }
 
 
-#' Make predictions using a BART model
+#' Make Predictions Using a BART Model
 #'
 #' This function makes predictions using a Bayesian Additive Regression Trees (BART) model
 #' on a stack of environmental covariates.
 #'
 #' @param bart_model A BART model object obtained from fitting BART (bart).
-#' @param raster_stack A SpatRaster object containing environmental covariates for prediction.
+#' @param layers A SpatRaster object containing environmental covariates for prediction.
 #' @param cutoff An optional cutoff value for determining potential presences.
 #'
 #' @return A SpatRaster containing the mean, median, standard deviation, and quantiles
 #' of the posterior predictive distribution.
 #'
 #' @export
-predict_bart <- function(bart_model, raster_stack, cutoff = NULL) {
+predict_bart <- function(bart_model, layers, cutoff = NULL) {
   tryCatch({
     # Define quantiles for posterior predictive distribution
     quantiles <- c(0.025, 0.975)
 
     # Convert raster stack to matrix
-    input_matrix <- terra::as.matrix(raster_stack)
+    input_matrix <- terra::as.matrix(layers)
 
     # Create a blank data frame to store predictions
     blank_output <- data.frame(matrix(ncol = (4 + length(quantiles) + ifelse(!is.null(cutoff), 1, 0)),
-                                      nrow = terra::ncell(raster_stack[[1]])))
+                                      nrow = terra::ncell(layers[[1]])))
 
     # Get indices of non-NA values in the input matrix
     which_vals <- which(complete.cases(input_matrix))
@@ -84,9 +84,9 @@ predict_bart <- function(bart_model, raster_stack, cutoff = NULL) {
     # Reshape output to SpatRaster format
     out_list <- lapply(1:ncol(blank_output), function(x) {
       output_matrix <- t(matrix(blank_output[, x],
-                                nrow = ncol(raster_stack),
-                                ncol = nrow(raster_stack)))
-      return(terra::rast(output_matrix, extent = terra::ext(raster_stack)))
+                                nrow = ncol(layers),
+                                ncol = nrow(layers)))
+      return(terra::rast(output_matrix, extent = terra::ext(layers)))
     })
 
     # Convert list of matrices to raster stack
@@ -96,7 +96,7 @@ predict_bart <- function(bart_model, raster_stack, cutoff = NULL) {
     names(out_list) <- names(pred_data)
 
     # Set crs
-    terra::crs(out_list) <- terra::crs(raster_stack)
+    terra::crs(out_list) <- terra::crs(layers)
 
     return(out_list)
   }, error = function(err) {
@@ -105,7 +105,7 @@ predict_bart <- function(bart_model, raster_stack, cutoff = NULL) {
 }
 
 
-#' Calculate response curve using BART model
+#' Calculate Response Curve Using BART Model
 #'
 #' This function calculates the response curve using a Bayesian Additive Regression Trees (BART) model.
 #'
@@ -149,9 +149,7 @@ response_curve_bart <- function(bart_model, data, predictor_names) {
 }
 
 
-#' @title Variable Importance in BART model
-#'
-#' @description
+#' Variable Importance in BART Model
 #'
 #' Calculate variable importance, measured as the proportion of total branches used for a given variable.
 #'
@@ -165,11 +163,11 @@ variable_importance <- function(bart_model) {
   return(importance)
 }
 
-#' Optimal cutoff for presence-absence prediction
+#' Optimal Cutoff for Presence-Absence Prediction
 #'
 #' This function calculates the optimal cutoff for presence-absence prediction using a BART model.
 #'
-#' @param pa_coords Dataframe with coordinates of presences and absences and column indicating if presence or absence.
+#' @param pa_coords Data frame with coordinates of presences and absences, and a column indicating presence or absence.
 #' @param layers A list of layer names to extract from the raster stack.
 #' @param model A BART model object.
 #' @param seed Random seed for reproducibility.
@@ -192,6 +190,23 @@ pa_optimal_cutoff <- function(pa_coords, layers, model, seed = NULL) {
   return(pa_cutoff)
 }
 
+#' Cross-Validation for BART Model
+#'
+#' This function performs k-fold cross-validation for a Bayesian Additive Regression Trees (BART) model
+#' using presence-absence data and environmental covariate layers. It calculates various performance metrics
+#' for model evaluation.
+#'
+#' @param pa_coords Data frame with coordinates of presences and absences, and a column indicating presence or absence.
+#' @param layers A list of layer names to extract from the raster stack.
+#' @param k Integer; number of folds for cross-validation (default is 5).
+#' @param seed Optional; random seed for reproducibility.
+#'
+#' @return A data frame containing the true positives (TP), false positives (FP), false negatives (FN), true negatives (TN),
+#' and various performance metrics including precision (PREC), sensitivity (SEN), specificity (SPC), false discovery rate (FDR),
+#' negative predictive value (NPV), false negative rate (FNR), false positive rate (FPR), F-score, accuracy (ACC), balanced accuracy (BA),
+#' and true skill statistic (TSS) for each fold.
+#'
+#' @export
 cv_bart <- function(pa_coords, layers, k = 5, seed = NULL){
   set.seed(seed)
   # Extract covariate values

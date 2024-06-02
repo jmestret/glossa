@@ -1,5 +1,5 @@
 #=========================================================#
-# glossa utils  ----
+# Validate inputs  ----
 #=========================================================#
 
 #' Validate presences/absences CSV file
@@ -10,7 +10,7 @@
 #' @return TRUE if the file has the expected columns and formats, FALSE otherwise.
 #' @details This function validates the format of a CSV file containing presence/absence data. It checks if the file has the expected columns and formats. If the "pa" column is missing, it assumes the presence/absence column and adds it with default values.
 #' @keywords internal
-validate_presences_absences_csv <- function(file_input) {
+validate_presences_absences_csv <- function(file_input, show_modal = FALSE) {
   file_path <- file_input["datapath"]
   file_name <- file_input["name"]
   # Define expected columns and formats
@@ -25,7 +25,7 @@ validate_presences_absences_csv <- function(file_input) {
   if (inherits(data, "character")){
     msg <- paste("Check", file_name, "file format, delimiters or separators.")
     warning(msg)
-    showNotification(msg, duration = 5, closeButton = TRUE, type = "error")
+    if (show_modal) showNotification(msg, duration = 5, closeButton = TRUE, type = "error")
     return(NULL)
   }
 
@@ -40,7 +40,7 @@ validate_presences_absences_csv <- function(file_input) {
   } else {
     msg <- paste("The", file_name, "file does not have the correct column names.")
     warning(msg)
-    showNotification(msg, duration = 5, closeButton = TRUE, type = "error")
+    if (show_modal) showNotification(msg, duration = 5, closeButton = TRUE, type = "error")
     return(NULL)
   }
 
@@ -49,7 +49,7 @@ validate_presences_absences_csv <- function(file_input) {
   if (nrow(data) == 0){
     msg <- paste("No records with valid coordinates in", file_name, ".")
     warning(msg)
-    showNotification(msg, duration = 5, closeButton = TRUE, type = "error")
+    if (show_modal) showNotification(msg, duration = 5, closeButton = TRUE, type = "error")
     return(NULL)
   }
 
@@ -58,12 +58,12 @@ validate_presences_absences_csv <- function(file_input) {
     if (expected_formats[i] == "numeric" && !all(sapply(data[[i]], is.numeric))) {
       msg <- paste("Column", i, "is not numeric in", file_name, "file .")
       warning(msg)
-      showNotification(msg, duration = 5, closeButton = TRUE, type = "error")
+      if (show_modal) showNotification(msg, duration = 5, closeButton = TRUE, type = "error")
       return(NULL)
     } else if (expected_formats[i] == "character" && !all(sapply(data[[i]], is.character))) {
       msg <- paste("Column", i, "is not character in", file_name, "file .")
       warning(msg)
-      showNotification(msg, duration = 5, closeButton = TRUE, type = "error")
+      if (show_modal) showNotification(msg, duration = 5, closeButton = TRUE, type = "error")
       return(NULL)
     }
   }
@@ -72,7 +72,7 @@ validate_presences_absences_csv <- function(file_input) {
     if (!(all(data[, "pa"] %in% c(0, 1)))){
       msg <- paste("column 'pa0' has values other than 0 and 1 in", file_name, "file .")
       warning(msg)
-      showNotification(msg, duration = 5, closeButton = TRUE, type = "error")
+      if (show_modal) showNotification(msg, duration = 5, closeButton = TRUE, type = "error")
       return(NULL)
     }
 
@@ -90,20 +90,25 @@ validate_presences_absences_csv <- function(file_input) {
 #' @return TRUE if the layers pass validation criteria, FALSE otherwise.
 #' @details This function expects that each subfolder within the zip file represents a covariate, and each covariate contains one or more raster files. It checks if the layers within each covariate have the same CRS and resolution.
 #'
-#' @importFrom terra rast crs res
 #' @keywords internal
-validate_historical_layers_zip <- function(file_input) {
+validate_fit_layers_zip <- function(file_input, show_modal = FALSE) {
   file_path <- file_input[, "datapath"]
 
   # Extract contents of the zip file
   tmpdir <- tempdir()
-  zip_contents <- unzip(file_path, unzip = getOption("unzip"), exdir = tmpdir)
+  zip_contents <- utils::unzip(file_path, unzip = getOption("unzip"), exdir = tmpdir)
 
   # Load the first layer of each covariate to check CRS and resolution
   layers <- lapply(zip_contents, function(x) {
-    terra::rast(x)
+    tryCatch(terra::rast(x), error = function(e) NULL)
   })
   names(layers) <- sub("([^.]+)\\.[[:alnum:]]+$", "\\1", basename(zip_contents))
+  if (any(sapply(layers, is.null))){
+    msg <- paste("Error: check format from files.")
+    warning(msg)
+    if (show_modal) showNotification(msg, duration = 5, closeButton = TRUE, type = "error")
+    return(NULL)
+  }
 
   # Check if all layers have the same CRS
   crs_list <- sapply(layers, function(x) {
@@ -112,13 +117,13 @@ validate_historical_layers_zip <- function(file_input) {
   if (any(sapply(crs_list, is.na) == TRUE)){
     msg <- paste("There are rasters with undefined coordinate reference system (CRS).")
     warning(msg)
-    showNotification(msg, duration = 5, closeButton = TRUE, type = "error")
+    if (show_modal) showNotification(msg, duration = 5, closeButton = TRUE, type = "error")
     return(NULL)
   }
   if (length(unique(crs_list)) != 1) {
     msg <- paste("There are layers with different coordinate reference system (CRS).")
     warning(msg)
-    showNotification(msg, duration = 5, closeButton = TRUE, type = "warning")
+    if (show_modal) showNotification(msg, duration = 5, closeButton = TRUE, type = "warning")
   }
 
   # Project all layers to +proj=longlat +datum=WGS84
@@ -133,7 +138,7 @@ validate_historical_layers_zip <- function(file_input) {
   if (length(unique(res_list)) != 1) {
     msg <- paste("The layers uploaded have different resolution.")
     warning(msg)
-    showNotification(msg, duration = 5, closeButton = TRUE, type = "error")
+    if (show_modal) showNotification(msg, duration = 5, closeButton = TRUE, type = "error")
     return(NULL)
   }
 
@@ -144,7 +149,7 @@ validate_historical_layers_zip <- function(file_input) {
   if (length(unique(ext_list)) != 1) {
     msg <- paste("There are layers with different extent. We will transform layers to biggest extent.")
     warning(msg)
-    showNotification(msg, duration = 5, closeButton = TRUE, type = "warning")
+    if (show_modal) showNotification(msg, duration = 5, closeButton = TRUE, type = "warning")
 
     ext_df <- do.call(rbind, ext_list)
     largest_ext <- terra::ext(c(min(ext_df[, 1]), max(ext_df[, 2]), min(ext_df[, 3]), max(ext_df[, 4]))) # xmin xmax ymin ymax
@@ -159,12 +164,21 @@ validate_historical_layers_zip <- function(file_input) {
   return(layers)
 }
 
-validate_projection_layers_zip <- function(file_input) {
+#' Validate Projection Layers Zip
+#'
+#' This function validates a zip file containing projection layers. It checks if the layers have the same number of files, CRS (Coordinate Reference System), and resolution.
+#'
+#' @param file_path Path to the zip file containing projection layers.
+#' @return TRUE if the layers pass validation criteria, FALSE otherwise.
+#' @details This function expects that each subfolder within the zip file represents a covariate, and each covariate contains one or more raster files. It checks if the layers within each covariate have the same CRS and resolution.
+#'
+#' @keywords internal
+validate_projection_layers_zip <- function(file_input, show_modal = FALSE) {
   file_path <- file_input["datapath"]
 
   # Extract contents of the zip file
   tmpdir <- tempdir()
-  zip_contents <- unzip(file_path, unzip = getOption("unzip"), exdir = tmpdir)
+  zip_contents <- utils::unzip(file_path, unzip = getOption("unzip"), exdir = tmpdir)
 
   # Get unique covariate directories
   covariates <- unique(dirname(zip_contents))
@@ -173,14 +187,20 @@ validate_projection_layers_zip <- function(file_input) {
   if (length(unique(n_files)) != 1) {
     msg <- paste("The layers uploaded differ in number between the different covariates.")
     warning(msg)
-    showNotification(msg, duration = 5, closeButton = TRUE, type = "error")
+    if (show_modal) showNotification(msg, duration = 5, closeButton = TRUE, type = "error")
     return(NULL)
   }
 
   # Load the first layer of each covariate to check CRS and resolution
   layers <- lapply(covariates, function(x) {
-    terra::rast(list.files(x, full.names = TRUE)[1])
+    tryCatch(terra::rast(list.files(x, full.names = TRUE)[1]), error = function(e) NULL)
   })
+  if (any(sapply(layers, is.null))){
+    msg <- paste("Error: check format from files.")
+    warning(msg)
+    if (show_modal) showNotification(msg, duration = 5, closeButton = TRUE, type = "error")
+    return(NULL)
+  }
 
   # Check if all layers have the same CRS
   crs_list <- sapply(layers, function(x) {
@@ -189,13 +209,13 @@ validate_projection_layers_zip <- function(file_input) {
   if (any(sapply(crs_list, is.na) == TRUE)){
     msg <- paste("There are rasters with undefined coordinate reference system (CRS).")
     warning(msg)
-    showNotification(msg, duration = 5, closeButton = TRUE, type = "error")
+    if (show_modal) showNotification(msg, duration = 5, closeButton = TRUE, type = "error")
     return(NULL)
   }
   if (length(unique(crs_list)) != 1) {
     msg <- paste("There are layers with different coordinate reference system (CRS).")
     warning(msg)
-    showNotification(msg, duration = 5, closeButton = TRUE, type = "error")
+    if (show_modal) showNotification(msg, duration = 5, closeButton = TRUE, type = "error")
   }
 
   # Check if all layers have the same resolution
@@ -205,7 +225,7 @@ validate_projection_layers_zip <- function(file_input) {
   if (length(unique(res_list)) != 1) {
     msg <- paste("The layers uploaded have different resolution.")
     warning(msg)
-    showNotification(msg, duration = 5, closeButton = TRUE, type = "error")
+    if (show_modal) showNotification(msg, duration = 5, closeButton = TRUE, type = "error")
     return(NULL)
   }
 
@@ -214,32 +234,32 @@ validate_projection_layers_zip <- function(file_input) {
 }
 
 
-#' Validate Historical and Future Layers
+#' Validate Fit and Projection Layers
 #'
-#' This function validates historical and future layers by checking their CRS, resolution, and covariates.
+#' This function validates fit and projection layers by checking their CRS, resolution, and covariates.
 #'
-#' @param hist_path Path to the ZIP file containing historical layers.
-#' @param fut_path Path to the ZIP file containing future layers.
+#' @param fit_layers_path Path to the ZIP file containing fit layers.
+#' @param proj_path Path to the ZIP file containing projection layers.
 #' @return TRUE if the layers pass validation criteria, FALSE otherwise.
-#' @details This function compares historical and future layers to ensure they have the same CRS, resolution, and covariates.
+#' @details This function compares fit and projection layers to ensure they have the same CRS, resolution, and covariates.
 #'
 #' @keywords internal
-validate_hist_proj_layers <- function(hist_path, proj_path) {
+validate_fit_proj_layers <- function(fit_layers_path, proj_path, show_modal = FALSE) {
   # Extract contents of the zip file
-  tmpdir_hist <- tempdir()
+  tmpdir_fit_layers <- tempdir()
   tmpdir_proj <- tempdir()
-  hist_contents <- unzip(hist_path, unzip = getOption("unzip"), exdir = tmpdir_hist)
-  proj_contents <- unzip(proj_path, unzip = getOption("unzip"), exdir = tmpdir_proj)
+  fit_layers_content <- utils::unzip(fit_layers_path, unzip = getOption("unzip"), exdir = tmpdir_fit_layers)
+  proj_contents <- utils::unzip(proj_path, unzip = getOption("unzip"), exdir = tmpdir_proj)
 
   # Get unique covariate directories
-  hist_covariates <- sub("([^.]+)\\.[[:alnum:]]+$", "\\1", basename(hist_contents))
+  fit_layers_covariates <- sub("([^.]+)\\.[[:alnum:]]+$", "\\1", basename(fit_layers_content))
   proj_covariates <- basename(unique(dirname(proj_contents)))
 
   # Check they have same covariates
-  if (!all(paste(sort(hist_covariates), collapse = "") == paste(sort(proj_covariates), collapse = ""))){
-    msg <- "The projection layers uploaded have different covariates from the historical layers."
+  if (!all(paste(sort(fit_layers_covariates), collapse = "") == paste(sort(proj_covariates), collapse = ""))){
+    msg <- "The projection layers uploaded have different covariates from the fit layers."
     warning(msg)
-    showNotification(msg, duration = 5, closeButton = TRUE, type = "error")
+    if (show_modal) showNotification(msg, duration = 5, closeButton = TRUE, type = "error")
     return(FALSE)
   }
 
@@ -247,7 +267,16 @@ validate_hist_proj_layers <- function(hist_path, proj_path) {
   return(TRUE)
 }
 
-validate_extent_poly <- function(file_input){
+#' Validate Extent Polygon
+#'
+#' This function validates a polygon file containing the extent. It checks if the file has the correct format.
+#'
+#' @param file_path Path to the polygon file containing the extent.
+#' @return A spatial object representing the extent if the file is valid, NULL otherwise.
+#' @details This function validates the format of a polygon file containing the extent. It checks if the file has the correct format.
+#'
+#' @keywords internal
+validate_extent_poly <- function(file_input, show_modal = FALSE){
   file_path <- file_input["datapath"]
   extent_poly <- tryCatch(
     sf::st_read(file_path, drivers = c("GPKG", "ESRI Shapefile")),
@@ -256,17 +285,30 @@ validate_extent_poly <- function(file_input){
   if (inherits(extent_poly, "character")){
     msg <- "Check file format."
     warning(msg)
-    showNotification(msg, duration = 5, closeButton = TRUE, type = "error")
+    if (show_modal) showNotification(msg, duration = 5, closeButton = TRUE, type = "error")
     return(NULL)
   }
 
   return(extent_poly)
 }
 
+#=========================================================#
+# glossa helpers  ----
+#=========================================================#
+
+#' Get Covariate Names
+#'
+#' This function extracts the names of covariates from a ZIP file containing covariate layers.
+#'
+#' @param file_path Path to the ZIP file containing covariate layers.
+#' @return A character vector containing the names of covariates.
+#' @details This function extracts the names of covariates from a ZIP file containing covariate layers.
+#'
+#' @keywords internal
 get_covariate_names <- function(file_path){
   # Extract contents of the zip file
   tmpdir <- tempdir()
-  zip_contents <- unzip(file_path, unzip = getOption("unzip"), exdir = tmpdir)
+  zip_contents <- utils::unzip(file_path, unzip = getOption("unzip"), exdir = tmpdir)
 
   # Get unique covariate directories
   covariates <- basename(unique(dirname(zip_contents)))
@@ -275,7 +317,7 @@ get_covariate_names <- function(file_path){
 }
 
 
-#' Extract Covariate Values without NA
+#' Extract Non-NA Covariate Values
 #'
 #' This function extracts covariate values for species occurrences, excluding NA values.
 #'
@@ -303,13 +345,13 @@ extract_noNA_cov_values <- function(data, covariate_layers){
 #' applies optional scaling, and restricts the output to a specified spatial mask.
 #'
 #' @param layers Raster or stack of raster layers to derive geographic extent and resolution.
-#' @param sf_poly Spatial object for masking output layers.
+#' @param study_area Spatial object for masking output layers.
 #' @param scale_layers Logical indicating if scaling is applied. Default is FALSE.
 #'
 #' @return Raster stack with layers 'decimalLongitude' and 'decimalLatitude'.
 #'
 #' @export
-create_coords_layer <- function(layers, sf_poly, scale_layers = FALSE){
+create_coords_layer <- function(layers, study_area = NULL, scale_layers = FALSE){
   # Create layer with longitude and latitude values
   coords_layer <- terra::rast(terra::ext(layers), resolution = terra::res(layers))
   terra::crs(coords_layer) <- terra::crs(layers)
@@ -333,7 +375,9 @@ create_coords_layer <- function(layers, sf_poly, scale_layers = FALSE){
 
   # Apply a mask to combined layers
   coords_layer <- c(raster_long, raster_lat)
-  coords_layer <- terra::mask(coords_layer, terra::vect(sf_poly))
+  if(!is.null(study_area)){
+    coords_layer <- terra::mask(coords_layer, terra::vect(study_area))
+  }
   names(coords_layer) <- c("decimalLongitude", "decimalLatitude")
 
   return(coords_layer)
@@ -343,11 +387,26 @@ create_coords_layer <- function(layers, sf_poly, scale_layers = FALSE){
 #'
 #' This function exports various types of Glossa model results, including native range predictions, suitable habitat predictions, model data, variable importance, functional response results, and presence/absence probability cutoffs. It generates raster files for prediction results, CSV files for model data and variable importance, and CSV files for functional response results. Additionally, it creates a CSV file for presence/absence probability cutoffs if provided.
 #'
+#' @param species A character vector specifying the species names.
+#' @param models A character vector specifying the types of models to export results for.
+#' @param layer_results A list containing layer results for native range and suitable habitat predictions.
+#' @param fields A character vector specifying the fields to include in the exported results.
+#' @param model_data Logical, indicating whether to export model data.
+#' @param fr Logical, indicating whether to export functional response results.
+#' @param prob_cut Logical, indicating whether to export presence/absence probability cutoffs.
+#' @param varimp Logical, indicating whether to export variable importance.
+#' @param cross_val Logical, indicating whether to export cross-validation metrics.
+#' @param layer_format A character vector specifying the format of the exported raster files.
+#' @param projections_results A list containing projections results.
+#' @param presence_absence_list A list containing presence/absence lists.
+#' @param other_results A list containing other types of results (e.g., variable importance, functional responses, cross-validation).
+#' @param pa_cutoff A list containing presence/absence probability cutoffs.
+#'
 #' @keywords internal
-glossa_export <- function(species = NULL, mods = NULL, time = NULL, fields = NULL,
+glossa_export <- function(species = NULL, models = NULL, layer_results = NULL, fields = NULL,
                           model_data = FALSE, fr = FALSE, prob_cut = FALSE,
                           varimp = FALSE, cross_val = FALSE, layer_format = "tif",
-                          prediction_results = NULL, presence_absence_list = NULL,
+                          projections_results = NULL, presence_absence_list = NULL,
                           other_results = NULL, pa_cutoff = NULL) {
   # Initialize an empty vector to store file paths of exported files
   export_files <- c()
@@ -359,47 +418,34 @@ glossa_export <- function(species = NULL, mods = NULL, time = NULL, fields = NUL
     }
     dir.create(tmp_sp)
 
-    if ("native_range" %in% mods){
+    if ("native_range" %in% models){
       # Create a temporary directory to store native range files
       tmp_nr <- file.path(tmp_sp, "native_range")
       dir.create(tmp_nr)
 
-      # Iterate over each time period
-      for (t in time){
-        if (t == "historical"){
+      # Iterate over each layer_results
+      for (t in layer_results){
+        if (t == "fit_layers"){
           dir.create(file.path(tmp_nr, t))
           # Iterate over each field and export raster files
           for (value in fields) {
             dir.create(file.path(tmp_nr, t, value))
             terra::writeRaster(
-              prediction_results[[t]][["native_range"]][[sp]][[value]],
+              projections_results[[t]][["native_range"]][[sp]][[value]],
               filename = file.path(file.path(tmp_nr, t, value, paste(gsub(" ", "_", sp), "_native_range_", t, "_", value, ".", layer_format, sep = ""))),
               overwrite = TRUE
             )
           }
-        } else if (t == "past"){
-          dir.create(file.path(tmp_nr, t))
-          # Iterate over each year and each field to export raster files
-          for (value in fields) {
-            dir.create(file.path(tmp_nr, t, value))
-            for (year in seq_along(prediction_results[[t]][["native_range"]][[sp]])){
-              terra::writeRaster(
-                prediction_results[[t]][["native_range"]][[sp]][[year]][[value]],
-                filename = file.path(file.path(tmp_nr, t, value, paste(gsub(" ", "_", sp), "_native_range_", t, "_", year,  "_", value, ".", layer_format, sep = ""))),
-                overwrite = TRUE
-              )
-            }
-          }
-        } else if (t == "future"){
+        } else if (t == "projections"){
           dir.create(file.path(tmp_nr, t))
           # Iterate over each scenario, year, and field to export raster files
-          for (scenario in names(prediction_results[[t]][["native_range"]][[sp]])){
+          for (scenario in names(projections_results[[t]][["native_range"]][[sp]])){
             dir.create(file.path(tmp_nr, t, scenario))
             for (value in fields) {
               dir.create(file.path(tmp_nr, t, scenario, value))
-              for (year in seq_along(prediction_results[[t]][["native_range"]][[sp]][[scenario]])){
+              for (year in seq_along(projections_results[[t]][["native_range"]][[sp]][[scenario]])){
                 terra::writeRaster(
-                  prediction_results[[t]][["native_range"]][[sp]][[scenario]][[year]][[value]],
+                  projections_results[[t]][["native_range"]][[sp]][[scenario]][[year]][[value]],
                   filename = file.path(file.path(tmp_nr, t, scenario, value, paste(gsub(" ", "_", sp), "_native_range_", t, "_", year, "_", value, ".", layer_format, sep = ""))),
                   overwrite = TRUE
                 )
@@ -411,46 +457,33 @@ glossa_export <- function(species = NULL, mods = NULL, time = NULL, fields = NUL
     }
 
 
-    if ("suitable_habitat" %in% mods){
+    if ("suitable_habitat" %in% models){
       # Create a temporary directory to store suitable habitat files
       tmp_sh <- file.path(tmp_sp, "suitable_habitat")
       dir.create(tmp_sh)
 
-      for (t in time){
-        if (t == "historical"){
+      for (t in layer_results){
+        if (t == "fit_layers"){
           dir.create(file.path(tmp_sh, t))
           # Iterate over each field and export raster files
           for (value in fields) {
             dir.create(file.path(tmp_sh, t, value))
             terra::writeRaster(
-              prediction_results[[t]][["suitable_habitat"]][[sp]][[value]],
+              projections_results[[t]][["suitable_habitat"]][[sp]][[value]],
               filename = file.path(file.path(tmp_sh, t, value, paste(gsub(" ", "_", sp), "_suitable_habitat_", t, "_", value, ".", layer_format, sep = ""))),
               overwrite = TRUE
             )
           }
-        } else if (t == "past"){
-          dir.create(file.path(tmp_sh, t))
-          # Iterate over each year and each field to export raster files
-          for (value in fields) {
-            dir.create(file.path(tmp_sh, t, value))
-            for (year in seq_along(prediction_results[[t]][["suitable_habitat"]][[sp]])){
-              terra::writeRaster(
-                prediction_results[[t]][["suitable_habitat"]][[sp]][[year]][[value]],
-                filename = file.path(file.path(tmp_sh, t, value, paste(gsub(" ", "_", sp), "_suitable_habitat_", t, "_", year,  "_", value, ".", layer_format, sep = ""))),
-                overwrite = TRUE
-              )
-            }
-          }
-        } else if (t == "future"){
+        } else if (t == "projections"){
           dir.create(file.path(tmp_sh, t))
           # Iterate over each scenario, year, and field to export raster files
-          for (scenario in names(prediction_results[[t]][["suitable_habitat"]][[sp]])){
+          for (scenario in names(projections_results[[t]][["suitable_habitat"]][[sp]])){
             dir.create(file.path(tmp_sh, t, scenario))
             for (value in fields) {
               dir.create(file.path(tmp_sh, t, scenario, value))
-              for (year in seq_along(prediction_results[[t]][["suitable_habitat"]][[sp]][[scenario]])){
+              for (year in seq_along(projections_results[[t]][["suitable_habitat"]][[sp]][[scenario]])){
                 terra::writeRaster(
-                  prediction_results[[t]][["suitable_habitat"]][[sp]][[scenario]][[year]][[value]],
+                  projections_results[[t]][["suitable_habitat"]][[sp]][[scenario]][[year]][[value]],
                   filename = file.path(file.path(tmp_sh, t, scenario, value, paste(gsub(" ", "_", sp), "_suitable_habitat_", t, "_", year, "_", value, ".", layer_format, sep = ""))),
                   overwrite = TRUE
                 )
@@ -511,7 +544,7 @@ glossa_export <- function(species = NULL, mods = NULL, time = NULL, fields = NUL
           write.table(other_results[["cross_validation"]][[mode]][[sp]], file = file.path(tmp_cv, paste(gsub(" ", "_", sp), "_cross_validation_", mode, ".csv", sep = "")), quote = FALSE, sep = "\t", dec = ".", row.names = FALSE, col.names = TRUE)
         }
       } else {
-        warning("Unable to download functional response results as they have not been computed.")
+        warning("Unable to download cross-validation results as they have not been computed.")
       }
     }
 
@@ -541,8 +574,10 @@ glossa_export <- function(species = NULL, mods = NULL, time = NULL, fields = NUL
   return(export_files)
 }
 
+#=========================================================#
 # cutoff functions----
 # Functions obtained from https://github.com/selva86/InformationValue
+#=========================================================#
 
 #' Compute specificity and sensitivity
 #'
@@ -636,7 +671,6 @@ optimalCutoff <- function(actuals, predictedScores, optimiseFor="misclasserror",
     return(output)
   }
 }
-# End cutoff functions----
 
 #=========================================================#
 # UI utils ----
@@ -765,36 +799,7 @@ sparkvalueBox <- function(title, sparkline_data, description, type = "line", box
   )
 }
 
-customFileInput <- function(inputId, multiple = FALSE, accept = NULL, width = NULL,
-                            buttonLabel = "Browse...", capture = NULL)
-{
-  restoredValue <- shiny::restoreInput(id = inputId, default = NULL)
-  if (!is.null(restoredValue) && !is.data.frame(restoredValue)) {
-    warning("Restored value for ", inputId, " has incorrect format.")
-    restoredValue <- NULL
-  }
-  if (!is.null(restoredValue)) {
-    restoredValue <- jsonlite::toJSON(restoredValue, strict_atomic = FALSE)
-  }
-  inputTag <- tags$input(id = inputId, class = "shiny-input-file",
-                         name = inputId, type = "file",
-                         style = "position: absolute !important; top: -99999px !important; left: -99999px !important;",
-                         `data-restore` = restoredValue)
-  if (multiple)
-    inputTag$attribs$multiple <- "multiple"
-  if (length(accept) > 0)
-    inputTag$attribs$accept <- paste(accept, collapse = ",")
-  if (!is.null(capture)) {
-    inputTag$attribs$capture <- capture
-  }
-  tags$label(class = "btn btn-file",
-             style = "background-color: white; border: 1px solid #007bff; padding: 5px 10px; font-size: 12px; border-radius: 5px !important;",
-             buttonLabel, inputTag)
-}
-
-
-
-#' Create Download Action Button
+#' Create a Download Action Button
 #'
 #' This function generates a download action button that triggers the download of a file when clicked.
 #'
@@ -832,6 +837,7 @@ downloadActionButton <- function(outputId, label = "Download", icon = NULL,
 #=========================================================#
 # Plots ----
 #=========================================================#
+
 #' Generate Prediction Plot
 #'
 #' This function generates a plot based on prediction raster layers and presence/absence points.
@@ -865,7 +871,7 @@ generate_prediction_plot <- function(prediction_layer, pa_points, legend_label, 
       )
       p <- p +
         tidyterra::geom_spatraster(data = prediction_layer) +
-        ggplot2::scale_fill_gradientn(colours = c("#A1D4B1","#2BAF90","#F1A512","#DD4111","#8C0027"),
+        ggplot2::scale_fill_gradientn(colours = c("#A1D4B1","#2BAF90","#F1A512","#DD4111","#8C0027"), na.value = "white",
                                       limits = lim, name = legend_label)
     }
   }
@@ -878,8 +884,11 @@ generate_prediction_plot <- function(prediction_layer, pa_points, legend_label, 
   }
 
   # Add non study area mask
+  if (!is.null(non_study_area_mask)){
+    p <- p +
+      geom_sf(data = non_study_area_mask, color = "#353839", fill = "antiquewhite")
+  }
   p <- p +
-    geom_sf(data = non_study_area_mask, color = "#353839", fill = "antiquewhite") +
     theme(
       panel.grid.major = element_line(
         color = gray(.5),
@@ -894,6 +903,15 @@ generate_prediction_plot <- function(prediction_layer, pa_points, legend_label, 
   return(p)
 }
 
+#' Generate Cross-Validation Plot
+#'
+#' This function generates a cross-validation plot based on evaluation metrics.
+#'
+#' @param data Dataframe containing cross-validation results.
+#'
+#' @return Returns a ggplot object representing the cross-validation plot.
+#'
+#' @keywords internal
 generate_cv_plot <- function(data){
   data <- data[, c("PREC", "SEN", "SPC", "FDR", "NPV", "FNR", "FPR", "Fscore", "ACC", "BA")]
   data_mean <- colMeans(data, na.rm = TRUE)

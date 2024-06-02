@@ -2,7 +2,7 @@
 % Please edit documentation in R/bart_functions.R
 \name{variable_importance}
 \alias{variable_importance}
-\title{Variable Importance in BART model}
+\title{Variable Importance in BART Model}
 \usage{
 variable_importance(bart_model)
 }

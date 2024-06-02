@@ -2,12 +2,12 @@
 % Please edit documentation in R/bart_functions.R
 \name{fit_bart_model}
 \alias{fit_bart_model}
-\title{Fit a BART model using environmental covariates}
+\title{Fit a BART Model Using Environmental Covariates}
 \usage{
 fit_bart_model(pa_coords, layers, seed = NULL)
 }
 \arguments{
-\item{pa_coords}{Dataframe with coordinates of presences and absences and column indicating if presence or absence.}
+\item{pa_coords}{Data frame with coordinates of presences and absences, and a column indicating presence or absence.}
 
 \item{layers}{A list of layer names to extract from the raster stack.}
 

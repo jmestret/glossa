@@ -2,7 +2,7 @@
 % Please edit documentation in R/read_files.R
 \name{read_glossa_pa}
 \alias{read_glossa_pa}
-\title{Function to load presence/absence data from CSV files and perform validation}
+\title{Load Presence/Absence Data from CSV Files}
 \usage{
 read_glossa_pa(file_path)
 }
@@ -13,8 +13,8 @@ read_glossa_pa(file_path)
 A data frame containing the loaded presence/absence data.
 }
 \description{
-Function to load presence/absence data from CSV files and perform validation
+This function loads presence/absence data from a CSV file, performs validation to ensure required columns are present, and adds a default value for the presence/absence column if not present.
 }
 \details{
-This function loads presence/absence data from a CSV file, performs validation to ensure required columns are present, and adds a default value for the presence/absence column if not present.
+This function expects the CSV file to contain columns: "decimalLongitude", "decimalLatitude", "year", and "species". If the "pa" column is not present, a default value of 1 is added for all records.
 }

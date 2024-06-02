@@ -2,7 +2,7 @@
 % Please edit documentation in R/utils.R
 \name{extract_noNA_cov_values}
 \alias{extract_noNA_cov_values}
-\title{Extract Covariate Values without NA}
+\title{Extract Non-NA Covariate Values}
 \usage{
 extract_noNA_cov_values(data, covariate_layers)
 }

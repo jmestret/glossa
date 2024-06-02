@@ -6,7 +6,7 @@
 \usage{
 remove_points_poly(
   x,
-  sf_poly,
+  study_area,
   overlapping = TRUE,
   coords = c("decimalLongitude", "decimalLatitude")
 )
@@ -14,7 +14,7 @@ remove_points_poly(
 \arguments{
 \item{x}{A dataframe object with points.}
 
-\item{sf_poly}{Polygon object (sf object) to define the region for point removal.}
+\item{study_area}{Polygon object (sf object) to define the region for point removal.}
 
 \item{overlapping}{Logical indicating whether to remove points within (TRUE) or outside (FALSE) the polygon.}
 

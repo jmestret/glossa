@@ -5,10 +5,9 @@
 \title{Main Analysis Function for Glossa Package}
 \usage{
 glossa_analysis(
-  pa_files = NULL,
-  historical_files = NULL,
-  future_files = NULL,
-  future_scenario_names = NULL,
+  pa_data = NULL,
+  fit_layers = NULL,
+  proj_files = NULL,
   study_area_poly = NULL,
   predictor_variables = NULL,
   decimal_digits = NULL,
@@ -21,21 +20,23 @@ glossa_analysis(
 )
 }
 \arguments{
-\item{pa_files}{A list of file paths containing presence-absence data.}
+\item{pa_data}{A list of data frames containing presence-absence data.}
 
-\item{historical_files}{A list of file paths containing historical environmental layers.}
+\item{fit_layers}{A SpatRaster stack containing model fitting environmental layers.}
 
-\item{future_files}{A list of file paths containing future scenario environmental layers.}
+\item{proj_files}{A list of file paths containing environmental layers for projection scenarios.}
 
-\item{future_scenario_names}{A vector of names corresponding to future scenarios.}
+\item{study_area_poly}{A spatial polygon defining the study area.}
+
+\item{predictor_variables}{A list of predictor variables to be used in the analysis.}
 
 \item{decimal_digits}{Integer; number of digits to round coordinates to if not NULL.}
 
-\item{scale_layers}{Logical; if TRUE, covariate layers will be scaled based on historical data.}
+\item{scale_layers}{Logical; if TRUE, covariate layers will be scaled based on fit layers.}
 
-\item{native_range}{A vector of scenarios ('historical', 'past', 'future') where native range modeling should be performed.}
+\item{native_range}{A vector of scenarios ('fit_layers', 'projections') where native range modeling should be performed.}
 
-\item{suitable_habitat}{A vector of scenarios ('historical', 'past', 'future') where habitat suitability modeling should be performed.}
+\item{suitable_habitat}{A vector of scenarios ('fit_layers', 'projections') where habitat suitability modeling should be performed.}
 
 \item{other_analysis}{A vector of additional analyses to perform (e.g., 'variable_importance', 'response_curve', 'cross_validation').}
 
@@ -44,10 +45,10 @@ glossa_analysis(
 \item{waiter}{Optional; a waiter instance to update progress in a Shiny application.}
 }
 \value{
-A list containing structured outputs from each major section of the analysis including model data, predictions,
+A list containing structured outputs from each major section of the analysis, including model data, projections,
 variable importance scores, and habitat suitability assessments.
 }
 \description{
 This function wraps all the analysis that the Glossa package performs. It processes presence-absence data,
-environmental covariates, and performs species distribution modeling and prediction under historical, past, and future scenarios.
+environmental covariates, and performs species distribution modeling and projections under past and future scenarios.
 }
