@@ -14,7 +14,7 @@ create_coords_layer(layers, study_area = NULL, scale_layers = FALSE)
 \item{scale_layers}{Logical indicating if scaling is applied. Default is FALSE.}
 }
 \value{
-Raster stack with layers 'decimalLongitude' and 'decimalLatitude'.
+Raster stack with layers lon and lat.
 }
 \description{
 Generates raster layers for longitude and latitude from given raster data,

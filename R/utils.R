@@ -1,298 +1,4 @@
 #=========================================================#
-# Validate inputs  ----
-#=========================================================#
-
-#' Validate presences/absences CSV file
-#'
-#' This function validates a CSV file containing presences and absences data for species occurrences. It checks if the file has the expected columns and formats.
-#'
-#' @param file_path The file path to the CSV file.
-#' @return TRUE if the file has the expected columns and formats, FALSE otherwise.
-#' @details This function validates the format of a CSV file containing presence/absence data. It checks if the file has the expected columns and formats. If the "pa" column is missing, it assumes the presence/absence column and adds it with default values.
-#' @keywords internal
-validate_presences_absences_csv <- function(file_input, show_modal = FALSE) {
-  file_path <- file_input["datapath"]
-  file_name <- file_input["name"]
-  # Define expected columns and formats
-  expected_columns <- c("decimalLongitude", "decimalLatitude", "year", "species")
-  expected_formats <- c("numeric", "numeric", "numeric", "character")
-
-  # Load the CSV file
-  data <- tryCatch(
-    read.csv2(file_path, sep = "\t", dec = ".", header = TRUE, stringsAsFactors = FALSE),
-    error = function(e) "error"
-  )
-  if (inherits(data, "character")){
-    msg <- paste("Check", file_name, "file format, delimiters or separators.")
-    warning(msg)
-    if (show_modal) showNotification(msg, duration = 5, closeButton = TRUE, type = "error")
-    return(NULL)
-  }
-
-  # Check if the data has the expected columns
-  if (all(expected_columns %in% colnames(data))) {
-    # Check if "pa" column is present
-    if (!("pa" %in% colnames(data))) {
-      data[, "pa"] <- 1
-    }
-    expected_columns <- c(expected_columns, "pa")
-    data <- data[, expected_columns]
-  } else {
-    msg <- paste("The", file_name, "file does not have the correct column names.")
-    warning(msg)
-    if (show_modal) showNotification(msg, duration = 5, closeButton = TRUE, type = "error")
-    return(NULL)
-  }
-
-  # Remove NA coordinates
-  data <- data[complete.cases(data[, expected_columns[1:2]]), ]
-  if (nrow(data) == 0){
-    msg <- paste("No records with valid coordinates in", file_name, ".")
-    warning(msg)
-    if (show_modal) showNotification(msg, duration = 5, closeButton = TRUE, type = "error")
-    return(NULL)
-  }
-
-  # Check column formats
-  for (i in seq_along(expected_formats)) {
-    if (expected_formats[i] == "numeric" && !all(sapply(data[[i]], is.numeric))) {
-      msg <- paste("Column", i, "is not numeric in", file_name, "file .")
-      warning(msg)
-      if (show_modal) showNotification(msg, duration = 5, closeButton = TRUE, type = "error")
-      return(NULL)
-    } else if (expected_formats[i] == "character" && !all(sapply(data[[i]], is.character))) {
-      msg <- paste("Column", i, "is not character in", file_name, "file .")
-      warning(msg)
-      if (show_modal) showNotification(msg, duration = 5, closeButton = TRUE, type = "error")
-      return(NULL)
-    }
-  }
-
-  if ("pa" %in% colnames(data)) {
-    if (!(all(data[, "pa"] %in% c(0, 1)))){
-      msg <- paste("column 'pa0' has values other than 0 and 1 in", file_name, "file .")
-      warning(msg)
-      if (show_modal) showNotification(msg, duration = 5, closeButton = TRUE, type = "error")
-      return(NULL)
-    }
-
-  }
-
-  return(data)
-}
-
-
-#' Validate Layers Zip
-#'
-#' This function validates a zip file containing layers. It checks if the layers have the same number of files, CRS (Coordinate Reference System), and resolution.
-#'
-#' @param file_path Path to the zip file containing layers.
-#' @return TRUE if the layers pass validation criteria, FALSE otherwise.
-#' @details This function expects that each subfolder within the zip file represents a covariate, and each covariate contains one or more raster files. It checks if the layers within each covariate have the same CRS and resolution.
-#'
-#' @keywords internal
-validate_fit_layers_zip <- function(file_input, show_modal = FALSE) {
-  file_path <- file_input[, "datapath"]
-
-  # Extract contents of the zip file
-  tmpdir <- tempdir()
-  zip_contents <- utils::unzip(file_path, unzip = getOption("unzip"), exdir = tmpdir)
-
-  # Load the first layer of each covariate to check CRS and resolution
-  layers <- lapply(zip_contents, function(x) {
-    tryCatch(terra::rast(x), error = function(e) NULL)
-  })
-  names(layers) <- sub("([^.]+)\\.[[:alnum:]]+$", "\\1", basename(zip_contents))
-  if (any(sapply(layers, is.null))){
-    msg <- paste("Error: check format from files.")
-    warning(msg)
-    if (show_modal) showNotification(msg, duration = 5, closeButton = TRUE, type = "error")
-    return(NULL)
-  }
-
-  # Check if all layers have the same CRS
-  crs_list <- sapply(layers, function(x) {
-    terra::crs(x, proj = TRUE)
-  })
-  if (any(sapply(crs_list, is.na) == TRUE)){
-    msg <- paste("There are rasters with undefined coordinate reference system (CRS).")
-    warning(msg)
-    if (show_modal) showNotification(msg, duration = 5, closeButton = TRUE, type = "error")
-    return(NULL)
-  }
-  if (length(unique(crs_list)) != 1) {
-    msg <- paste("There are layers with different coordinate reference system (CRS).")
-    warning(msg)
-    if (show_modal) showNotification(msg, duration = 5, closeButton = TRUE, type = "warning")
-  }
-
-  # Project all layers to +proj=longlat +datum=WGS84
-  layers <- lapply(layers, function(x){
-    terra::project(x, "epsg:4326")
-  })
-
-  # Check if all layers have the same resolution
-  res_list <- sapply(layers, function(x) {
-    paste(terra::res(x), collapse = "")
-  })
-  if (length(unique(res_list)) != 1) {
-    msg <- paste("The layers uploaded have different resolution.")
-    warning(msg)
-    if (show_modal) showNotification(msg, duration = 5, closeButton = TRUE, type = "error")
-    return(NULL)
-  }
-
-  # Check if all layers have the same extent
-  ext_list <- lapply(layers, function(x){
-    as.vector(terra::ext(x))
-  })
-  if (length(unique(ext_list)) != 1) {
-    msg <- paste("There are layers with different extent. We will transform layers to biggest extent.")
-    warning(msg)
-    if (show_modal) showNotification(msg, duration = 5, closeButton = TRUE, type = "warning")
-
-    ext_df <- do.call(rbind, ext_list)
-    largest_ext <- terra::ext(c(min(ext_df[, 1]), max(ext_df[, 2]), min(ext_df[, 3]), max(ext_df[, 4]))) # xmin xmax ymin ymax
-    layers <- lapply(layers, function(x){
-      terra::extend(x, largest_ext)
-    })
-  }
-
-  layers <- terra::rast(layers)
-
-  # If all checks passed, return layers
-  return(layers)
-}
-
-#' Validate Projection Layers Zip
-#'
-#' This function validates a zip file containing projection layers. It checks if the layers have the same number of files, CRS (Coordinate Reference System), and resolution.
-#'
-#' @param file_path Path to the zip file containing projection layers.
-#' @return TRUE if the layers pass validation criteria, FALSE otherwise.
-#' @details This function expects that each subfolder within the zip file represents a covariate, and each covariate contains one or more raster files. It checks if the layers within each covariate have the same CRS and resolution.
-#'
-#' @keywords internal
-validate_projection_layers_zip <- function(file_input, show_modal = FALSE) {
-  file_path <- file_input["datapath"]
-
-  # Extract contents of the zip file
-  tmpdir <- tempdir()
-  zip_contents <- utils::unzip(file_path, unzip = getOption("unzip"), exdir = tmpdir)
-
-  # Get unique covariate directories
-  covariates <- unique(dirname(zip_contents))
-  # Check if each covariate has the same number of files
-  n_files <- sapply(covariates, function(x) length(list.files(x)))
-  if (length(unique(n_files)) != 1) {
-    msg <- paste("The layers uploaded differ in number between the different covariates.")
-    warning(msg)
-    if (show_modal) showNotification(msg, duration = 5, closeButton = TRUE, type = "error")
-    return(NULL)
-  }
-
-  # Load the first layer of each covariate to check CRS and resolution
-  layers <- lapply(covariates, function(x) {
-    tryCatch(terra::rast(list.files(x, full.names = TRUE)[1]), error = function(e) NULL)
-  })
-  if (any(sapply(layers, is.null))){
-    msg <- paste("Error: check format from files.")
-    warning(msg)
-    if (show_modal) showNotification(msg, duration = 5, closeButton = TRUE, type = "error")
-    return(NULL)
-  }
-
-  # Check if all layers have the same CRS
-  crs_list <- sapply(layers, function(x) {
-    terra::crs(x, proj = TRUE)
-  })
-  if (any(sapply(crs_list, is.na) == TRUE)){
-    msg <- paste("There are rasters with undefined coordinate reference system (CRS).")
-    warning(msg)
-    if (show_modal) showNotification(msg, duration = 5, closeButton = TRUE, type = "error")
-    return(NULL)
-  }
-  if (length(unique(crs_list)) != 1) {
-    msg <- paste("There are layers with different coordinate reference system (CRS).")
-    warning(msg)
-    if (show_modal) showNotification(msg, duration = 5, closeButton = TRUE, type = "error")
-  }
-
-  # Check if all layers have the same resolution
-  res_list <- sapply(layers, function(x) {
-    paste(terra::res(x), collapse = "")
-  })
-  if (length(unique(res_list)) != 1) {
-    msg <- paste("The layers uploaded have different resolution.")
-    warning(msg)
-    if (show_modal) showNotification(msg, duration = 5, closeButton = TRUE, type = "error")
-    return(NULL)
-  }
-
-  # If all checks passed, return TRUE
-  return(file_path)
-}
-
-
-#' Validate Fit and Projection Layers
-#'
-#' This function validates fit and projection layers by checking their CRS, resolution, and covariates.
-#'
-#' @param fit_layers_path Path to the ZIP file containing fit layers.
-#' @param proj_path Path to the ZIP file containing projection layers.
-#' @return TRUE if the layers pass validation criteria, FALSE otherwise.
-#' @details This function compares fit and projection layers to ensure they have the same CRS, resolution, and covariates.
-#'
-#' @keywords internal
-validate_fit_proj_layers <- function(fit_layers_path, proj_path, show_modal = FALSE) {
-  # Extract contents of the zip file
-  tmpdir_fit_layers <- tempdir()
-  tmpdir_proj <- tempdir()
-  fit_layers_content <- utils::unzip(fit_layers_path, unzip = getOption("unzip"), exdir = tmpdir_fit_layers)
-  proj_contents <- utils::unzip(proj_path, unzip = getOption("unzip"), exdir = tmpdir_proj)
-
-  # Get unique covariate directories
-  fit_layers_covariates <- sub("([^.]+)\\.[[:alnum:]]+$", "\\1", basename(fit_layers_content))
-  proj_covariates <- basename(unique(dirname(proj_contents)))
-
-  # Check they have same covariates
-  if (!all(paste(sort(fit_layers_covariates), collapse = "") == paste(sort(proj_covariates), collapse = ""))){
-    msg <- "The projection layers uploaded have different covariates from the fit layers."
-    warning(msg)
-    if (show_modal) showNotification(msg, duration = 5, closeButton = TRUE, type = "error")
-    return(FALSE)
-  }
-
-  # If all checks passed, return TRUE
-  return(TRUE)
-}
-
-#' Validate Extent Polygon
-#'
-#' This function validates a polygon file containing the extent. It checks if the file has the correct format.
-#'
-#' @param file_path Path to the polygon file containing the extent.
-#' @return A spatial object representing the extent if the file is valid, NULL otherwise.
-#' @details This function validates the format of a polygon file containing the extent. It checks if the file has the correct format.
-#'
-#' @keywords internal
-validate_extent_poly <- function(file_input, show_modal = FALSE){
-  file_path <- file_input["datapath"]
-  extent_poly <- tryCatch(
-    sf::st_read(file_path, drivers = c("GPKG", "ESRI Shapefile")),
-    error = function(e) "error"
-  )
-  if (inherits(extent_poly, "character")){
-    msg <- "Check file format."
-    warning(msg)
-    if (show_modal) showNotification(msg, duration = 5, closeButton = TRUE, type = "error")
-    return(NULL)
-  }
-
-  return(extent_poly)
-}
-
-#=========================================================#
 # glossa helpers  ----
 #=========================================================#
 
@@ -321,7 +27,7 @@ get_covariate_names <- function(file_path){
 #'
 #' This function extracts covariate values for species occurrences, excluding NA values.
 #'
-#' @param data A data frame containing species occurrence data with columns "decimalLongitude" and "decimalLatitude".
+#' @param data A data frame containing species occurrence data with columns x/long and y/lat.
 #' @param covariate_layers A list of raster layers representing covariates.
 #' @return A data frame containing species occurrence data with covariate values, excluding NA values.
 #' @details This function extracts covariate values for each species occurrence location from the provided covariate layers. It returns a data frame containing species occurrence data with covariate values, excluding any NA values.
@@ -330,7 +36,7 @@ get_covariate_names <- function(file_path){
 extract_noNA_cov_values <- function(data, covariate_layers){
   covariate_values <- terra::extract(
     covariate_layers,
-    data[, c("decimalLongitude", "decimalLatitude")]
+    data[, c(1, 2)]
   )
 
   covariate_values <- cbind(data, covariate_values) %>%
@@ -348,7 +54,7 @@ extract_noNA_cov_values <- function(data, covariate_layers){
 #' @param study_area Spatial object for masking output layers.
 #' @param scale_layers Logical indicating if scaling is applied. Default is FALSE.
 #'
-#' @return Raster stack with layers 'decimalLongitude' and 'decimalLatitude'.
+#' @return Raster stack with layers lon and lat.
 #'
 #' @export
 create_coords_layer <- function(layers, study_area = NULL, scale_layers = FALSE){
@@ -378,7 +84,6 @@ create_coords_layer <- function(layers, study_area = NULL, scale_layers = FALSE)
   if(!is.null(study_area)){
     coords_layer <- terra::mask(coords_layer, terra::vect(study_area))
   }
-  names(coords_layer) <- c("decimalLongitude", "decimalLatitude")
 
   return(coords_layer)
 }
@@ -850,7 +555,7 @@ downloadActionButton <- function(outputId, label = "Download", icon = NULL,
 #' @return Returns a ggplot object representing the world prediction plot.
 #'
 #' @keywords internal
-generate_prediction_plot <- function(prediction_layer, pa_points, legend_label, non_study_area_mask) {
+generate_prediction_plot <- function(prediction_layer, pa_points, legend_label, non_study_area_mask, coords) {
   p <- ggplot2::ggplot()
 
   # Add prediction layer if available
@@ -879,7 +584,7 @@ generate_prediction_plot <- function(prediction_layer, pa_points, legend_label, 
   # Add presence/absence points if available
   if (!is.null(pa_points)) {
     p <- p +
-      ggplot2::geom_point(data = pa_points, aes(x = decimalLongitude, y = decimalLatitude, color = as.factor(pa)), alpha = 1) +
+      ggplot2::geom_point(data = pa_points, aes(x = pa_points[, coords[1]], y = pa_points[, coords[2]], color = as.factor(pa_points[, "pa"])), alpha = 1) +
       ggplot2::scale_color_manual(values = c("0" = "black","1" = "green"), labels = c("Absences", "Presences"), name = NULL)
   }
 

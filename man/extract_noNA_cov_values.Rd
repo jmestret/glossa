@@ -7,7 +7,7 @@
 extract_noNA_cov_values(data, covariate_layers)
 }
 \arguments{
-\item{data}{A data frame containing species occurrence data with columns "decimalLongitude" and "decimalLatitude".}
+\item{data}{A data frame containing species occurrence data with columns x/long and y/lat.}
 
 \item{covariate_layers}{A list of raster layers representing covariates.}
 }

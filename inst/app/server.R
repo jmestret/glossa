@@ -32,6 +32,12 @@ function(input, output, session) {
   proj_layers_input <- glossa::file_input_area_server("proj_layers")
   study_area_poly_input <- glossa::file_input_area_server("study_area_poly")
 
+  # Get long lat coordinate colnames
+  long_lat_cols <- reactive({
+    req(pa_data())
+    colnames(pa_data()[[1]])[c(1,2)]
+  })
+
   # Invert study area polygon for plotting
   inv_study_area_poly <- reactive({
     if(is.null(study_area_poly()) | is.null(extent_validation_table())){
@@ -647,7 +653,9 @@ function(input, output, session) {
       previsualization_plot %>%
         leaflet::setView(0, 0, zoom = 1) %>%
         leaflet::clearMarkers() %>%
-        leaflet::addCircleMarkers(data = pa_data()[[input$previsualization_plot_species]], lat = ~decimalLatitude, lng = ~decimalLongitude,
+        leaflet::addCircleMarkers(data = pa_data()[[input$previsualization_plot_species]],
+                                  lng = pa_data()[[input$previsualization_plot_species]][, long_lat_cols()[1]],
+                                  lat = pa_data()[[input$previsualization_plot_species]][, long_lat_cols()[2]],
                                   color = ~ifelse(pa == 1, "green", "black"), radius = 5)
     } else {
       previsualization_plot %>%
@@ -764,7 +772,7 @@ function(input, output, session) {
       pa_points <- presence_absence_list()$model_pa[[input$sp]]
     }
 
-    glossa::generate_prediction_plot(prediction_layer, pa_points, legend_label, inv_study_area_poly())
+    glossa::generate_prediction_plot(prediction_layer, pa_points, legend_label, inv_study_area_poly(), coords = long_lat_cols())
   })
   output$prediction_plot <- renderPlot({
     prediction_plot()
@@ -827,21 +835,23 @@ function(input, output, session) {
 
     if (!is.null(input$sp)) {
       model_points <- presence_absence_list()$model_pa[[input$sp]]
-      model_points <- model_points[model_points[, "pa"] == 1, c("decimalLongitude", "decimalLatitude", "pa")]
+      model_points <- model_points[model_points[, "pa"] == 1, c(long_lat_cols(), "pa")]
       model_points$type <- "keeped"
 
       raw_points <- presence_absence_list()$raw_pa[[input$sp]]
-      raw_points <- raw_points[raw_points[, "pa"] == 1, c("decimalLongitude", "decimalLatitude", "pa")]
+      raw_points <- raw_points[raw_points[, "pa"] == 1, c(long_lat_cols(), "pa")]
       decimal_digits <- switch(input$round_digits + 1, NULL, input$decimal_digits)
       if (!is.null(decimal_digits)) {
-        raw_points[, "decimalLongitude"] <- round(raw_points[, "decimalLongitude"], decimal_digits)
-        raw_points[, "decimalLatitude"] <- round(raw_points[, "decimalLatitude"], decimal_digits)
+        raw_points[, long_lat_cols()[1]] <- round(raw_points[, long_lat_cols()[1]], decimal_digits)
+        raw_points[, long_lat_cols()[2]] <- round(raw_points[, long_lat_cols()[2]], decimal_digits)
       }
-      raw_points <- dplyr::anti_join(raw_points, model_points, by = c("decimalLongitude", "decimalLatitude"))
+      raw_points <- dplyr::anti_join(raw_points, model_points, by = long_lat_cols())
       raw_points$type <- "discarded"
 
+      tmp_data <- rbind(raw_points, model_points)
+
       p <- p +
-        geom_point(data = rbind(raw_points, model_points), ggplot2::aes(x = decimalLongitude, y = decimalLatitude, color = type)) +
+        geom_point(data = tmp_data, ggplot2::aes(x = tmp_data[, long_lat_cols()[1]], y = tmp_data[, long_lat_cols()[2]], color = type)) +
         scale_color_manual(values = c("keeped" = "#65c4d8", "discarded" = "#f67d33"))
     }
 

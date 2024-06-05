@@ -181,7 +181,7 @@ body <- bs4Dash::bs4DashBody(
             bs4Dash::column(
               width = 6,
               align = "center",
-              img(src = "logo_glossa.png", height = "30%")
+              img(src = "logo_glossa.png", height = "130px")
             )
           ),
 
@@ -471,7 +471,7 @@ body <- bs4Dash::bs4DashBody(
                     label = "Ocurrences",
                     button_label = "Add CSV files",
                     multiple = TRUE,
-                    accept = ".csv",
+                    accept = c(".csv", ".txt", ".tsv"),
                     icon_name = "map-location-dot"
                   )
                 ),

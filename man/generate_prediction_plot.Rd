@@ -8,7 +8,8 @@ generate_prediction_plot(
   prediction_layer,
   pa_points,
   legend_label,
-  non_study_area_mask
+  non_study_area_mask,
+  coords
 )
 }
 \arguments{

@@ -67,6 +67,7 @@ glossa_analysis <- function(
   # * Load presence(/absence) data ----
   presence_absence_list$raw_pa <- pa_data
   sp_names <- names(presence_absence_list$raw_pa)
+  long_lat_cols <- colnames(presence_absence_list$raw_pa[[1]])[c(1,2)]
 
   # * Load covariate layers ----
   # Fit layers
@@ -113,7 +114,7 @@ glossa_analysis <- function(
       study_area = study_area_poly,
       overlapping = FALSE,
       decimal_digits = decimal_digits,
-      coords = c("decimalLongitude", "decimalLatitude")
+      coords = long_lat_cols
     )
   })
 
@@ -196,7 +197,7 @@ glossa_analysis <- function(
 
   # Remove points with NA values in any environmental variable
   presence_absence_list$model_pa <- lapply(seq_along(presence_absence_list$clean_pa), function(i){
-    x <- presence_absence_list$clean_pa[[i]]
+    x <- presence_absence_list$clean_pa[[i]][, c(long_lat_cols, "pa")]
     fit_points <- extract_noNA_cov_values(x, layers[[predictor_variables[[i]]]]) %>%
       dplyr::select(colnames(x))
     return(fit_points)
@@ -212,7 +213,7 @@ glossa_analysis <- function(
   presence_absence_list$model_pa <- lapply(seq_along(presence_absence_list$model_pa), function(i) {
     x <- presence_absence_list$model_pa[[i]]
     if (all(x[, "pa"] == 1)){
-      x <- generate_pseudo_absences(x, study_area_poly, layers[[predictor_variables[[i]]]])
+      x <- generate_pseudo_absences(x, study_area_poly, layers[[predictor_variables[[i]]]], coords = long_lat_cols, digits = decimal_digits)
     }
     return(x)
   })
@@ -222,9 +223,9 @@ glossa_analysis <- function(
   design_matrix <- lapply(seq_along(presence_absence_list$model_pa), function (i){
     terra::extract(
       layers[[predictor_variables[[i]]]],
-      presence_absence_list$model_pa[[i]][, c("decimalLongitude", "decimalLatitude")]
+      presence_absence_list$model_pa[[i]][, long_lat_cols]
     ) %>%
-      select(!ID)
+      dplyr::select(!"ID")
   })
   names(design_matrix) <- names(presence_absence_list$model_pa)
 
@@ -241,6 +242,7 @@ glossa_analysis <- function(
 
     # Create layer with longitude and latitude values
     coords_layer <- create_coords_layer(layers, study_area_poly, scale_layers = scale_layers)
+    names(coords_layer) <- long_lat_cols
 
     # * Fit bart ----
     if (!is.null(waiter)){waiter$update(html = tagList(img(src = "logo_glossa.gif", height = "200px"), h4("Fitting native range models...")))}
@@ -269,7 +271,7 @@ glossa_analysis <- function(
     # * Optimal cutoff ----
     pa_cutoff$native_range <- lapply(names(models_native_range), function(sp) {
       pa_optimal_cutoff(
-        presence_absence_list$model_pa[[sp]],
+        presence_absence_list$model_pa[[sp]][, c(long_lat_cols, "pa")],
         c(layers[[predictor_variables[[sp]]]], coords_layer),
         models_native_range[[sp]]
       )
@@ -469,11 +471,11 @@ glossa_analysis <- function(
     }
 
     other_results$response_curve <- lapply(names(presence_absence_list$model_pa), function(i){
-      x <- presence_absence_list$model_pa[[i]]
+      x <- presence_absence_list$model_pa[[i]][, c(long_lat_cols, "pa")]
       pred_layers <- fr_layers[[predictor_variables[[i]]]]
       fit_data <- extract_noNA_cov_values(x, pred_layers)
       fit_data <- fit_data %>%
-        select(pa, !names(x))
+        dplyr::select("pa", !names(x))
 
       if (scale_layers | is.null(suitable_habitat)) {
         set.seed(seed)

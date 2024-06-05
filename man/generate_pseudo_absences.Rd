@@ -9,7 +9,7 @@ generate_pseudo_absences(
   study_area,
   raster_stack,
   coords = c("decimalLongitude", "decimalLatitude"),
-  digits = 4,
+  digits = NULL,
   attempts = 50
 )
 }

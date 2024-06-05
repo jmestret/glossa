@@ -13,7 +13,7 @@
 fit_bart_model <- function(pa_coords, layers, seed = NULL) {
   fit_data <- extract_noNA_cov_values(pa_coords, layers)
   fit_data <- fit_data %>%
-    dplyr::select(pa, !names(pa_coords))
+    dplyr::select("pa", !names(pa_coords))
 
   set.seed(seed)
   bart_model <- dbarts::bart(x.train = fit_data[, names(layers), drop = FALSE],
@@ -176,7 +176,7 @@ variable_importance <- function(bart_model) {
 #'
 #' @export
 pa_optimal_cutoff <- function(pa_coords, layers, model, seed = NULL) {
-  data <- terra::extract(layers, pa_coords[, c("decimalLongitude", "decimalLatitude")])
+  data <- terra::extract(layers, pa_coords[, c(1, 2)]) # coordinates have to be (x,y) or (lon, lat)
 
   set.seed(seed)
   pred_data <- dbarts:::predict.bart(model, newdata = data[, names(layers), drop = FALSE])

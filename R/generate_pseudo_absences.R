@@ -12,7 +12,7 @@
 #' @return Data frame containing both presence and pseudo-absence points.
 #'
 #' @export
-generate_pseudo_absences <- function(presences, study_area, raster_stack, coords = c("decimalLongitude", "decimalLatitude"), digits = 4, attempts = 50) {
+generate_pseudo_absences <- function(presences, study_area, raster_stack, coords = c("decimalLongitude", "decimalLatitude"), digits = NULL, attempts = 50) {
 
   # Check inputs
   if (!is.null(study_area)) {
@@ -54,7 +54,9 @@ generate_pseudo_absences <- function(presences, study_area, raster_stack, coords
     # Convert to data frame and round coordinates
     new_abs <- as.data.frame(sf::st_coordinates(new_abs))
     colnames(new_abs) <- coords
-    new_abs <- round(new_abs, digits) # Custom round precision
+    if (!is.null(digits)){
+      new_abs <- round(new_abs, digits) # Custom round precision
+    }
 
     # Remove points with missing covariate values
     design_matrix <- terra::extract(raster_stack, new_abs)
