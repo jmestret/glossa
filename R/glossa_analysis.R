@@ -33,7 +33,7 @@ glossa_analysis <- function(
   # 0. Check inputs and load necessary data ----
   #=========================================================#
 
-  if (!is.null(waiter)){waiter$update(html = tagList(img(src = "logo_glossa.gif", height = "200px"), h4("Initializing objects...")))}
+  if (!is.null(waiter)){waiter$update(html = tagList(img(src = "logo_glossa.gif", height = "200px"), h4("Loading..."), h4("Sit back, relax, and let us do the math!"),  h6("Initializing objects")))}
   print("Initializing objects...")
 
   # Set seed
@@ -61,7 +61,7 @@ glossa_analysis <- function(
   # 1. Load presence(/absence) data and environmental layers ----
   #=========================================================#
 
-  if (!is.null(waiter)){waiter$update(html = tagList(img(src = "logo_glossa.gif", height = "200px"), h4("Loading input data...")))}
+  if (!is.null(waiter)){waiter$update(html = tagList(img(src = "logo_glossa.gif", height = "200px"), h4("Loading..."), h4("Sit back, relax, and let us do the math!"),  h6("Loading input data")))}
   print("Loading input data...")
 
   # * Load presence(/absence) data ----
@@ -105,7 +105,7 @@ glossa_analysis <- function(
   # 2. Clean coordinates ----
   #=========================================================#
 
-  if (!is.null(waiter)){waiter$update(html = tagList(img(src = "logo_glossa.gif", height = "200px"), h4("Processing P/A coordinates...")))}
+  if (!is.null(waiter)){waiter$update(html = tagList(img(src = "logo_glossa.gif", height = "200px"), h4("Loading..."), h4("Sit back, relax, and let us do the math!"),  h6("Processing P/A coordinates")))}
   print("Processing P/A coordinates...")
 
   presence_absence_list$clean_pa <- lapply(presence_absence_list$raw_pa, function(x){
@@ -125,7 +125,7 @@ glossa_analysis <- function(
   # 3. Covariate layer processing ----
   #=========================================================#
 
-  if (!is.null(waiter)){waiter$update(html = tagList(img(src = "logo_glossa.gif", height = "200px"), h4("Processing covariate layers...")))}
+  if (!is.null(waiter)){waiter$update(html = tagList(img(src = "logo_glossa.gif", height = "200px"), h4("Loading..."), h4("Sit back, relax, and let us do the math!"),  h6("Processing covariate layers")))}
   print("Processing covariate layers...")
 
   # * Process environmental layers for model fitting ----
@@ -192,7 +192,7 @@ glossa_analysis <- function(
   # 4. Remove presences/absences with NA values in covariates ----
   #=========================================================#
 
-  if (!is.null(waiter)){waiter$update(html = tagList(img(src = "logo_glossa.gif", height = "200px"), h4("Building model matrix...")))}
+  if (!is.null(waiter)){waiter$update(html = tagList(img(src = "logo_glossa.gif", height = "200px"), h4("Loading..."), h4("Sit back, relax, and let us do the math!"),  h6("Building model matrix")))}
   print("Building model matrix...")
 
   # Remove points with NA values in any environmental variable
@@ -245,7 +245,7 @@ glossa_analysis <- function(
     names(coords_layer) <- long_lat_cols
 
     # * Fit bart ----
-    if (!is.null(waiter)){waiter$update(html = tagList(img(src = "logo_glossa.gif", height = "200px"), h4("Fitting native range models...")))}
+    if (!is.null(waiter)){waiter$update(html = tagList(img(src = "logo_glossa.gif", height = "200px"), h4("Loading..."), h4("Sit back, relax, and let us do the math!"),  h6("Fitting native range models")))}
     print("Fitting native range models...")
 
     models_native_range <- lapply(seq_along(presence_absence_list$model_pa), function(i){
@@ -283,7 +283,7 @@ glossa_analysis <- function(
 
 
     # * fit_layers projections ----
-    if (!is.null(waiter)){waiter$update(html = tagList(img(src = "logo_glossa.gif", height = "200px"), h4("Predicting native range for fit layer...")))}
+    if (!is.null(waiter)){waiter$update(html = tagList(img(src = "logo_glossa.gif", height = "200px"), h4("Loading..."), h4("Sit back, relax, and let us do the math!"),  h6("Predicting native range for fit layer")))}
     projections_results$fit_layers$native_range <- lapply(names(models_native_range), function(sp) {
       predict_bart(
         models_native_range[[sp]],
@@ -299,7 +299,7 @@ glossa_analysis <- function(
 
     # * Spatial projections to new scenarios/times ----
     if ("projections" %in% native_range){
-      if (!is.null(waiter)){waiter$update(html = tagList(img(src = "logo_glossa.gif", height = "200px"), h4("Predicting other secenarios native range...")))}
+      if (!is.null(waiter)){waiter$update(html = tagList(img(src = "logo_glossa.gif", height = "200px"), h4("Loading..."), h4("Sit back, relax, and let us do the math!"),  h6("Predicting other secenarios native range")))}
       projections_results$projections$native_range <- lapply(names(models_native_range), function(sp) {
         projections <- lapply(covariate_list$projections, function(scenario){
           projections_scenario <- lapply(scenario, function(pred_layers){
@@ -332,7 +332,7 @@ glossa_analysis <- function(
     start_sh_time <- Sys.time()
 
     # * Fit bart ----
-    if (!is.null(waiter)){waiter$update(html = tagList(img(src = "logo_glossa.gif", height = "200px"), h4("Fitting suitable habitat models...")))}
+    if (!is.null(waiter)){waiter$update(html = tagList(img(src = "logo_glossa.gif", height = "200px"), h4("Loading..."), h4("Sit back, relax, and let us do the math!"),  h6("Fitting suitable habitat models")))}
     print("Fitting suitable habitat models...")
 
     models_suitable_habitat <- lapply(seq_along(presence_absence_list$model_pa), function(i){
@@ -367,7 +367,7 @@ glossa_analysis <- function(
     print(paste("P/A cutoff execution time:", difftime(pa_cutoff_sh_time, var_imp_sh_time, units = "mins"), "mins"))
 
     # * fit_layers projections ----
-    if (!is.null(waiter)){waiter$update(html = tagList(img(src = "logo_glossa.gif", height = "200px"), h4("Predicting suitable habitat for fit layers...")))}
+    if (!is.null(waiter)){waiter$update(html = tagList(img(src = "logo_glossa.gif", height = "200px"), h4("Loading..."), h4("Sit back, relax, and let us do the math!"),  h6("Predicting suitable habitat for fit layers")))}
     projections_results$fit_layers$suitable_habitat <- lapply(names(models_suitable_habitat), function(sp) {
       predict_bart(
         models_suitable_habitat[[sp]],
@@ -382,7 +382,7 @@ glossa_analysis <- function(
 
     # * Spatial projections to new scenarios/times ----
     if ("projections" %in% suitable_habitat){
-      if (!is.null(waiter)){waiter$update(html = tagList(img(src = "logo_glossa.gif", height = "200px"), h4("Predicting other scenarios suitable habitat...")))}
+      if (!is.null(waiter)){waiter$update(html = tagList(img(src = "logo_glossa.gif", height = "200px"), h4("Loading..."), h4("Sit back, relax, and let us do the math!"),  h6("Predicting other scenarios suitable habitat")))}
       projections_results$projections$suitable_habitat <- lapply(names(models_suitable_habitat), function(sp) {
         projections <- lapply(covariate_list$projections, function(scenario){
           projections_scenario <- lapply(scenario, function(pred_layers){
@@ -399,7 +399,7 @@ glossa_analysis <- function(
     print(paste("Suitable habitat projections execution time:", difftime(pred_sh_time, hist_sh_time, units = "mins"), "mins"))
 
     # * Habitat suitability change ----
-    if (!is.null(waiter)){waiter$update(html = tagList(img(src = "logo_glossa.gif", height = "200px"), h4("Computing habitat suitability change...")))}
+    if (!is.null(waiter)){waiter$update(html = tagList(img(src = "logo_glossa.gif", height = "200px"), h4("Loading..."), h4("Sit back, relax, and let us do the math!"),  h6("Computing habitat suitability change")))}
     # Covered area
     habitat_suitability$fit_layers$covered_area <- lapply(names(models_suitable_habitat), function(sp){
       layer <- projections_results$fit_layers$suitable_habitat[[sp]]["mean"]
@@ -461,7 +461,7 @@ glossa_analysis <- function(
 
   if ("functional_responses" %in% other_analysis){
     start_fr_time <- Sys.time()
-    if (!is.null(waiter)){waiter$update(html = tagList(img(src = "logo_glossa.gif", height = "200px"), h4("Computing functional responses...")))}
+    if (!is.null(waiter)){waiter$update(html = tagList(img(src = "logo_glossa.gif", height = "200px"), h4("Loading..."), h4("Sit back, relax, and let us do the math!"),  h6("Computing functional responses")))}
     print("Computing functional responses...")
 
     if (scale_layers){
@@ -511,7 +511,7 @@ glossa_analysis <- function(
 
   if ("cross_validation" %in% other_analysis){
     start_cv_time <- Sys.time()
-    if (!is.null(waiter)){waiter$update(html = tagList(img(src = "logo_glossa.gif", height = "200px"), h4("Performing cross-validation...")))}
+    if (!is.null(waiter)){waiter$update(html = tagList(img(src = "logo_glossa.gif", height = "200px"), h4("Loading..."), h4("Sit back, relax, and let us do the math!"),  h6("Performing cross-validation")))}
     print("Performing cross-validation...")
 
     if (!is.null(native_range)){
@@ -542,7 +542,7 @@ glossa_analysis <- function(
   #=========================================================#
   # 10. Finalizing -----
   #=========================================================#
-  if (!is.null(waiter)){waiter$update(html = tagList(img(src = "logo_glossa.gif", height = "200px"), h4("Finalizing...")))}
+  if (!is.null(waiter)){waiter$update(html = tagList(img(src = "logo_glossa.gif", height = "200px"), h4("Loading..."), h4("Sit back, relax, and let us do the math!"),  h6("Finalizing")))}
 
   for (sp in names(presence_absence_list$model_pa)){
     presence_absence_list$model_pa[[sp]] <- cbind(presence_absence_list$model_pa[[sp]], design_matrix[[sp]])

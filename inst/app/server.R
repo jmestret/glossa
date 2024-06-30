@@ -2,6 +2,8 @@ function(input, output, session) {
   #=========================================================#
   # Initialization ----
   #=========================================================#
+  bs4Dash::updateTabItems(session, "sidebar_menu", "reports")
+  bs4Dash::updateTabItems(session, "sidebar_menu", "home")
 
   # * Reactive values ----
   # Inputs
@@ -456,6 +458,11 @@ function(input, output, session) {
       seed = input$seed,
       waiter = w
     )
+
+    # Move to Reports tab
+    bs4Dash::updateTabItems(session, "sidebar_menu", "reports")
+
+    # Hide waiter
     w$hide()
 
     showNotification("GLOSSA analysis done!", duration = NULL, closeButton = TRUE, type = "message")
@@ -750,6 +757,7 @@ function(input, output, session) {
       )
     )
   })
+  outputOptions(output, "spark_boxes", suspendWhenHidden = FALSE) # To render before showing the tab
 
   # * Prediction plot ----
   prediction_plot <- reactive({
