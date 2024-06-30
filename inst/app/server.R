@@ -2,8 +2,6 @@ function(input, output, session) {
   #=========================================================#
   # Initialization ----
   #=========================================================#
-  bs4Dash::updateTabItems(session, "sidebar_menu", "reports")
-  bs4Dash::updateTabItems(session, "sidebar_menu", "home")
 
   # * Reactive values ----
   # Inputs

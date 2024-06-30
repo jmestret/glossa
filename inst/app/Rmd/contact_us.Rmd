@@ -15,7 +15,7 @@ We value your feedback and are here to help you with any questions, support need
 ####  **GitHub**
 
 For issues, feature requests, questions, or general feedback, please use the Issues tab on our GitHub repository:
-- [GLOSSA GitHub issues](https://github.com/jmestret/glossa/issues)
+- <a href="https://github.com/jmestret/glossa/issues" target="_blank">GLOSSA GitHub issues</a>
 
 ### **Email**
 
@@ -25,6 +25,6 @@ For special support or collaboration requests, please contact us via email:
 ### **X (Twitter)**
 
 Follow our research group on Twitter for the latest news and updates:
-- Twitter: [@iMARES_group](https://x.com/iMARES_group)
+- Twitter: <a href="https://x.com/iMARES_group" target="_blank">@iMARES_group</a>
 
 Thank you for your support!
