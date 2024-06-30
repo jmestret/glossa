@@ -490,7 +490,7 @@ body <- bs4Dash::bs4DashBody(
                   width = 3,
                   glossa::file_input_area_ui(
                     "proj_layers",
-                    label = "projections layers",
+                    label = "Projection layers",
                     button_label = "Add ZIP layers (optional)",
                     multiple = TRUE,
                     accept = ".zip",
@@ -988,7 +988,12 @@ body <- bs4Dash::bs4DashBody(
                        collapsible = FALSE,
                        headerBorder = FALSE,
                        elevation = 2,
-                       label = NULL,
+                       label = bs4Dash::actionButton(
+                         "export_all",
+                         label = "Select all",
+                         status = "primary",
+                         outline = FALSE
+                       ),
 
                        selectInput(
                          "export_sp",

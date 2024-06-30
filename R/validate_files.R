@@ -10,9 +10,10 @@
 #' @return TRUE if the file has the expected columns and formats, FALSE otherwise.
 #' @details This function validates the format of a CSV file containing presence/absence data. It checks if the file has the expected columns and formats. If the "pa" column is missing, it assumes the presence/absence column and adds it with default values.
 #' @keywords internal
-validate_presences_absences_csv <- function(file_input, show_modal = FALSE, coords = c("decimalLongitude", "decimalLatitude"), sep = "\t", dec = ".") {
-  file_path <- file_input["datapath"]
-  file_name <- file_input["name"]
+read_presences_absences_csv <- function(file_path, file_name = NULL, show_modal = FALSE, coords = c("decimalLongitude", "decimalLatitude"), sep = "\t", dec = ".") {
+  if (is.null(file_name)){
+    file_name <- basename(file_path)
+  }
 
   # Load the CSV file
   data <- tryCatch(
@@ -81,9 +82,7 @@ validate_presences_absences_csv <- function(file_input, show_modal = FALSE, coor
 #' @details This function expects that each subfolder within the zip file represents a covariate, and each covariate contains one or more raster files. It checks if the layers within each covariate have the same CRS and resolution.
 #'
 #' @keywords internal
-validate_fit_layers_zip <- function(file_input, show_modal = FALSE) {
-  file_path <- file_input[, "datapath"]
-
+read_fit_layers_zip <- function(file_path, show_modal = FALSE) {
   # Extract contents of the zip file
   tmpdir <- tempdir()
   zip_contents <- utils::unzip(file_path, unzip = getOption("unzip"), exdir = tmpdir)
@@ -163,9 +162,7 @@ validate_fit_layers_zip <- function(file_input, show_modal = FALSE) {
 #' @details This function expects that each subfolder within the zip file represents a covariate, and each covariate contains one or more raster files. It checks if the layers within each covariate have the same CRS and resolution.
 #'
 #' @keywords internal
-validate_projection_layers_zip <- function(file_input, show_modal = FALSE) {
-  file_path <- file_input["datapath"]
-
+validate_projection_layers_zip <- function(file_path, show_modal = FALSE) {
   # Extract contents of the zip file
   tmpdir <- tempdir()
   zip_contents <- utils::unzip(file_path, unzip = getOption("unzip"), exdir = tmpdir)
@@ -266,8 +263,7 @@ validate_fit_proj_layers <- function(fit_layers_path, proj_path, show_modal = FA
 #' @details This function validates the format of a polygon file containing the extent. It checks if the file has the correct format.
 #'
 #' @keywords internal
-validate_extent_poly <- function(file_input, show_modal = FALSE){
-  file_path <- file_input["datapath"]
+read_extent_poly <- function(file_path, show_modal = FALSE){
   extent_poly <- tryCatch(
     sf::st_read(file_path, drivers = c("GPKG", "ESRI Shapefile")),
     error = function(e) "error"

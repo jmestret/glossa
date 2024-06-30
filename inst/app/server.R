@@ -135,7 +135,7 @@ function(input, output, session) {
 
       # Read files
       data <- apply(pa_files_input(), 1, function(x){
-        glossa::validate_presences_absences_csv(x, show_modal = TRUE)
+        glossa::read_presences_absences_csv(x["datapath"], x["name"], show_modal = TRUE)
       })
       if (is.null(data)){
         data <- list(data)
@@ -162,7 +162,7 @@ function(input, output, session) {
       w$show()
 
       # Read files
-      fit_layers(glossa::validate_fit_layers_zip(fit_layers_input(), show_modal = TRUE))
+      fit_layers(glossa::read_fit_layers_zip(fit_layers_input()[, "datapath"], show_modal = TRUE))
 
       w$hide()
     }
@@ -184,7 +184,7 @@ function(input, output, session) {
 
       # Read files
       layers <- apply(proj_layers_input(), 1, function(x){
-        glossa::validate_projection_layers_zip(x, show_modal = TRUE)
+        glossa::validate_projection_layers_zip(x["datapath"], show_modal = TRUE)
       })
       if (is.null(layers)){
         layers <- list(layers)
@@ -211,7 +211,7 @@ function(input, output, session) {
       w$show()
 
       # Read files
-      study_area_poly(glossa::validate_extent_poly(study_area_poly_input(), show_modal = TRUE))
+      study_area_poly(glossa::read_extent_poly(study_area_poly_input()["datapath"], show_modal = TRUE))
 
       w$hide()
     }
@@ -566,6 +566,21 @@ function(input, output, session) {
     updateSelectInput(session, "export_models", choices = unique(as.vector((unlist((sapply(projections_results()[export_layer_results], names)))))))
     updateSelectInput(session, "export_values", choices = c("mean", "median", "sd", "q0.025", "q0.975", "diff", "potential_presences"))
     updateSelectInput(session, "export_layer_format", choices = c("tif", "asc", "nc"))
+  })
+
+  observeEvent(input$export_all, {
+    req(presence_absence_list())
+    req(projections_results())
+    updateSelectInput(session, "export_sp", selected = names(presence_absence_list()$model_pa))
+    export_layer_results <- names(projections_results()[!unlist(lapply(projections_results(),is.null))])
+    updateSelectInput(session, "export_results", selected = export_layer_results)
+    updateSelectInput(session, "export_models", selected = unique(as.vector((unlist((sapply(projections_results()[export_layer_results], names)))))))
+    updateSelectInput(session, "export_values", selected = c("mean", "median", "sd", "q0.025", "q0.975", "diff", "potential_presences"))
+    shinyWidgets::updatePrettySwitch(inputId = "export_model_data", value = TRUE)
+    shinyWidgets::updatePrettySwitch(inputId = "export_var_imp", value = TRUE)
+    shinyWidgets::updatePrettySwitch(inputId = "export_fr", value = TRUE)
+    shinyWidgets::updatePrettySwitch(inputId = "export_cv", value = TRUE)
+    shinyWidgets::updatePrettySwitch(inputId = "export_pa_cutoff", value = TRUE)
   })
 
   #=========================================================#

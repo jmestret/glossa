@@ -185,7 +185,7 @@ glossa_analysis <- function(
   process_layers_time <- Sys.time()
   print(paste("Layer processing execution time:", difftime(process_layers_time, clean_coords_time, units = "secs"), "secs"))
 
-  layers <- covariate_list$fit_layers
+  layers <- covariate_list$fit_layers # layer to fit models
 
 
   #=========================================================#
