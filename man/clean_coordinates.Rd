@@ -13,9 +13,9 @@ clean_coordinates(
 )
 }
 \arguments{
-\item{data}{A data frame containing presence/absence data with columns "decimalLongitude" and "decimalLatitude".}
+\item{data}{A dataframe object with rows representing points. Coordinates are in WGS84 (EPSG:4326) coordinate system.}
 
-\item{study_area}{A spatial polygon representing the boundaries within which coordinates should be kept.}
+\item{study_area}{A spatial polygon in WGS84 (EPSG:4326) representing the boundaries within which coordinates should be kept.}
 
 \item{overlapping}{Logical indicating whether points overlapping the polygon should be kept (TRUE) or removed (FALSE).}
 

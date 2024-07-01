@@ -7,7 +7,7 @@
 remove_duplicate_points(x, coords = c("decimalLongitude", "decimalLatitude"))
 }
 \arguments{
-\item{x}{A dataframe object.}
+\item{x}{A dataframe object with each row representing one point.}
 
 \item{coords}{Names of the coordinate columns used for identifying duplicate points.}
 }

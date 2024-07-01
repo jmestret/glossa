@@ -2,7 +2,7 @@
 % Please edit documentation in R/run_glossa.R
 \name{run_glossa}
 \alias{run_glossa}
-\title{Run Glossa Shiny App}
+\title{Run GLOSSA Shiny App}
 \usage{
 run_glossa(
   request_size_mb = 2000,
@@ -18,10 +18,10 @@ run_glossa(
 \item{port}{Port number for the Shiny app. Uses the port specified by `getOption("shiny.port")` by default.}
 }
 \description{
-This function launches the Glossa Shiny web application.
+This function launches the GLOSSA Shiny web application.
 }
 \details{
-The Glossa Shiny app provides an interactive interface for users to access Glossa functionalities.
+The GLOSSA Shiny app provides an interactive interface for users to access GLOSSA functionalities.
 }
 \examples{
 \dontrun{

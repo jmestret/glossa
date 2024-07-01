@@ -6,7 +6,7 @@
 #' @importFrom DT DTOutput renderDT datatable
 #' @importFrom zip zip
 #' @importFrom dplyr select
-#' @importFrom shiny icon strong div fluidRow  HTML conditionalPanel numericInput selectInput downloadButton downloadHandler h4 img modalButton modalDialog moduleServer observeEvent p reactive NS span tagList tags restoreInput showNotification showModal
+#' @importFrom shiny icon strong div fluidRow  HTML conditionalPanel numericInput selectInput downloadButton downloadHandler h4 h6 img modalButton modalDialog moduleServer observeEvent p reactive NS span tagList tags restoreInput showNotification showModal
 #' @importFrom shinyWidgets prettySwitch pickerInput prettyCheckboxGroup
 #'
 NULL

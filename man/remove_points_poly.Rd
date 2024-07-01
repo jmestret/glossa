@@ -12,7 +12,7 @@ remove_points_poly(
 )
 }
 \arguments{
-\item{x}{A dataframe object with points.}
+\item{x}{A dataframe object with rows representing points.}
 
 \item{study_area}{Polygon object (sf object) to define the region for point removal.}
 

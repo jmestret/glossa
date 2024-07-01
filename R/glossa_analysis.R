@@ -1,6 +1,6 @@
-#' Main Analysis Function for Glossa Package
+#' Main Analysis Function for GLOSSA Package
 #'
-#' This function wraps all the analysis that the Glossa package performs. It processes presence-absence data,
+#' This function wraps all the analysis that the GLOSSA package performs. It processes presence-absence data,
 #' environmental covariates, and performs species distribution modeling and projections under past and future scenarios.
 #'
 #' @param pa_data A list of data frames containing presence-absence data.
@@ -12,7 +12,7 @@
 #' @param scale_layers Logical; if TRUE, covariate layers will be scaled based on fit layers.
 #' @param native_range A vector of scenarios ('fit_layers', 'projections') where native range modeling should be performed.
 #' @param suitable_habitat A vector of scenarios ('fit_layers', 'projections') where habitat suitability modeling should be performed.
-#' @param other_analysis A vector of additional analyses to perform (e.g., 'variable_importance', 'response_curve', 'cross_validation').
+#' @param other_analysis A vector of additional analyses to perform (e.g., 'variable_importance', 'functional_responses', 'cross_validation').
 #' @param seed Optional; an integer seed for reproducibility of results.
 #' @param waiter Optional; a waiter instance to update progress in a Shiny application.
 #'
@@ -79,7 +79,7 @@ glossa_analysis <- function(
     if (length(proj_files) <= 0){
       stop("Error: No projections layers provided.")
     }
-    covariate_list$projections <- lapply(proj_files, read_glossa_projections_layers)
+    covariate_list$projections <- lapply(proj_files, read_projections_layers)
     pred_scenario <- names(covariate_list$projections)
 
 

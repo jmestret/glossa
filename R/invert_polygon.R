@@ -18,7 +18,6 @@ invert_polygon <- function(sf_poly, bbox = NULL) {
     sf::st_crs(bbox_poly) <- sf::st_crs(sf_poly)
   }
 
-
   # When it's projected sf has issues computing the difference
   # An alternative is to change sf_use_s2() to FALSE
   #crs <- sf::st_crs(sf_poly)

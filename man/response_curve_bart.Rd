@@ -7,9 +7,9 @@
 response_curve_bart(bart_model, data, predictor_names)
 }
 \arguments{
-\item{bart_model}{A BART model object obtained from fitting BART (bart).}
+\item{bart_model}{A BART model object obtained from fitting BART ('dbarts::bart').}
 
-\item{data}{A data frame containing the predictor variables used in the BART model.}
+\item{data}{A data frame containing the predictor variables (the design matrix) used in the BART model.}
 
 \item{predictor_names}{A character vector containing the names of the predictor variables.}
 }
@@ -17,5 +17,5 @@ response_curve_bart(bart_model, data, predictor_names)
 A list containing a data frame for each independent variable with mean, 2.5th percentile, 97.5th percentile, and corresponding values of the variables.
 }
 \description{
-This function calculates the response curve using a Bayesian Additive Regression Trees (BART) model.
+This function calculates the response curve (functional responses) using a Bayesian Additive Regression Trees (BART) model.
 }

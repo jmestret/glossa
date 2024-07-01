@@ -3,7 +3,7 @@
 #' This function generates pseudo-absence points within the study area.
 #'
 #' @param presences Data frame containing presence points.
-#' @param study_area Spatial polygon defining the study area.
+#' @param study_area Spatial polygon defining the study area ('sf').
 #' @param raster_stack SpatRaster containing covariate data.
 #' @param coords Character vector specifying the column names for latitude and longitude.
 #' @param digits Number of decimal digits to round for the coordinates.

@@ -1,15 +1,20 @@
 #=========================================================#
-# Validate inputs  ----
+# Read and Validate inputs  ----
 #=========================================================#
 
-#' Validate presences/absences CSV file
+#' Read and validate presences/absences CSV file
 #'
-#' This function validates a CSV file containing presences and absences data for species occurrences. It checks if the file has the expected columns and formats.
+#' This function reads and validates a CSV file containing presences and absences data for species occurrences. It checks if the file has the expected columns and formats.
 #'
 #' @param file_path The file path to the CSV file.
-#' @return TRUE if the file has the expected columns and formats, FALSE otherwise.
-#' @details This function validates the format of a CSV file containing presence/absence data. It checks if the file has the expected columns and formats. If the "pa" column is missing, it assumes the presence/absence column and adds it with default values.
+#' @param file_name Optional. The name of the file. If not provided, the base name of the file path is used.
+#' @param show_modal Optional. Logical. Whether to show a modal notification for warnings. Default is FALSE.
+#' @param coords Optional. Character vector of length 2 specifying the names of the columns containing the longitude and latitude coordinates. Default is c("decimalLongitude", "decimalLatitude").
+#' @param sep Optional. The field separator character. Default is tab-separated.
+#' @param dec Optional. The decimal point character. Default is ".".
+#' @return A data frame with the validated data if the file has the expected columns and formats, NULL otherwise.
 #' @keywords internal
+#' @export
 read_presences_absences_csv <- function(file_path, file_name = NULL, show_modal = FALSE, coords = c("decimalLongitude", "decimalLatitude"), sep = "\t", dec = ".") {
   if (is.null(file_name)){
     file_name <- basename(file_path)
@@ -72,16 +77,15 @@ read_presences_absences_csv <- function(file_path, file_name = NULL, show_modal 
   return(data)
 }
 
-
-#' Validate Layers Zip
+#' Read and validate fit layers zip
 #'
 #' This function validates a zip file containing layers. It checks if the layers have the same number of files, CRS (Coordinate Reference System), and resolution.
 #'
-#' @param file_path Path to the zip file containing layers.
-#' @return TRUE if the layers pass validation criteria, FALSE otherwise.
-#' @details This function expects that each subfolder within the zip file represents a covariate, and each covariate contains one or more raster files. It checks if the layers within each covariate have the same CRS and resolution.
-#'
+#' @param file_path Path to the zip file containing layers to fit the model.
+#' @param show_modal Optional. Logical. Whether to show a modal notification for warnings. Default is FALSE.
+#' @return A raster stack of layers if the layers pass validation criteria, NULL otherwise.
 #' @keywords internal
+#' @export
 read_fit_layers_zip <- function(file_path, show_modal = FALSE) {
   # Extract contents of the zip file
   tmpdir <- tempdir()
@@ -158,9 +162,8 @@ read_fit_layers_zip <- function(file_path, show_modal = FALSE) {
 #' This function validates a zip file containing projection layers. It checks if the layers have the same number of files, CRS (Coordinate Reference System), and resolution.
 #'
 #' @param file_path Path to the zip file containing projection layers.
+#' @param show_modal Optional. Logical. Whether to show a modal notification for warnings. Default is FALSE.
 #' @return TRUE if the layers pass validation criteria, FALSE otherwise.
-#' @details This function expects that each subfolder within the zip file represents a covariate, and each covariate contains one or more raster files. It checks if the layers within each covariate have the same CRS and resolution.
-#'
 #' @keywords internal
 validate_projection_layers_zip <- function(file_path, show_modal = FALSE) {
   # Extract contents of the zip file
@@ -220,15 +223,14 @@ validate_projection_layers_zip <- function(file_path, show_modal = FALSE) {
   return(file_path)
 }
 
-
 #' Validate Fit and Projection Layers
 #'
 #' This function validates fit and projection layers by checking their CRS, resolution, and covariates.
 #'
 #' @param fit_layers_path Path to the ZIP file containing fit layers.
 #' @param proj_path Path to the ZIP file containing projection layers.
+#' @param show_modal Optional. Logical. Whether to show a modal notification for warnings. Default is FALSE.
 #' @return TRUE if the layers pass validation criteria, FALSE otherwise.
-#' @details This function compares fit and projection layers to ensure they have the same CRS, resolution, and covariates.
 #'
 #' @keywords internal
 validate_fit_proj_layers <- function(fit_layers_path, proj_path, show_modal = FALSE) {
@@ -254,13 +256,13 @@ validate_fit_proj_layers <- function(fit_layers_path, proj_path, show_modal = FA
   return(TRUE)
 }
 
-#' Validate Extent Polygon
+#' Read and Validate Extent Polygon
 #'
 #' This function validates a polygon file containing the extent. It checks if the file has the correct format.
 #'
 #' @param file_path Path to the polygon file containing the extent.
+#' @param show_modal Optional. Logical. Whether to show a modal notification for warnings. Default is FALSE.
 #' @return A spatial object representing the extent if the file is valid, NULL otherwise.
-#' @details This function validates the format of a polygon file containing the extent. It checks if the file has the correct format.
 #'
 #' @keywords internal
 read_extent_poly <- function(file_path, show_modal = FALSE){
@@ -278,15 +280,16 @@ read_extent_poly <- function(file_path, show_modal = FALSE){
   return(extent_poly)
 }
 
+
 #' Load Covariate Layers from ZIP Files
 #'
 #' This function loads covariate layers from a ZIP file, verifies their spatial characteristics, and returns them as a list of raster layers.
 #'
 #' @param file_path Path to the ZIP file containing covariate layers.
 #' @return A list containing raster layers for each covariate.
-#' @details This function expects the ZIP file to contain subdirectories for each covariate, with raster files stored within these directories. All covariates should have the same number of files and the same spatial characteristics (e.g., CRS, resolution).
+#' @keywords internal
 #' @export
-read_glossa_projections_layers <- function(file_path) {
+read_projections_layers <- function(file_path) {
   # Assumptions:
   # - ZIP files contain subdirectories for each covariate, with raster files stored within these directories
   # - All covariates have the same number of files and the same spatial characteristics (e.g., CRS, resolution)

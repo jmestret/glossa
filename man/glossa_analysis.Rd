@@ -2,7 +2,7 @@
 % Please edit documentation in R/glossa_analysis.R
 \name{glossa_analysis}
 \alias{glossa_analysis}
-\title{Main Analysis Function for Glossa Package}
+\title{Main Analysis Function for GLOSSA Package}
 \usage{
 glossa_analysis(
   pa_data = NULL,
@@ -38,7 +38,7 @@ glossa_analysis(
 
 \item{suitable_habitat}{A vector of scenarios ('fit_layers', 'projections') where habitat suitability modeling should be performed.}
 
-\item{other_analysis}{A vector of additional analyses to perform (e.g., 'variable_importance', 'response_curve', 'cross_validation').}
+\item{other_analysis}{A vector of additional analyses to perform (e.g., 'variable_importance', 'functional_responses', 'cross_validation').}
 
 \item{seed}{Optional; an integer seed for reproducibility of results.}
 
@@ -49,6 +49,6 @@ A list containing structured outputs from each major section of the analysis, in
 variable importance scores, and habitat suitability assessments.
 }
 \description{
-This function wraps all the analysis that the Glossa package performs. It processes presence-absence data,
+This function wraps all the analysis that the GLOSSA package performs. It processes presence-absence data,
 environmental covariates, and performs species distribution modeling and projections under past and future scenarios.
 }

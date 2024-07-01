@@ -1,12 +1,12 @@
-#' Run Glossa Shiny App
+#' Run GLOSSA Shiny App
 #'
-#' This function launches the Glossa Shiny web application.
+#' This function launches the GLOSSA Shiny web application.
 #'
 #' @param request_size_mb Maximum request size for file uploads, in megabytes. Default is 2000 MB.
 #' @param launch.browser Logical indicating whether to launch the app in the browser (default is TRUE).
 #' @param port Port number for the Shiny app. Uses the port specified by `getOption("shiny.port")` by default.
 #'
-#' @details The Glossa Shiny app provides an interactive interface for users to access Glossa functionalities.
+#' @details The GLOSSA Shiny app provides an interactive interface for users to access GLOSSA functionalities.
 #'
 #' @return NULL
 #' @export

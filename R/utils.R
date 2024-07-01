@@ -27,7 +27,7 @@ get_covariate_names <- function(file_path){
 #'
 #' This function extracts covariate values for species occurrences, excluding NA values.
 #'
-#' @param data A data frame containing species occurrence data with columns x/long and y/lat.
+#' @param data A data frame containing species occurrence data with columns x/long (first column) and y/lat (second column).
 #' @param covariate_layers A list of raster layers representing covariates.
 #' @return A data frame containing species occurrence data with covariate values, excluding NA values.
 #' @details This function extracts covariate values for each species occurrence location from the provided covariate layers. It returns a data frame containing species occurrence data with covariate values, excluding any NA values.

@@ -1,11 +1,11 @@
-#' Fit a BART Model Using Environmental Covariates
+#' Fit a BART Model Using Environmental Covariate Layers
 #'
 #' This function fits a Bayesian Additive Regression Trees (BART) model using
-#' environmental covariate layers.
+#' presence/absence data and environmental covariate layers.
 #'
-#' @param pa_coords Data frame with coordinates of presences and absences, and a column indicating presence or absence.
-#' @param layers A list of layer names to extract from the raster stack.
-#' @param seed Random seed for reproducibility.
+#' @param pa_coords Data frame with coordinates of presences and absences to extract the values from the layers, and a column (named 'pa') indicating presence (1) or absence (0).
+#' @param layers A SpatRaster with the environmental layers.
+#' @param seed Random seed.
 #'
 #' @return A BART model object.
 #'
@@ -30,11 +30,11 @@ fit_bart_model <- function(pa_coords, layers, seed = NULL) {
 #' Make Predictions Using a BART Model
 #'
 #' This function makes predictions using a Bayesian Additive Regression Trees (BART) model
-#' on a stack of environmental covariates.
+#' on a stack of environmental covariates ('SpatRaster').
 #'
-#' @param bart_model A BART model object obtained from fitting BART (bart).
+#' @param bart_model A BART model object obtained from fitting BART ('dbarts::bart').
 #' @param layers A SpatRaster object containing environmental covariates for prediction.
-#' @param cutoff An optional cutoff value for determining potential presences.
+#' @param cutoff An optional cutoff value for determining potential presences. If NULL potential presences and absences will not be computed.
 #'
 #' @return A SpatRaster containing the mean, median, standard deviation, and quantiles
 #' of the posterior predictive distribution.
@@ -107,10 +107,10 @@ predict_bart <- function(bart_model, layers, cutoff = NULL) {
 
 #' Calculate Response Curve Using BART Model
 #'
-#' This function calculates the response curve using a Bayesian Additive Regression Trees (BART) model.
+#' This function calculates the response curve (functional responses) using a Bayesian Additive Regression Trees (BART) model.
 #'
-#' @param bart_model A BART model object obtained from fitting BART (bart).
-#' @param data A data frame containing the predictor variables used in the BART model.
+#' @param bart_model A BART model object obtained from fitting BART ('dbarts::bart').
+#' @param data A data frame containing the predictor variables (the design matrix) used in the BART model.
 #' @param predictor_names A character vector containing the names of the predictor variables.
 #'
 #' @return A list containing a data frame for each independent variable with mean, 2.5th percentile, 97.5th percentile, and corresponding values of the variables.
@@ -196,10 +196,10 @@ pa_optimal_cutoff <- function(pa_coords, layers, model, seed = NULL) {
 #' using presence-absence data and environmental covariate layers. It calculates various performance metrics
 #' for model evaluation.
 #'
-#' @param pa_coords Data frame with coordinates of presences and absences, and a column indicating presence or absence.
+#' @param pa_coords Data frame with coordinates of presences and absences to extract the values from the layers, and a column (named 'pa') indicating presence (1) or absence (0).
 #' @param layers A list of layer names to extract from the raster stack.
 #' @param k Integer; number of folds for cross-validation (default is 5).
-#' @param seed Optional; random seed for reproducibility.
+#' @param seed Optional; random seed.
 #'
 #' @return A data frame containing the true positives (TP), false positives (FP), false negatives (FN), true negatives (TN),
 #' and various performance metrics including precision (PREC), sensitivity (SEN), specificity (SPC), false discovery rate (FDR),

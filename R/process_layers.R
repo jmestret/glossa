@@ -3,8 +3,8 @@
 #' This function crops and extends raster layers to a study area extent (bbox) defined by longitude
 #' and latitude then applies a mask based on a provided spatial polygon to remove areas outside the polygon.
 #'
-#' @param layers A SpatRaster object or stack of raster layers to be processed.
-#' @param study_area A spatial polygon (`sf` or `sp` object) used to mask the raster layers.
+#' @param layers A  stack of raster layers (`SpatRaster` object) to be processed.
+#' @param study_area A spatial polygon (`sf` object) used to mask the raster layers.
 #'
 #' @return A `SpatRaster` object representing the masked raster layers.
 #'

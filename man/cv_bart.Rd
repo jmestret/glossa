@@ -7,13 +7,13 @@
 cv_bart(pa_coords, layers, k = 5, seed = NULL)
 }
 \arguments{
-\item{pa_coords}{Data frame with coordinates of presences and absences, and a column indicating presence or absence.}
+\item{pa_coords}{Data frame with coordinates of presences and absences to extract the values from the layers, and a column (named 'pa') indicating presence (1) or absence (0).}
 
 \item{layers}{A list of layer names to extract from the raster stack.}
 
 \item{k}{Integer; number of folds for cross-validation (default is 5).}
 
-\item{seed}{Optional; random seed for reproducibility.}
+\item{seed}{Optional; random seed.}
 }
 \value{
 A data frame containing the true positives (TP), false positives (FP), false negatives (FN), true negatives (TN),

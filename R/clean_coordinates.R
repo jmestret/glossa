@@ -2,7 +2,7 @@
 #'
 #' This function removes duplicated points from a dataframe object based on specified coordinate column names.
 #'
-#' @param x A dataframe object.
+#' @param x A dataframe object with each row representing one point.
 #' @param coords Names of the coordinate columns used for identifying duplicate points.
 #'
 #' @return A dataframe without duplicated points.
@@ -37,7 +37,7 @@ remove_duplicate_points <- function(x, coords = c("decimalLongitude", "decimalLa
 #' This function removes points from a spatial dataframe that either fall within or outside the specified polygon,
 #' depending on the 'overlapping' parameter.
 #'
-#' @param x A dataframe object with points.
+#' @param x A dataframe object with rows representing points.
 #' @param study_area Polygon object (sf object) to define the region for point removal.
 #' @param overlapping Logical indicating whether to remove points within (TRUE) or outside (FALSE) the polygon.
 #' @param coords Character vector specifying the column names for longitude and latitude.
@@ -79,8 +79,8 @@ remove_points_poly <- function(x, study_area, overlapping = TRUE, coords = c("de
 #'
 #' This function cleans coordinates of presence/absence data by removing NA coordinates, rounding coordinates if specified, removing duplicated points, and removing points outside specified spatial polygon boundaries.
 #'
-#' @param data A data frame containing presence/absence data with columns "decimalLongitude" and "decimalLatitude".
-#' @param study_area A spatial polygon representing the boundaries within which coordinates should be kept.
+#' @param data  A dataframe object with rows representing points. Coordinates are in WGS84 (EPSG:4326) coordinate system.
+#' @param study_area A spatial polygon in WGS84 (EPSG:4326) representing the boundaries within which coordinates should be kept.
 #' @param overlapping Logical indicating whether points overlapping the polygon should be kept (TRUE) or removed (FALSE).
 #' @param decimal_digits Number of digits to round the coordinates to, if it is not NULL.
 #' @param coords Character vector specifying the column names for longitude and latitude.
@@ -92,7 +92,6 @@ remove_points_poly <- function(x, study_area, overlapping = TRUE, coords = c("de
 #' @export
 clean_coordinates <- function(data, study_area, overlapping = FALSE, decimal_digits = NULL, coords = c("decimalLongitude", "decimalLatitude")) {
   # Assumptions:
-  # - 'land_mask' is a spatial polygon representing the land boundaries
   # - Coordinates are in WGS84 (EPSG:4326) coordinate system
 
   # Remove NA coordinates

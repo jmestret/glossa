@@ -7,9 +7,9 @@
 layer_mask(layers, study_area)
 }
 \arguments{
-\item{layers}{A SpatRaster object or stack of raster layers to be processed.}
+\item{layers}{A  stack of raster layers (`SpatRaster` object) to be processed.}
 
-\item{study_area}{A spatial polygon (`sf` or `sp` object) used to mask the raster layers.}
+\item{study_area}{A spatial polygon (`sf` object) used to mask the raster layers.}
 }
 \value{
 A `SpatRaster` object representing the masked raster layers.

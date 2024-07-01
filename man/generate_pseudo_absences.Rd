@@ -16,7 +16,7 @@ generate_pseudo_absences(
 \arguments{
 \item{presences}{Data frame containing presence points.}
 
-\item{study_area}{Spatial polygon defining the study area.}
+\item{study_area}{Spatial polygon defining the study area ('sf').}
 
 \item{raster_stack}{SpatRaster containing covariate data.}
 
