@@ -1,8 +1,6 @@
 # GLOSSA - Global Species Spatiotemporal Analysis <img src="inst/app/www/logo_glossa.png" align="right" alt="" width="120" />
 
 [![License: GPL v3](https://img.shields.io/badge/License-GPL%20v3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
-<!--[![cran version](http://www.r-pkg.org/badges/version/glossa)](https://cran.r-project.org/package=DOYPAColors)-->
-<!--[![cran downloads](http://cranlogs.r-pkg.org/badges/grand-total/glossa)](https://github.com/metacran/cranlogs.app)-->
 [![Stars](https://img.shields.io/github/stars/jmestret/glossa.svg)](https://github.com/jmestret/glossa/stargazers)
 
 ***
@@ -24,4 +22,21 @@ library(glossa)
 run_glossa()
 ```
 
+## GUI
+
+### Home tab
+
+![home_tab](https://github.com/jmestret/glossa/blob/main/inst/app/www/img/glossa_gui_home.png)
+
+### New analysis tab
+
+![new_analysis_tab](https://github.com/jmestret/glossa/blob/main/inst/app/www/img/glossa_gui_new_analysis.png)
+
+### Reports tab
+
+![reports_tab](https://github.com/jmestret/glossa/blob/main/inst/app/www/img/glossa_gui_reports.png)
+
+### Export tab
+
+![export_tab](https://github.com/jmestret/glossa/blob/main/inst/app/www/img/glossa_gui_export.png)
 
