@@ -976,8 +976,8 @@ function(input, output, session) {
                                     presence_absence_list = presence_absence_list(),
                                     other_results = other_results(), pa_cutoff = pa_cutoff())
 
-      w$hide()
       zip::zip(zipfile = file, files = export_files, mode = "cherry-pick")
+      w$hide()
     }
   )
 

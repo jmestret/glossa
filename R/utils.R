@@ -206,7 +206,7 @@ glossa_export <- function(species = NULL, models = NULL, layer_results = NULL, f
         df <- presence_absence_list[["model_pa"]][[sp]]
         write.table(df, tmp_model_data, quote = FALSE, sep = "\t", dec = ".", row.names = FALSE, col.names = TRUE)
       } else {
-        warning("Unable to download model data as it has not been computed.")
+        warning(paste("Unable to download model data for", sp, "as it has not been computed."))
       }
 
     }
@@ -222,7 +222,7 @@ glossa_export <- function(species = NULL, models = NULL, layer_results = NULL, f
           write.table(df, file = file.path(tmp_var_imp, paste(gsub(" ", "_", sp), "_variable_importance_", mod, ".csv", sep = "")), quote = FALSE, sep = "\t", dec = ".", row.names = FALSE, col.names = TRUE)
         }
       } else {
-        warning("Unable to download variable importance as it has not been computed.")
+        warning(paste("Unable to download variable importance for", sp, "as it has not been computed."))
       }
 
     }
@@ -236,7 +236,7 @@ glossa_export <- function(species = NULL, models = NULL, layer_results = NULL, f
           write.table(other_results[["response_curve"]][[sp]][[cov]], file = file.path(tmp_fr, paste(gsub(" ", "_", sp), "_functional_response_", cov, ".csv", sep = "")), quote = FALSE, sep = "\t", dec = ".", row.names = FALSE, col.names = TRUE)
         }
       } else {
-        warning("Unable to download functional response results as they have not been computed.")
+        warning(paste("Unable to download functional response results for", sp, "as they have not been computed."))
       }
     }
 
@@ -249,7 +249,7 @@ glossa_export <- function(species = NULL, models = NULL, layer_results = NULL, f
           write.table(other_results[["cross_validation"]][[mode]][[sp]], file = file.path(tmp_cv, paste(gsub(" ", "_", sp), "_cross_validation_", mode, ".csv", sep = "")), quote = FALSE, sep = "\t", dec = ".", row.names = FALSE, col.names = TRUE)
         }
       } else {
-        warning("Unable to download cross-validation results as they have not been computed.")
+        warning(paste("Unable to download cross-validation results for", sp, "as they have not been computed."))
       }
     }
 
@@ -262,7 +262,7 @@ glossa_export <- function(species = NULL, models = NULL, layer_results = NULL, f
         df <- data.frame(model = names(sp_values), prob_cutoff = unlist(sp_values), row.names = NULL)
         write.table(df, tmp_cutoff, quote = FALSE, sep = "\t", dec = ".", row.names = FALSE, col.names = TRUE)
       } else {
-        warning("Unable to download P/A probability cutoff as they have not been computed.")
+        warning(paste("Unable to download P/A probability cutoff for", sp, "as they have not been computed."))
       }
     }
 
