@@ -10,5 +10,5 @@ test_that("Read presence/absence files", {
   pa_data <- glossa::read_presences_absences_csv(file_path = file1)
   study_area <- glossa::read_extent_poly(file_path = file2)
 
-  expect_s3_class(glossa::clean_coordinates(pa_data, study_area, decimal_digits = 4), "data.frame")
+  expect_s3_class(glossa::clean_coordinates(pa_data, study_area, decimal_digits = 4, by_timestamp = TRUE), "data.frame")
 })

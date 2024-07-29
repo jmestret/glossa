@@ -55,7 +55,6 @@ glossa_analysis <- function(
   other_results <- list(variable_importance = NULL, response_curve = NULL, cross_validation = NULL)
   pa_cutoff <- list(native_range = NULL, suitable_habitat = NULL)
   habitat_suitability <- list(fit_layers = NULL, projections = NULL)
-  design_matrix <- list()
 
   #=========================================================#
   # 1. Load presence(/absence) data and environmental layers ----
@@ -71,21 +70,21 @@ glossa_analysis <- function(
 
   # * Load covariate layers ----
   # Fit layers
-  covariate_list$fit_layers <- fit_layers
-  cov_names <- names(covariate_list$fit_layers)
+  covariate_list$fit_layers <- read_layers_zip(fit_layers)
+  cov_names <- names(covariate_list$fit_layers[[1]])
 
   # projections layers
   if ("projections" %in% native_range | "projections" %in% suitable_habitat){
     if (length(proj_files) <= 0){
       stop("Error: No projections layers provided.")
     }
-    covariate_list$projections <- lapply(proj_files, read_projections_layers)
+    covariate_list$projections <- lapply(proj_files, read_layers_zip)
     pred_scenario <- names(covariate_list$projections)
 
 
     # Check for same layers for fitting and projections
     same_fit_pred_layers <- all(sapply(covariate_list$projections, function(x){
-      all(names(x) == names(covariate_list$fit_layers))
+      all(names(x[[1]]) == cov_names)
     }))
     if (!same_fit_pred_layers){
       stop("Error: projection layers differ in the covariate names from fit layers.")
@@ -94,7 +93,7 @@ glossa_analysis <- function(
 
   # * Select predictor variables ----
   if (is.null(predictor_variables)){
-    predictor_variables <- lapply(seq_along(presence_absence_list$raw_pa), function(x) names(covariate_list$fit_layers))
+    predictor_variables <- lapply(seq_along(presence_absence_list$raw_pa), function(x) cov_names)
   }
   names(predictor_variables) <- sp_names
 
@@ -114,9 +113,16 @@ glossa_analysis <- function(
       study_area = study_area_poly,
       overlapping = FALSE,
       decimal_digits = decimal_digits,
-      coords = long_lat_cols
+      coords = long_lat_cols,
+      by_timestamp = TRUE
     )
   })
+
+  for (i in names(presence_absence_list$clean_pa)){
+    if (nrow(presence_absence_list$clean_pa[[i]]) == 0){
+      stop(paste("Error: Check input of species", i, "as after processing it has no remaining points for the analysis."))
+    }
+  }
 
   clean_coords_time <- Sys.time()
   print(paste("Clean coordinates execution time:", difftime(clean_coords_time, load_data_time, units = "secs"), "secs"))
@@ -130,27 +136,35 @@ glossa_analysis <- function(
 
   # * Process environmental layers for model fitting ----
   if (!is.null(study_area_poly)){
-    covariate_list$fit_layers <- layer_mask(layers = covariate_list$fit_layers, study_area = study_area_poly)
+    covariate_list$fit_layers <- lapply(covariate_list$fit_layers, function(x){
+      layer_mask(layers = x, study_area = study_area_poly)
+    })
   }
 
   if (scale_layers) {
-    # If need to compute functional responses save not scaled layers
-    if ("functional_responses" %in% other_analysis){
-      no_scaled_layers <- covariate_list$fit_layers
-    }
     # Compute mean and sd of the fit_layers model fitting layers for each environmental variable
-    fit_layers_mean <- terra::global(covariate_list$fit_layers, "mean", na.rm = TRUE)
-    fit_layers_sd <- terra::global(covariate_list$fit_layers, "sd", na.rm = TRUE)
+    fit_layers_mean <- lapply(cov_names, function(i){
+      mean(
+        unlist(lapply(covariate_list$fit_layers, function(x){as.vector(x[i])})),
+        na.rm = TRUE
+      )
+    })
+    names(fit_layers_mean) <- cov_names
+    fit_layers_mean <- unlist(fit_layers_mean)
+
+    fit_layers_sd <- lapply(cov_names, function(i){
+      sd(
+        unlist(lapply(covariate_list$fit_layers, function(x){as.vector(x[i])})),
+        na.rm = TRUE
+      )
+    })
+    names(fit_layers_sd) <- cov_names
+    fit_layers_sd <- unlist(fit_layers_sd)
 
     # Scale fit layers with fit_layers mean and sd
-    covariate_list$fit_layers <- lapply(1:terra::nlyr(covariate_list$fit_layers), function(x, i){
-      terra::scale(
-        x[[i]],
-        center = fit_layers_mean[i,],
-        scale = fit_layers_sd[i, ]
-      )
-    }, x = covariate_list$fit_layers)
-    covariate_list$fit_layers <- terra::rast(covariate_list$fit_layers)
+    covariate_list$fit_layers <- lapply(covariate_list$fit_layers, function(x){
+      terra::scale(x, center = fit_layers_mean, scale = fit_layers_sd)
+    })
   }
 
   # * Process projections environmental layers ----
@@ -167,16 +181,8 @@ glossa_analysis <- function(
     # Scale layers with fit_layers mean and sd
     if (scale_layers){
       covariate_list$projections <- lapply(covariate_list$projections, function(scenario){
-        scenario <- lapply(scenario, function(year){
-          year <- lapply(1:terra::nlyr(year), function(x, i){
-            terra::scale(
-              x[[i]],
-              center = fit_layers_mean[i,],
-              scale = fit_layers_sd[i, ]
-            )
-          }, x = covariate_list$fit_layers)
-          year <- terra::rast(year)
-          return(year)
+        scenario <- lapply(scenario, function(x){
+          terra::scale(x, center = fit_layers_mean, scale = fit_layers_sd)
         })
       })
     }
@@ -185,11 +191,8 @@ glossa_analysis <- function(
   process_layers_time <- Sys.time()
   print(paste("Layer processing execution time:", difftime(process_layers_time, clean_coords_time, units = "secs"), "secs"))
 
-  layers <- covariate_list$fit_layers # layer to fit models
-
-
   #=========================================================#
-  # 4. Remove presences/absences with NA values in covariates ----
+  # 4. Extract environmental variable values and remove presences/absences with NA values in covariates ----
   #=========================================================#
 
   if (!is.null(waiter)){waiter$update(html = tagList(img(src = "logo_glossa.gif", height = "200px"), h4("Loading..."), h4("Sit back, relax, and let us do the math!"),  h6("Building model matrix")))}
@@ -197,9 +200,8 @@ glossa_analysis <- function(
 
   # Remove points with NA values in any environmental variable
   presence_absence_list$model_pa <- lapply(seq_along(presence_absence_list$clean_pa), function(i){
-    x <- presence_absence_list$clean_pa[[i]][, c(long_lat_cols, "pa")]
-    fit_points <- extract_noNA_cov_values(x, layers[[predictor_variables[[i]]]]) %>%
-      dplyr::select(colnames(x))
+    x <- presence_absence_list$clean_pa[[i]][, c(long_lat_cols, "timestamp", "pa")]
+    fit_points <- extract_noNA_cov_values(x, covariate_list$fit_layers, predictor_variables[[i]])
     return(fit_points)
   })
   names(presence_absence_list$model_pa) <- names(presence_absence_list$clean_pa)
@@ -213,21 +215,19 @@ glossa_analysis <- function(
   presence_absence_list$model_pa <- lapply(seq_along(presence_absence_list$model_pa), function(i) {
     x <- presence_absence_list$model_pa[[i]]
     if (all(x[, "pa"] == 1)){
-      x <- generate_pseudo_absences(x, study_area_poly, layers[[predictor_variables[[i]]]], coords = long_lat_cols, digits = decimal_digits)
+      x <- generate_pseudo_absences(x, study_area_poly, covariate_list$fit_layers, predictor_variables = predictor_variables[[i]], coords = long_lat_cols, digits = decimal_digits)
     }
     return(x)
   })
   names(presence_absence_list$model_pa) <- names(presence_absence_list$clean_pa)
 
-  # * Create design matrix ----
-  design_matrix <- lapply(seq_along(presence_absence_list$model_pa), function (i){
-    terra::extract(
-      layers[[predictor_variables[[i]]]],
-      presence_absence_list$model_pa[[i]][, long_lat_cols]
-    ) %>%
-      dplyr::select(!"ID")
+  # * Aggregate timestamps of fitting layers for prediction - compute the mean of the layers
+  covariate_list$fit_layers <- lapply(cov_names, function(i){
+    single_cov_layers <- lapply(covariate_list$fit_layers, function(x) {x[i]})
+    mean_cov_layers <- terra::mean(terra::rast(single_cov_layers), na.rm = TRUE)
   })
-  names(design_matrix) <- names(presence_absence_list$model_pa)
+  covariate_list$fit_layers  <- terra::rast(covariate_list$fit_layers )
+  names(covariate_list$fit_layers) <- cov_names
 
   model_matrix_time <- Sys.time()
   print(paste("Build model matrix execution time:", difftime(model_matrix_time, process_layers_time, units = "secs"), "secs"))
@@ -241,17 +241,24 @@ glossa_analysis <- function(
     start_nr_time <- Sys.time()
 
     # Create layer with longitude and latitude values
-    coords_layer <- create_coords_layer(layers, study_area_poly, scale_layers = scale_layers)
-    names(coords_layer) <- long_lat_cols
+    coords_layer <- create_coords_layer(covariate_list$fit_layers, study_area_poly, scale_layers = scale_layers)
+    names(coords_layer) <- c("grid_long", "grid_lat")
+
+    # Extract values for each observation
+    presence_absence_list$model_pa <- lapply(presence_absence_list$model_pa, function(x){
+      x <- cbind(x, terra::extract(coords_layer, x[, long_lat_cols]))
+      x[,colnames(x) != "ID"]
+    })
 
     # * Fit bart ----
     if (!is.null(waiter)){waiter$update(html = tagList(img(src = "logo_glossa.gif", height = "200px"), h4("Loading..."), h4("Sit back, relax, and let us do the math!"),  h6("Fitting native range models")))}
     print("Fitting native range models...")
 
     models_native_range <- lapply(seq_along(presence_absence_list$model_pa), function(i){
+      print(head(presence_absence_list$model_pa[[i]]))
       fit_bart_model(
-        presence_absence_list$model_pa[[i]],
-        layers = c(layers[[predictor_variables[[i]]]], coords_layer),
+        y = presence_absence_list$model_pa[[i]][, "pa"],
+        x = presence_absence_list$model_pa[[i]][, c(predictor_variables[[i]], names(coords_layer)), drop = FALSE],
         seed = seed
       )
     })
@@ -271,8 +278,8 @@ glossa_analysis <- function(
     # * Optimal cutoff ----
     pa_cutoff$native_range <- lapply(names(models_native_range), function(sp) {
       pa_optimal_cutoff(
-        presence_absence_list$model_pa[[sp]][, c(long_lat_cols, "pa")],
-        c(layers[[predictor_variables[[sp]]]], coords_layer),
+        y = presence_absence_list$model_pa[[sp]][, "pa"],
+        x = presence_absence_list$model_pa[[sp]][, c(predictor_variables[[sp]], names(coords_layer)), drop = FALSE],
         models_native_range[[sp]]
       )
     })
@@ -287,7 +294,7 @@ glossa_analysis <- function(
     projections_results$fit_layers$native_range <- lapply(names(models_native_range), function(sp) {
       predict_bart(
         models_native_range[[sp]],
-        c(layers[[predictor_variables[[sp]]]], coords_layer),
+        c(covariate_list$fit_layers[[predictor_variables[[sp]]]], coords_layer),
         pa_cutoff$native_range[[sp]]
       )
     })
@@ -337,8 +344,8 @@ glossa_analysis <- function(
 
     models_suitable_habitat <- lapply(seq_along(presence_absence_list$model_pa), function(i){
       fit_bart_model(
-        presence_absence_list$model_pa[[i]],
-        layers = layers[[predictor_variables[[i]]]],
+        y = presence_absence_list$model_pa[[i]][, "pa"],
+        x = presence_absence_list$model_pa[[i]][, predictor_variables[[i]], drop = FALSE],
         seed = seed
       )
     })
@@ -356,8 +363,8 @@ glossa_analysis <- function(
     # * Optimal cutoff ----
     pa_cutoff$suitable_habitat <- lapply(names(models_suitable_habitat), function(sp) {
       pa_optimal_cutoff(
-        presence_absence_list$model_pa[[sp]],
-        layers[[predictor_variables[[sp]]]],
+        y = presence_absence_list$model_pa[[sp]][, "pa"],
+        x = presence_absence_list$model_pa[[sp]][, predictor_variables[[sp]], drop = FALSE],
         models_suitable_habitat[[sp]]
       )
     })
@@ -371,7 +378,7 @@ glossa_analysis <- function(
     projections_results$fit_layers$suitable_habitat <- lapply(names(models_suitable_habitat), function(sp) {
       predict_bart(
         models_suitable_habitat[[sp]],
-        layers[[predictor_variables[[sp]]]],
+        covariate_list$fit_layers[[predictor_variables[[sp]]]],
         pa_cutoff$suitable_habitat[[sp]]
       )
     })
@@ -464,34 +471,30 @@ glossa_analysis <- function(
     if (!is.null(waiter)){waiter$update(html = tagList(img(src = "logo_glossa.gif", height = "200px"), h4("Loading..."), h4("Sit back, relax, and let us do the math!"),  h6("Computing functional responses")))}
     print("Computing functional responses...")
 
-    if (scale_layers){
-      fr_layers <- no_scaled_layers
-    } else {
-      fr_layers <- layers
-    }
-
     other_results$response_curve <- lapply(names(presence_absence_list$model_pa), function(i){
-      x <- presence_absence_list$model_pa[[i]][, c(long_lat_cols, "pa")]
-      pred_layers <- fr_layers[[predictor_variables[[i]]]]
-      fit_data <- extract_noNA_cov_values(x, pred_layers)
-      fit_data <- fit_data %>%
-        dplyr::select("pa", !names(x))
-
       if (scale_layers | is.null(suitable_habitat)) {
-        set.seed(seed)
-        bart_model <- dbarts::bart(x.train = fit_data[,names(pred_layers), drop = FALSE],
-                                   y.train = fit_data[,"pa"],
-                                   keeptrees = TRUE)
+        # Variable values in original scale (inverse of z-score value)
+        x_original_scale <- lapply(predictor_variables[[i]], function(j){
+          fit_layers_mean[j] + (presence_absence_list$model_pa[[i]][, j] * fit_layers_sd[j])
+        })
+        x_original_scale <- as.data.frame(do.call(cbind, x_original_scale))
+        colnames(x_original_scale) <- predictor_variables[[i]]
 
-        invisible(bart_model$fit$state)
+        # Fit new model with variables without scaling
+        bart_model <- fit_bart_model(
+          y = presence_absence_list$model_pa[[i]][, "pa"],
+          x = x_original_scale,
+          seed = seed
+        )
       } else {
         bart_model <- models_suitable_habitat[[i]]
+        x_original_scale <- presence_absence_list$model_pa[[i]][, predictor_variables[[i]], drop = FALSE]
       }
 
       fr <- response_curve_bart(bart_model = bart_model,
-                                data = fit_data,
-                                predictor_names = names(pred_layers))
-      names(fr) <- names(pred_layers)
+                                data = x_original_scale,
+                                predictor_names = predictor_variables[[i]])
+      names(fr) <- predictor_variables[[i]]
       return(fr)
     })
     names(other_results$response_curve) <- names(presence_absence_list$model_pa)
@@ -516,8 +519,7 @@ glossa_analysis <- function(
 
     if (!is.null(native_range)){
       other_results$cross_validation$native_range <- lapply(names(presence_absence_list$model_pa), function(i){
-        cv_bart(pa_coords = presence_absence_list$model_pa[[i]],
-                layers = c(layers[[predictor_variables[[i]]]], coords_layer),
+        cv_bart(data = presence_absence_list$model_pa[[i]][, c("pa", predictor_variables[[i]], names(coords_layer))],
                 k = 10,
                 seed = seed)
       })
@@ -526,8 +528,7 @@ glossa_analysis <- function(
 
     if (!is.null(suitable_habitat)){
       other_results$cross_validation$suitable_habitat <- lapply(names(presence_absence_list$model_pa), function(i){
-        cv_bart(pa_coords = presence_absence_list$model_pa[[i]],
-                layers = layers[[predictor_variables[[i]]]],
+        cv_bart(data = presence_absence_list$model_pa[[i]][, c("pa", predictor_variables[[i]])],
                 k = 10,
                 seed = seed)
       })
@@ -543,10 +544,6 @@ glossa_analysis <- function(
   # 10. Finalizing -----
   #=========================================================#
   if (!is.null(waiter)){waiter$update(html = tagList(img(src = "logo_glossa.gif", height = "200px"), h4("Loading..."), h4("Sit back, relax, and let us do the math!"),  h6("Finalizing")))}
-
-  for (sp in names(presence_absence_list$model_pa)){
-    presence_absence_list$model_pa[[sp]] <- cbind(presence_absence_list$model_pa[[sp]], design_matrix[[sp]])
-  }
 
   end_time <- Sys.time()
   print(paste("GLOSSA analysis execution time:", difftime(end_time, start_time, units = "mins"), "mins"))

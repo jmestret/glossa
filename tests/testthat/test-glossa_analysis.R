@@ -14,7 +14,7 @@ test_that("GLOSSA analysis", {
   # Load data
   pa_data  <-  list("sp1" = glossa::read_presences_absences_csv(file_path = file1, file_name = "sp1"),
                     "sp2" = glossa::read_presences_absences_csv(file_path = file2, file_name = "sp2"))
-  fit_layers <- suppressWarnings(glossa::read_fit_layers_zip(file_path = file3))
+  fit_layers <- file3
   proj_files <- list("proj1" = file4)
   study_area_poly <- glossa::read_extent_poly(file_path = file5)
   predictor_variables <- NULL

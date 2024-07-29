@@ -5,6 +5,7 @@
 #' @param presences Data frame containing presence points.
 #' @param study_area Spatial polygon defining the study area ('sf').
 #' @param raster_stack SpatRaster containing covariate data.
+#' @param predictor_variables Name of the predictor variables selected for this species.
 #' @param coords Character vector specifying the column names for latitude and longitude.
 #' @param digits Number of decimal digits to round for the coordinates.
 #' @param attempts Number of attempts to generate exact pseudo-absences.
@@ -12,21 +13,23 @@
 #' @return Data frame containing both presence and pseudo-absence points.
 #'
 #' @export
-generate_pseudo_absences <- function(presences, study_area, raster_stack, coords = c("decimalLongitude", "decimalLatitude"), digits = NULL, attempts = 50) {
+generate_pseudo_absences <- function(presences, study_area, raster_stack, predictor_variables, coords = c("decimalLongitude", "decimalLatitude"), digits = NULL, attempts = 50) {
 
   # Check inputs
   if (!is.null(study_area)) {
     stopifnot(inherits(study_area, "sf") || inherits(study_area, "sfc"))
   }
-  stopifnot(inherits(raster_stack, "SpatRaster"))
+  stopifnot(inherits(raster_stack[[1]], "SpatRaster"))
 
   # Initialize variables
   n_presences <- nrow(presences)
-  absences <- data.frame(X = numeric(), Y = numeric())
-  colnames(absences) <- coords
+  timestamp_values <- presences$timestamp
+  col_names <- c(coords, "timestamp", predictor_variables)
+  absences <- data.frame(matrix(ncol = length(col_names), nrow = 0))
+  colnames(absences) <- col_names
   if(is.null(study_area)){
-    crs <- terra::crs(raster_stack)
-    bounding_box <- sf::st_bbox(as.vector(terra::ext(raster_stack))[c("xmin", "ymin", "xmax", "ymax")])
+    crs <- terra::crs(raster_stack[[1]])
+    bounding_box <- sf::st_bbox(as.vector(terra::ext(raster_stack[[1]]))[c("xmin", "ymin", "xmax", "ymax")])
   } else {
     crs <- sf::st_crs(study_area)
     bounding_box <- sf::st_bbox(study_area)
@@ -58,18 +61,30 @@ generate_pseudo_absences <- function(presences, study_area, raster_stack, coords
       new_abs <- round(new_abs, digits) # Custom round precision
     }
 
-    # Remove points with missing covariate values
-    design_matrix <- terra::extract(raster_stack, new_abs)
-    new_abs <- new_abs[complete.cases(design_matrix), ]
+    # Sample timestamp values
+    timestamp_sampled <- sample(timestamp_values, nrow(new_abs))
+    new_abs$timestamp <- timestamp_sampled
+
+    # Extract covariate values and remove points with missing covariate values
+    if (nrow(new_abs) > 0){
+      new_abs <- extract_noNA_cov_values(new_abs, raster_stack, predictor_variables)
+    }
+
+    if (nrow(new_abs) > 0){
+      timestamp_keeped <- new_abs$timestamp
+
+      # Update remaining timestamp values
+      timestamp_values <- timestamp_values[-match(timestamp_keeped, timestamp_values)]
+    }
 
     # Bind with already sampled absences
     absences <- rbind(absences, new_abs)
 
     # Remove duplicate points
-    absences <- remove_duplicate_points(absences, coords = coords)
+    absences <- remove_duplicate_points(absences, coords = c(coords, "timestamp"))
 
     # Remove points already present in the occurrence data
-    absences <- dplyr::anti_join(absences, presences, by = coords)
+    absences <- dplyr::anti_join(absences, presences, by = c(coords, "timestamp"))
 
     # Increment attempt counter
     curr_attempt <- curr_attempt + 1
@@ -80,17 +95,8 @@ generate_pseudo_absences <- function(presences, study_area, raster_stack, coords
     }
   }
 
-  # Add year to absences
-  if ("year" %in% colnames(presences)){
-    absences$year <- presences$year
-  }
-
   # Add species information to absences
-  absences$species <- presences$species
-
-  # Extract covariate values for absences
-  #absences <- extract_noNA_cov_values(absences, raster_stack) %>%
-  #  dplyr::select(!ID)
+  # absences$species <- presences$species
 
   # Set presence/absence indicator
   presences$pa <- 1

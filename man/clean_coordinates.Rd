@@ -9,7 +9,8 @@ clean_coordinates(
   study_area,
   overlapping = FALSE,
   decimal_digits = NULL,
-  coords = c("decimalLongitude", "decimalLatitude")
+  coords = c("decimalLongitude", "decimalLatitude"),
+  by_timestamp = TRUE
 )
 }
 \arguments{
@@ -22,6 +23,8 @@ clean_coordinates(
 \item{decimal_digits}{Number of digits to round the coordinates to, if it is not NULL.}
 
 \item{coords}{Character vector specifying the column names for longitude and latitude.}
+
+\item{by_timestamp}{If TRUE it will be clean coordinates taking into account different time periods defined in the column `timestamp`.}
 }
 \value{
 A cleaned data frame containing presence/absence data with valid coordinates.

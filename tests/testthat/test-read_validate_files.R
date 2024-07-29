@@ -21,7 +21,7 @@ test_that("Read fit_layers file", {
   file1 <- system.file("extdata", "fit_layers.zip", package="glossa")
 
   suppressWarnings(
-    expect_s4_class(glossa::read_fit_layers_zip(file_path = file1), "SpatRaster")
+    expect_s4_class(glossa::read_layers_zip(file_path = file1)[[1]], "SpatRaster")
   )
 })
 
@@ -33,7 +33,7 @@ test_that("Read projection layers", {
   file1 <- system.file("extdata", "project_layers_1.zip", package="glossa")
 
   suppressWarnings(
-    expect_type(glossa::read_projections_layers(file_path = file1), "list")
+    expect_type(glossa::read_layers_zip(file_path = file1), "list")
   )
 })
 
@@ -45,7 +45,7 @@ test_that("Validate projection layers", {
   file1 <- system.file("extdata", "fit_layers.zip", package="glossa")
   file2 <- system.file("extdata", "project_layers_1.zip", package="glossa")
 
-  expect_type(glossa::validate_projection_layers_zip(file_path = file1), "character")
+  expect_type(glossa::validate_layers_zip(file_path = file1), "logical")
   expect_equal(glossa::validate_fit_proj_layers(file1, file2), TRUE)
 })
 

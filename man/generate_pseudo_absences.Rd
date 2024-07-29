@@ -8,6 +8,7 @@ generate_pseudo_absences(
   presences,
   study_area,
   raster_stack,
+  predictor_variables,
   coords = c("decimalLongitude", "decimalLatitude"),
   digits = NULL,
   attempts = 50
@@ -19,6 +20,8 @@ generate_pseudo_absences(
 \item{study_area}{Spatial polygon defining the study area ('sf').}
 
 \item{raster_stack}{SpatRaster containing covariate data.}
+
+\item{predictor_variables}{Name of the predictor variables selected for this species.}
 
 \item{coords}{Character vector specifying the column names for latitude and longitude.}
 

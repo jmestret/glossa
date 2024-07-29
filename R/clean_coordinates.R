@@ -45,7 +45,7 @@ remove_duplicate_points <- function(x, coords = c("decimalLongitude", "decimalLa
 #' @return A data.frame containing the filtered points.
 #'
 #' @export
-remove_points_poly <- function(x, study_area, overlapping = TRUE, coords = c("decimalLongitude", "decimalLatitude")) {
+remove_points_poly <- function(x, study_area, overlapping = FALSE, coords = c("decimalLongitude", "decimalLatitude")) {
   # Check if x is a dataframe
   if (!is.data.frame(x)) {
     stop("Argument 'x' must be a data.frame object.")
@@ -66,11 +66,19 @@ remove_points_poly <- function(x, study_area, overlapping = TRUE, coords = c("de
   }
 
   # Convert back to data.frame
-  filtered_points <- cbind(sf::st_coordinates(filtered_points)[, "X"],
-                           sf::st_coordinates(filtered_points)[, "Y"],
-                           as.data.frame(filtered_points))
-  colnames(filtered_points)[1:2] <- coords
-  filtered_points <- filtered_points[, -ncol(filtered_points)]
+  filtered_points <- tryCatch({
+    filtered_points <- cbind(sf::st_coordinates(filtered_points)[, "X"],
+                             sf::st_coordinates(filtered_points)[, "Y"],
+                             as.data.frame(filtered_points))
+    colnames(filtered_points)[1:2] <- coords
+    filtered_points <- filtered_points[, -ncol(filtered_points)]
+    filtered_points
+  }, error = function(e){
+    filtered_points <- data.frame(matrix(ncol = 4, nrow = 0))
+    colnames(filtered_points) <- c(coords, "timestamp", "pa")
+    filtered_points
+  })
+
 
   return(filtered_points)
 }
@@ -84,18 +92,23 @@ remove_points_poly <- function(x, study_area, overlapping = TRUE, coords = c("de
 #' @param overlapping Logical indicating whether points overlapping the polygon should be kept (TRUE) or removed (FALSE).
 #' @param decimal_digits Number of digits to round the coordinates to, if it is not NULL.
 #' @param coords Character vector specifying the column names for longitude and latitude.
+#' @param by_timestamp If TRUE it will be clean coordinates taking into account different time periods defined in the column `timestamp`.
 #'
 #' @return A cleaned data frame containing presence/absence data with valid coordinates.
 #'
 #' @details This function takes a data frame containing presence/absence data with longitude and latitude coordinates, a spatial polygon representing boundaries within which to keep points, and parameters for rounding coordinates and handling duplicated points. It returns a cleaned data frame with valid coordinates within the specified boundaries.
 #'
 #' @export
-clean_coordinates <- function(data, study_area, overlapping = FALSE, decimal_digits = NULL, coords = c("decimalLongitude", "decimalLatitude")) {
+clean_coordinates <- function(data, study_area, overlapping = FALSE, decimal_digits = NULL, coords = c("decimalLongitude", "decimalLatitude"), by_timestamp = TRUE) {
   # Assumptions:
   # - Coordinates are in WGS84 (EPSG:4326) coordinate system
 
   # Remove NA coordinates
-  data <- data[complete.cases(data[, coords]), ]
+  if (by_timestamp){
+    data <- data[complete.cases(data[, c(coords, "timestamp")]), ]
+  } else {
+    data <- data[complete.cases(data[, coords]), ]
+  }
 
   # Round coordinates
   if (!is.null(decimal_digits)) {
@@ -104,7 +117,11 @@ clean_coordinates <- function(data, study_area, overlapping = FALSE, decimal_dig
   }
 
   # Remove duplicated points
-  data <- remove_duplicate_points(data, coords = coords)
+  if (by_timestamp){
+    data <- remove_duplicate_points(data, coords = c(coords, "timestamp"))
+  } else {
+    data <- remove_duplicate_points(data, coords = coords)
+  }
 
   # Remove points outside the study area
   if (!is.null(study_area)){

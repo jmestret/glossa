@@ -29,17 +29,19 @@ get_covariate_names <- function(file_path){
 #'
 #' @param data A data frame containing species occurrence data with columns x/long (first column) and y/lat (second column).
 #' @param covariate_layers A list of raster layers representing covariates.
+#' @param predictor_variables Variables to select from all the layers.
 #' @return A data frame containing species occurrence data with covariate values, excluding NA values.
 #' @details This function extracts covariate values for each species occurrence location from the provided covariate layers. It returns a data frame containing species occurrence data with covariate values, excluding any NA values.
 #'
 #' @export
-extract_noNA_cov_values <- function(data, covariate_layers){
-  covariate_values <- terra::extract(
-    covariate_layers,
-    data[, c(1, 2)]
-  )
+extract_noNA_cov_values <- function(data, covariate_layers, predictor_variables){
+  # Extract value by year
+  covariate_values <- apply(data, 1, function(x){
+    terra::extract(covariate_layers[[x["timestamp"]]], t(matrix(x[c(1, 2)])))
+  })
+  covariate_values <- do.call(rbind, covariate_values)
 
-  covariate_values <- cbind(data, covariate_values) %>%
+  covariate_values <- cbind(data, covariate_values[, predictor_variables, drop = FALSE]) %>%
     tidyr::drop_na()
 
   return(covariate_values)

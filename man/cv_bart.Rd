@@ -4,14 +4,12 @@
 \alias{cv_bart}
 \title{Cross-Validation for BART Model}
 \usage{
-cv_bart(pa_coords, layers, k = 5, seed = NULL)
+cv_bart(data, k = 10, seed = NULL)
 }
 \arguments{
-\item{pa_coords}{Data frame with coordinates of presences and absences to extract the values from the layers, and a column (named 'pa') indicating presence (1) or absence (0).}
+\item{data}{Data frame with a column (named 'pa') indicating presence (1) or absence (0) and columns for the predictor variables.}
 
-\item{layers}{A list of layer names to extract from the raster stack.}
-
-\item{k}{Integer; number of folds for cross-validation (default is 5).}
+\item{k}{Integer; number of folds for cross-validation (default is 10).}
 
 \item{seed}{Optional; random seed.}
 }

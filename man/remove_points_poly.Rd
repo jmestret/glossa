@@ -7,7 +7,7 @@
 remove_points_poly(
   x,
   study_area,
-  overlapping = TRUE,
+  overlapping = FALSE,
   coords = c("decimalLongitude", "decimalLatitude")
 )
 }

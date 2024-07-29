@@ -4,12 +4,12 @@
 \alias{fit_bart_model}
 \title{Fit a BART Model Using Environmental Covariate Layers}
 \usage{
-fit_bart_model(pa_coords, layers, seed = NULL)
+fit_bart_model(y, x, seed = NULL)
 }
 \arguments{
-\item{pa_coords}{Data frame with coordinates of presences and absences to extract the values from the layers, and a column (named 'pa') indicating presence (1) or absence (0).}
+\item{y}{Vector indicating presence (1) or absence (0).}
 
-\item{layers}{A SpatRaster with the environmental layers.}
+\item{x}{Dataframe with same number of rows as the length of the vector `y` with the covariate values.}
 
 \item{seed}{Random seed.}
 }

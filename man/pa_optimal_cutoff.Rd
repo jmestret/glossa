@@ -4,12 +4,12 @@
 \alias{pa_optimal_cutoff}
 \title{Optimal Cutoff for Presence-Absence Prediction}
 \usage{
-pa_optimal_cutoff(pa_coords, layers, model, seed = NULL)
+pa_optimal_cutoff(y, x, model, seed = NULL)
 }
 \arguments{
-\item{pa_coords}{Data frame with coordinates of presences and absences, and a column indicating presence or absence.}
+\item{y}{Vector indicating presence (1) or absence (0).}
 
-\item{layers}{A list of layer names to extract from the raster stack.}
+\item{x}{Dataframe with same number of rows as the length of the vector `y` with the covariate values.}
 
 \item{model}{A BART model object.}
 

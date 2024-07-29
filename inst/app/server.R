@@ -7,9 +7,10 @@ function(input, output, session) {
   # Inputs
   pa_data <- reactiveVal()
   pa_validation_table <- reactiveVal()
-  fit_layers <- reactiveVal()
+  fit_layers_path <- reactiveVal()
+  fit_layers_previs <- reactiveVal()
   fit_layers_validation_table <- reactiveVal()
-  proj_layers <- reactiveVal()
+  proj_layers_path <- reactiveVal()
   proj_validation_table <- reactiveVal()
   study_area_poly <- reactiveVal()
   extent_validation_table <- reactiveVal()
@@ -63,8 +64,8 @@ function(input, output, session) {
 
   # name of uploaded predictor variables (name of files)
   predictor_variables <- reactive({
-    req(fit_layers())
-    return(names(fit_layers()))
+    req(fit_layers_previs())
+    return(names(fit_layers_previs()))
   })
 
   #=========================================================#
@@ -114,8 +115,8 @@ function(input, output, session) {
   })
 
   observe({
-    req(fit_layers())
-    updatePickerInput(session, "previsualization_plot_layer", choices = c(names(fit_layers()), "None"))
+    req(fit_layers_previs())
+    updatePickerInput(session, "previsualization_plot_layer", choices = c(names(fit_layers_previs()), "None"))
   })
 
   # * Validate inputs ----
@@ -133,7 +134,7 @@ function(input, output, session) {
       )
       w$show()
 
-      # Read files
+      # Read and validate files
       data <- apply(pa_files_input(), 1, function(x){
         glossa::read_presences_absences_csv(x["datapath"], x["name"], show_modal = TRUE)
       })
@@ -150,7 +151,8 @@ function(input, output, session) {
   observeEvent(fit_layers_input(), {
     # Check is not null and it was possible to upload the data
     if (is.null(fit_layers_input())){
-      fit_layers(NULL)
+      fit_layers_path(NULL)
+      fit_layers_previs(NULL)
     } else {
       # Turn on waiter
       w <- waiter::Waiter$new(id = "data_upload",
@@ -161,8 +163,16 @@ function(input, output, session) {
       )
       w$show()
 
-      # Read files
-      fit_layers(glossa::read_fit_layers_zip(fit_layers_input()[, "datapath"], show_modal = TRUE))
+      # Validate layers
+      is_valid <- glossa::validate_layers_zip(fit_layers_input()[, "datapath"], show_modal = TRUE)
+
+      if (is_valid == TRUE){
+        # Save path
+        fit_layers_path(fit_layers_input()[, "datapath"])
+
+        # Read last layer for previsualization
+        fit_layers_previs(glossa::read_last_layer(fit_layers_input()[, "datapath"]))
+      }
 
       w$hide()
     }
@@ -171,7 +181,7 @@ function(input, output, session) {
   observeEvent(proj_layers_input(), {
     # Check is not null and it was possible to upload the data
     if (is.null(proj_layers_input())){
-      proj_layers(NULL)
+      proj_layers_path(NULL)
     } else {
       # Turn on waiter
       w <- waiter::Waiter$new(id = "data_upload",
@@ -182,16 +192,20 @@ function(input, output, session) {
       )
       w$show()
 
-      # Read files
+      # Validate layers and safe file path
       layers <- apply(proj_layers_input(), 1, function(x){
-        glossa::validate_projection_layers_zip(x["datapath"], show_modal = TRUE)
+        if (glossa::validate_layers_zip(x["datapath"], show_modal = TRUE)){
+          return(x["datapath"])
+        } else {
+          return(NULL)
+        }
       })
       if (is.null(layers)){
         layers <- list(layers)
       }
       names(layers) <- sub("\\.zip$", "", proj_layers_input()[,"name"])
 
-      proj_layers(layers)
+      proj_layers_path(layers)
       w$hide()
     }
   })
@@ -217,13 +231,19 @@ function(input, output, session) {
     }
   })
 
-  observeEvent(pa_files_input(), {
+  observeEvent(c(pa_data(), fit_layers_path()), {
     if (is.null(pa_files_input()) | is.null(pa_data())){
       pa_validation_table(NULL)
     } else {
       # Check which ones where properly loaded
       validation_table <- as.data.frame(pa_files_input())
-      validation_table[, "validation"] <- !sapply(pa_data(), is.null)
+
+      if(!is.null(fit_layers_path())){
+        validation_table[, "validation"] <- !sapply(pa_data(), is.null) & sapply(pa_data(), function(x){glossa::validate_pa_fit_time(x, fit_layers_path(), show_modal = TRUE)})
+      } else {
+        validation_table[, "validation"] <- !sapply(pa_data(), is.null)
+      }
+
       validation_table[, "name"] <- paste(as.character(icon("map-location-dot",style = "font-size:2rem; color:#007bff;")), validation_table[, "name"])
       pa_validation_table(validation_table)
     }
@@ -235,17 +255,17 @@ function(input, output, session) {
     } else {
       validation_table <- as.data.frame(fit_layers_input())
       validation_table[, "name"] <- paste(as.character(icon("layer-group", style = "font-size:2rem; color:#007bff;")), validation_table[, "name"])
-      if (is.null(fit_layers())){
+      if (is.null(fit_layers_path())){
         validation_table[, "validation"] <- FALSE
       } else {
-        validation_table[, "validation"] <- !is.null(fit_layers())
+        validation_table[, "validation"] <- !is.null(fit_layers_path())
       }
       fit_layers_validation_table(validation_table)
     }
   })
 
-  observeEvent(c(proj_layers_input(), fit_layers_input()), {
-    if (is.null(proj_layers_input()) | is.null(proj_layers())){
+  observeEvent(c(proj_layers_path(),  fit_layers_path()), {
+    if (is.null(proj_layers_input()) | is.null(proj_layers_path())){
       proj_validation_table(NULL)
     } else {
       # Check which ones where properly loaded
@@ -253,9 +273,9 @@ function(input, output, session) {
       validation_table[, "name"] <- paste(as.character(icon("forward",style = "font-size:2rem; color:#007bff;")), validation_table[, "name"])
 
       if(!is.null(fit_layers_input())){
-        validation_table[, "validation"] <- !sapply(proj_layers(), is.null) & sapply(proj_layers_input()[, "datapath"], function(x){glossa::validate_fit_proj_layers(fit_layers_input()[, "datapath"], x, show_modal = TRUE)})
+        validation_table[, "validation"] <- !sapply(proj_layers_path(), is.null) & sapply(proj_layers_path(), function(x){glossa::validate_fit_proj_layers(fit_layers_path(), x, show_modal = TRUE)})
       } else {
-        validation_table[, "validation"] <- !sapply(proj_layers(), is.null)
+        validation_table[, "validation"] <- !sapply(proj_layers_path(), is.null)
       }
       proj_validation_table(validation_table)
     }
@@ -360,9 +380,10 @@ function(input, output, session) {
     # Reset data upload
     pa_data(NULL)
     pa_validation_table(NULL)
-    fit_layers(NULL)
+    fit_layers_path(NULL)
+    fit_layers_previs(NULL)
     fit_layers_validation_table(NULL)
-    proj_layers(NULL)
+    proj_layers_path(NULL)
     proj_validation_table(NULL)
     study_area_poly(NULL)
     extent_validation_table(NULL)
@@ -442,28 +463,40 @@ function(input, output, session) {
     })
 
     # Run GLOSSA analysis
-    glossa_results <- glossa::glossa_analysis(
-      pa_data = pa_data(),
-      fit_layers = fit_layers(),
-      proj_files = proj_layers(),
-      study_area_poly = study_area_poly(),
-      predictor_variables = predictor_variables,
-      decimal_digits = switch(input$round_digits + 1, NULL, input$decimal_digits),
-      scale_layers = input$scale_layers,
-      native_range = input$analysis_options_nr,
-      suitable_habitat = input$analysis_options_sh,
-      other_analysis = input$analysis_options_other,
-      seed = input$seed,
-      waiter = w
-    )
+    glossa_results <- tryCatch({
+      glossa::glossa_analysis(
+        pa_data = pa_data(),
+        fit_layers = fit_layers_path(),
+        proj_files = proj_layers_path(),
+        study_area_poly = study_area_poly(),
+        predictor_variables = predictor_variables,
+        decimal_digits = switch(input$round_digits + 1, NULL, input$decimal_digits),
+        scale_layers = input$scale_layers,
+        native_range = input$analysis_options_nr,
+        suitable_habitat = input$analysis_options_sh,
+        other_analysis = input$analysis_options_other,
+        seed = input$seed,
+        waiter = w
+      )
+    },
+    error = function(e) {
+      message(e)
+      NULL
+    })
 
-    # Move to Reports tab
-    bs4Dash::updateTabItems(session, "sidebar_menu", "reports")
+    if (!is.null(glossa_results)){
+      # Move to Reports tab
+      bs4Dash::updateTabItems(session, "sidebar_menu", "reports")
+    }
 
     # Hide waiter
     w$hide()
 
-    showNotification("GLOSSA analysis done!", duration = NULL, closeButton = TRUE, type = "message")
+    if (!is.null(glossa_results)){
+      showNotification("GLOSSA analysis done!", duration = NULL, closeButton = TRUE, type = "message")
+    } else {
+      showNotification("An error has occurred during the GLOSSA analysis. Check your files and if it still does not work, please contact us.", duration = NULL, closeButton = TRUE, type = "error")
+    }
 
     presence_absence_list(glossa_results$presence_absence_list)
     covariate_list(glossa_results$covariate_list)
@@ -685,11 +718,11 @@ function(input, output, session) {
 
   # add environmental raster layers
   observeEvent(input$previsualization_plot_layer, {
-    req(fit_layers())
+    req(fit_layers_previs())
     if (input$previsualization_plot_layer != "None"){
       previsualization_plot %>%
         leaflet::clearImages() %>%
-        leaflet::addRasterImage(terra::crop(fit_layers()[input$previsualization_plot_layer], ext(-180, 180, -87, 87)),
+        leaflet::addRasterImage(terra::crop(fit_layers_previs()[input$previsualization_plot_layer], ext(-180, 180, -87, 87)),
                                 colors = c("#A1D4B1","#2BAF90","#F1A512","#DD4111","#8C0027"), opacity = 0.5)
     } else {
       previsualization_plot %>%
@@ -867,7 +900,9 @@ function(input, output, session) {
         raw_points[, long_lat_cols()[2]] <- round(raw_points[, long_lat_cols()[2]], decimal_digits)
       }
       raw_points <- dplyr::anti_join(raw_points, model_points, by = long_lat_cols())
-      raw_points$type <- "discarded"
+      if (nrow(raw_points) > 0){
+        raw_points$type <- "discarded"
+      }
 
       tmp_data <- rbind(raw_points, model_points)
 

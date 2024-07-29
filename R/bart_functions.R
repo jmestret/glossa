@@ -3,21 +3,17 @@
 #' This function fits a Bayesian Additive Regression Trees (BART) model using
 #' presence/absence data and environmental covariate layers.
 #'
-#' @param pa_coords Data frame with coordinates of presences and absences to extract the values from the layers, and a column (named 'pa') indicating presence (1) or absence (0).
-#' @param layers A SpatRaster with the environmental layers.
+#' @param y Vector indicating presence (1) or absence (0).
+#' @param x Dataframe with same number of rows as the length of the vector `y` with the covariate values.
 #' @param seed Random seed.
 #'
 #' @return A BART model object.
 #'
 #' @export
-fit_bart_model <- function(pa_coords, layers, seed = NULL) {
-  fit_data <- extract_noNA_cov_values(pa_coords, layers)
-  fit_data <- fit_data %>%
-    dplyr::select("pa", !names(pa_coords))
-
+fit_bart_model <- function(y, x, seed = NULL) {
   set.seed(seed)
-  bart_model <- dbarts::bart(x.train = fit_data[, names(layers), drop = FALSE],
-                             y.train = fit_data[,"pa"],
+  bart_model <- dbarts::bart(x.train = x,
+                             y.train = y,
                              keeptrees = TRUE)
 
   invisible(bart_model$fit$state)
@@ -167,23 +163,21 @@ variable_importance <- function(bart_model) {
 #'
 #' This function calculates the optimal cutoff for presence-absence prediction using a BART model.
 #'
-#' @param pa_coords Data frame with coordinates of presences and absences, and a column indicating presence or absence.
-#' @param layers A list of layer names to extract from the raster stack.
+#' @param y Vector indicating presence (1) or absence (0).
+#' @param x Dataframe with same number of rows as the length of the vector `y` with the covariate values.
 #' @param model A BART model object.
 #' @param seed Random seed for reproducibility.
 #'
 #' @return The optimal cutoff value for presence-absence prediction.
 #'
 #' @export
-pa_optimal_cutoff <- function(pa_coords, layers, model, seed = NULL) {
-  data <- terra::extract(layers, pa_coords[, c(1, 2)]) # coordinates have to be (x,y) or (lon, lat)
-
+pa_optimal_cutoff <- function(y, x, model, seed = NULL) {
   set.seed(seed)
-  pred_data <- dbarts:::predict.bart(model, newdata = data[, names(layers), drop = FALSE])
+  pred_data <- dbarts:::predict.bart(model, newdata = x)
   pred_mean <- colMeans(pred_data)
 
   pa_cutoff <- optimalCutoff(
-    actuals = pa_coords[, "pa"],
+    actuals = y,
     predictedScores = pred_mean
   )
 
@@ -196,9 +190,8 @@ pa_optimal_cutoff <- function(pa_coords, layers, model, seed = NULL) {
 #' using presence-absence data and environmental covariate layers. It calculates various performance metrics
 #' for model evaluation.
 #'
-#' @param pa_coords Data frame with coordinates of presences and absences to extract the values from the layers, and a column (named 'pa') indicating presence (1) or absence (0).
-#' @param layers A list of layer names to extract from the raster stack.
-#' @param k Integer; number of folds for cross-validation (default is 5).
+#' @param data Data frame with a column (named 'pa') indicating presence (1) or absence (0) and columns for the predictor variables.
+#' @param k Integer; number of folds for cross-validation (default is 10).
 #' @param seed Optional; random seed.
 #'
 #' @return A data frame containing the true positives (TP), false positives (FP), false negatives (FN), true negatives (TN),
@@ -207,30 +200,38 @@ pa_optimal_cutoff <- function(pa_coords, layers, model, seed = NULL) {
 #' and true skill statistic (TSS) for each fold.
 #'
 #' @export
-cv_bart <- function(pa_coords, layers, k = 5, seed = NULL){
+cv_bart <- function(data, k = 10, seed = NULL){
   set.seed(seed)
-  # Extract covariate values
-  pa_coords <- extract_noNA_cov_values(pa_coords, layers)
-  n <- nrow(pa_coords)
+  n <- nrow(data)
   # Create index vector
   k_index <- rep(1:k, length.out = n)
   # Randomize vector
   k_index <- sample(k_index)
-  pa_coords$k <- k_index
+  data$k <- k_index
   TP <- c()
   FP <- c()
   FN <- c()
   TN <- c()
   for (i in 1:k){
     # Split train-test
-    train <- pa_coords[pa_coords$k != i, ]
-    test <- pa_coords[pa_coords$k == i, ]
-    bart_model <- dbarts::bart(x.train = train[, names(layers), drop = FALSE],
-                               y.train = train[,"pa"],
-                               keeptrees = TRUE)
-    invisible(bart_model$fit$state)
-    cutoff <- pa_optimal_cutoff(train, layers, bart_model)
-    pred <- dbarts:::predict.bart(bart_model, test[, names(layers), drop = FALSE])
+    train <- data[data$k != i, ]
+    test <- data[data$k == i, ]
+
+    # Fit model
+    bart_model <- fit_bart_model(
+      y = train[, "pa"],
+      x = train[, colnames(train) != "pa", drop = FALSE],
+      seed = seed
+    )
+
+    # Compute optimal cutoff to predict presence/absence
+    cutoff <- pa_optimal_cutoff(
+      y = train[, "pa"],
+      x = train[, colnames(train) != "pa", drop = FALSE],
+      bart_model
+    )
+
+    pred <- dbarts:::predict.bart(bart_model, test[, colnames(test) != "pa", drop = FALSE])
     pred <- colMeans(pred)
     potential_presences <- ifelse(pred >= cutoff, 1, 0)
 

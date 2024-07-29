@@ -4,12 +4,14 @@
 \alias{extract_noNA_cov_values}
 \title{Extract Non-NA Covariate Values}
 \usage{
-extract_noNA_cov_values(data, covariate_layers)
+extract_noNA_cov_values(data, covariate_layers, predictor_variables)
 }
 \arguments{
 \item{data}{A data frame containing species occurrence data with columns x/long (first column) and y/lat (second column).}
 
 \item{covariate_layers}{A list of raster layers representing covariates.}
+
+\item{predictor_variables}{Variables to select from all the layers.}
 }
 \value{
 A data frame containing species occurrence data with covariate values, excluding NA values.
