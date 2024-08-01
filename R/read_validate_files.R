@@ -34,15 +34,18 @@ read_presences_absences_csv <- function(file_path, file_name = NULL, show_modal 
 
   # Check if the data has the expected columns
   if (all(coords %in% colnames(data))) {
-    # Check if timestamp column is present
-    if (!("timestamp" %in% colnames(data))) {
+    # Check if timestamp or year column is present
+    if ("timestamp" %in% colnames(data)){
+      data[, "timestamp"] <- data$timestamp - min(data$timestamp) + 1
+    } else if ("year" %in% colnames(data)){
+      data[, "timestamp"] <- data$year - min(data$year) + 1
+    } else {
       data[, "timestamp"] <- 1
       msg <- paste0("'timestamp' column is not present in file ", file_name, ". We will assume all occurrences were observed in time 1.")
       warning(msg)
       if (show_modal) showNotification(msg, duration = 5, closeButton = TRUE, type = "warning")
-    } else {
-      data[, "timestamp"] <- data$timestamp - min(data$timestamp) + 1
     }
+
 
     # Check if "pa" column is present
     if (!("pa" %in% colnames(data))) {
