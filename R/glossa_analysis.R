@@ -8,7 +8,7 @@
 #' @param proj_files A list of file paths containing environmental layers for projection scenarios.
 #' @param study_area_poly A spatial polygon defining the study area.
 #' @param predictor_variables A list of predictor variables to be used in the analysis.
-#' @param decimal_digits Integer; number of digits to round coordinates to if not NULL.
+#' @param sp_thin_dist Integer; Distance in kilometers that you want the occurrences to be separated by.
 #' @param scale_layers Logical; if TRUE, covariate layers will be scaled based on fit layers.
 #' @param native_range A vector of scenarios ('fit_layers', 'projections') where native range modeling should be performed.
 #' @param suitable_habitat A vector of scenarios ('fit_layers', 'projections') where habitat suitability modeling should be performed.
@@ -22,7 +22,7 @@
 #' @export
 glossa_analysis <- function(
     pa_data = NULL, fit_layers = NULL, proj_files = NULL,
-    study_area_poly = NULL, predictor_variables = NULL, decimal_digits = NULL, scale_layers = FALSE,
+    study_area_poly = NULL, predictor_variables = NULL, sp_thin_dist = NULL, scale_layers = FALSE,
     native_range = NULL, suitable_habitat = NULL, other_analysis = NULL,
     seed = NA, waiter = NULL) {
 
@@ -70,7 +70,10 @@ glossa_analysis <- function(
 
   # * Load covariate layers ----
   # Fit layers
-  covariate_list$fit_layers <- read_layers_zip(fit_layers)
+  covariate_list$fit_layers <- read_layers_zip(
+    fit_layers,
+    extend = ifelse(is.null(study_area_poly), FALSE, TRUE)
+  )
   cov_names <- names(covariate_list$fit_layers[[1]])
 
   # projections layers
@@ -78,7 +81,9 @@ glossa_analysis <- function(
     if (length(proj_files) <= 0){
       stop("Error: No projections layers provided.")
     }
-    covariate_list$projections <- lapply(proj_files, read_layers_zip)
+    covariate_list$projections <- lapply(proj_files, function(x, extend){
+      read_layers_zip(x, extend)},
+      extend = ifelse(is.null(study_area_poly), FALSE, TRUE))
     pred_scenario <- names(covariate_list$projections)
 
 
@@ -112,7 +117,7 @@ glossa_analysis <- function(
       data = x,
       study_area = study_area_poly,
       overlapping = FALSE,
-      decimal_digits = decimal_digits,
+      sp_thin_dist = sp_thin_dist,
       coords = long_lat_cols,
       by_timestamp = TRUE
     )
@@ -215,13 +220,13 @@ glossa_analysis <- function(
   presence_absence_list$model_pa <- lapply(seq_along(presence_absence_list$model_pa), function(i) {
     x <- presence_absence_list$model_pa[[i]]
     if (all(x[, "pa"] == 1)){
-      x <- generate_pseudo_absences(x, study_area_poly, covariate_list$fit_layers, predictor_variables = predictor_variables[[i]], coords = long_lat_cols, digits = decimal_digits)
+      x <- generate_pseudo_absences(x, study_area_poly, covariate_list$fit_layers, predictor_variables = predictor_variables[[i]], coords = long_lat_cols, sp_thin_dist = sp_thin_dist)
     }
     return(x)
   })
   names(presence_absence_list$model_pa) <- names(presence_absence_list$clean_pa)
 
-  # * Aggregate timestamps of fitting layers for prediction - compute the mean of the layers
+  # * Aggregate (mean) timestamps of fitting layers for prediction - compute the mean of the layers
   covariate_list$fit_layers <- lapply(cov_names, function(i){
     single_cov_layers <- lapply(covariate_list$fit_layers, function(x) {x[i]})
     mean_cov_layers <- terra::mean(terra::rast(single_cov_layers), na.rm = TRUE)

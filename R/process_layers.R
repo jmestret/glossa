@@ -11,13 +11,13 @@
 #' @export
 layer_mask <- function(layers, study_area) {
   # Crop to study_area extent
-  cropped_layer <- terra::crop(layers, terra::ext(terra::vect(study_area)))
+  cropped_layer <- terra::crop(layers, terra::ext(terra::vect(study_area)), snap = "out")
 
   # Extend to study_area extent
-  extended_layer <- terra::extend(cropped_layer, terra::ext(terra::vect(study_area)))
+  extended_layer <- terra::extend(cropped_layer, terra::ext(terra::vect(study_area)), snap = "out")
 
   # Remove polygon values
-  processed_layers <- terra::mask(extended_layer, terra::vect(study_area))
+  processed_layers <- terra::mask(extended_layer, terra::vect(study_area), touches = TRUE)
 
   return(processed_layers)
 }

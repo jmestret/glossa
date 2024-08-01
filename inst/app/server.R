@@ -392,7 +392,6 @@ function(input, output, session) {
     updatePrettyCheckboxGroup(inputId = "analysis_options_nr", selected = character(0))
     updatePrettyCheckboxGroup(inputId = "analysis_options_sh", selected = character(0))
     updatePrettyCheckboxGroup(inputId = "analysis_options_other", selected = character(0))
-    updatePrettySwitch(inputId = "round_digits", value = FALSE)
     updatePrettySwitch(inputId = "scale_layers", value = FALSE)
     updateNumericInput(inputId = "seed", value = numeric(0))
   })
@@ -470,7 +469,7 @@ function(input, output, session) {
         proj_files = proj_layers_path(),
         study_area_poly = study_area_poly(),
         predictor_variables = predictor_variables,
-        decimal_digits = switch(input$round_digits + 1, NULL, input$decimal_digits),
+        sp_thin_dist = input$sp_thin_dist,
         scale_layers = input$scale_layers,
         native_range = input$analysis_options_nr,
         suitable_habitat = input$analysis_options_sh,
@@ -894,11 +893,6 @@ function(input, output, session) {
 
       raw_points <- presence_absence_list()$raw_pa[[input$sp]]
       raw_points <- raw_points[raw_points[, "pa"] == 1, c(long_lat_cols(), "pa")]
-      decimal_digits <- switch(input$round_digits + 1, NULL, input$decimal_digits)
-      if (!is.null(decimal_digits)) {
-        raw_points[, long_lat_cols()[1]] <- round(raw_points[, long_lat_cols()[1]], decimal_digits)
-        raw_points[, long_lat_cols()[2]] <- round(raw_points[, long_lat_cols()[2]], decimal_digits)
-      }
       raw_points <- dplyr::anti_join(raw_points, model_points, by = long_lat_cols())
       if (nrow(raw_points) > 0){
         raw_points$type <- "discarded"

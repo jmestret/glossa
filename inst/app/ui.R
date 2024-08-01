@@ -4,7 +4,7 @@ header <- bs4Dash::bs4DashNavbar(
   title = bs4Dash::dashboardBrand(
     title = strong("GLOSSA"),
     color = NULL,
-    href = "https://github.com/jmestret/glossa",
+    href = "https://jmestret.github.io/glossa-web/",
     image = "logo_glossa.png",
     opacity = 1
   ),
@@ -237,7 +237,7 @@ body <- bs4Dash::bs4DashBody(
                   status = "secondary",
                   outline = FALSE,
                   width = "100%",
-                  onclick ="window.open('https://github.com/jmestret/glossa/tree/main/inst/extdata', '_blank')"
+                  onclick ="window.open('https://jmestret.github.io/glossa-web/', '_blank')"
                 )
               )
             )
@@ -277,7 +277,7 @@ body <- bs4Dash::bs4DashBody(
                   status = "secondary",
                   outline = FALSE,
                   width = "100%",
-                  onclick ="window.open('https://martacollmarine.science/researchers/', '_blank')"
+                  onclick ="window.open('https://imares.science/', '_blank')"
                 )
               )
             )
@@ -320,7 +320,7 @@ body <- bs4Dash::bs4DashBody(
                   status = "primary",
                   outline = TRUE,
                   width = "100%",
-                  onclick ="window.open('https://github.com/jmestret/glossa/wiki', '_blank')"
+                  onclick ="window.open('https://jmestret.github.io/glossa-web/', '_blank')"
                 )
               )
             )
@@ -363,7 +363,7 @@ body <- bs4Dash::bs4DashBody(
                       status = "primary",
                       outline = TRUE,
                       width = "100%",
-                      onclick ="window.open('https://github.com/jmestret/glossa/blob/main/vignettes/glossa_global.html', '_blank')"
+                      onclick ="window.open('https://jmestret.github.io/glossa-web/', '_blank')"
                     )
                   ),
                   bs4Dash::column(
@@ -375,7 +375,7 @@ body <- bs4Dash::bs4DashBody(
                       status = "primary",
                       outline = TRUE,
                       width = "100%",
-                      onclick ="window.open('https://github.com/jmestret/glossa/blob/main/vignettes/glossa_global.html', '_blank')"
+                      onclick ="window.open('https://jmestret.github.io/glossa-web/', '_blank')"
                     )
                   )
                 )
@@ -425,17 +425,10 @@ body <- bs4Dash::bs4DashBody(
 
                 strong("Ocurrences processing"),
 
-                shinyWidgets::prettySwitch(
-                  inputId = "round_digits",
-                  label = "Round coordinates",
-                  status = "primary",
-                  fill = TRUE
-                ),
-
-                conditionalPanel(
-                  condition = "input['round_digits']",
-                  numericInput("decimal_digits", NULL, 4, min = 0, max = 100, width = "50%"),
-                ),
+                numericInput(
+                  inputId = "sp_thin_dist",
+                  label = "Spatial thinning (km)",
+                  value = NULL, min = 0, width = "90%"),
 
                 strong("Layers processing"),
 

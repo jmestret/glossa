@@ -10,8 +10,8 @@ generate_pseudo_absences(
   raster_stack,
   predictor_variables,
   coords = c("decimalLongitude", "decimalLatitude"),
-  digits = NULL,
-  attempts = 50
+  sp_thin_dist = NULL,
+  attempts = 100
 )
 }
 \arguments{
@@ -25,7 +25,7 @@ generate_pseudo_absences(
 
 \item{coords}{Character vector specifying the column names for latitude and longitude.}
 
-\item{digits}{Number of decimal digits to round for the coordinates.}
+\item{sp_thin_dist}{Distance in kilometers that you want the occurrences to be separated by.}
 
 \item{attempts}{Number of attempts to generate exact pseudo-absences.}
 }

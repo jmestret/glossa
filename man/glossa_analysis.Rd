@@ -10,7 +10,7 @@ glossa_analysis(
   proj_files = NULL,
   study_area_poly = NULL,
   predictor_variables = NULL,
-  decimal_digits = NULL,
+  sp_thin_dist = NULL,
   scale_layers = FALSE,
   native_range = NULL,
   suitable_habitat = NULL,
@@ -30,7 +30,7 @@ glossa_analysis(
 
 \item{predictor_variables}{A list of predictor variables to be used in the analysis.}
 
-\item{decimal_digits}{Integer; number of digits to round coordinates to if not NULL.}
+\item{sp_thin_dist}{Integer; Distance in kilometers that you want the occurrences to be separated by.}
 
 \item{scale_layers}{Logical; if TRUE, covariate layers will be scaled based on fit layers.}
 

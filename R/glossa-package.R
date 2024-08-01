@@ -2,6 +2,7 @@
 #' @importFrom magrittr "%>%"
 #' @importFrom grDevices gray
 #' @importFrom stats complete.cases median na.omit quantile reorder sd
+#' @importFrom spThin thin
 #' @importFrom utils head read.csv2 tail unzip write.table
 #' @importFrom DT DTOutput renderDT datatable
 #' @importFrom zip zip

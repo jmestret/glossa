@@ -18,7 +18,7 @@ test_that("GLOSSA analysis", {
   proj_files <- list("proj1" = file4)
   study_area_poly <- glossa::read_extent_poly(file_path = file5)
   predictor_variables <- NULL
-  decimal_digits <- 3
+  sp_thin_dist <- 10
   scale_layers <- TRUE
   native_range <- c("fit_layers", "projections")
   suitable_habitat <- c("fit_layers", "projections")
@@ -32,7 +32,7 @@ test_that("GLOSSA analysis", {
     proj_files = proj_files,
     study_area_poly = study_area_poly,
     predictor_variables = predictor_variables,
-    decimal_digits = decimal_digits,
+    sp_thin_dist = sp_thin_dist,
     scale_layers = scale_layers,
     native_range = native_range,
     suitable_habitat = suitable_habitat,

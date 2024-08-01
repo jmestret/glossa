@@ -83,6 +83,36 @@ remove_points_poly <- function(x, study_area, overlapping = FALSE, coords = c("d
   return(filtered_points)
 }
 
+#' Remove Close Points
+#'
+#' Filters out data points that are closer together than a specified distance.
+#'
+#' @param data A data frame containing the spatial data to be thinned. This data frame must include columns for longitude and latitude.
+#' @param sp_thin_dist A numeric value specifying the minimum distance (in kilometers) that must separate the data points.
+#' @param coords A character vector of length 2, specifying the column names in `data` that contain the longitude and latitude values, respectively. Defaults to `c("decimalLongitude", "decimalLatitude")`.
+#'
+#' @return A data frame that contains the subset of the original data, filtered to ensure that no two points are closer together than the specified `sp_thin_dist`.
+#'
+#' @export
+remove_close_points <- function(data, sp_thin_dist, coords = c("decimalLongitude", "decimalLatitude")){
+  data$SPEC <- "SPEC"
+  thinned_occ <- spThin::thin(
+    loc.data = data, long.col = coords[1], lat.col = coords[2], spec.col = "SPEC",
+    thin.par = sp_thin_dist, reps = 100,
+    locs.thinned.list.return = TRUE, write.files = FALSE,
+    write.log.file = FALSE, verbose = FALSE
+    )
+
+  max_occ <- max(sapply(thinned_occ, nrow))
+  n_occ <- sapply(thinned_occ, nrow)
+  max_records <- thinned_occ[[which(n_occ == max_occ)[1]]]
+
+  data <- data[as.numeric(rownames(max_records)),]
+  data$SPEC <- NULL
+
+  return(data)
+}
+
 #' Clean Coordinates of Presence/Absence Data
 #'
 #' This function cleans coordinates of presence/absence data by removing NA coordinates, rounding coordinates if specified, removing duplicated points, and removing points outside specified spatial polygon boundaries.
@@ -90,7 +120,7 @@ remove_points_poly <- function(x, study_area, overlapping = FALSE, coords = c("d
 #' @param data  A dataframe object with rows representing points. Coordinates are in WGS84 (EPSG:4326) coordinate system.
 #' @param study_area A spatial polygon in WGS84 (EPSG:4326) representing the boundaries within which coordinates should be kept.
 #' @param overlapping Logical indicating whether points overlapping the polygon should be kept (TRUE) or removed (FALSE).
-#' @param decimal_digits Number of digits to round the coordinates to, if it is not NULL.
+#' @param sp_thin_dist Distance in kilometers that you want the occurrences to be separated by.
 #' @param coords Character vector specifying the column names for longitude and latitude.
 #' @param by_timestamp If TRUE it will be clean coordinates taking into account different time periods defined in the column `timestamp`.
 #'
@@ -99,7 +129,7 @@ remove_points_poly <- function(x, study_area, overlapping = FALSE, coords = c("d
 #' @details This function takes a data frame containing presence/absence data with longitude and latitude coordinates, a spatial polygon representing boundaries within which to keep points, and parameters for rounding coordinates and handling duplicated points. It returns a cleaned data frame with valid coordinates within the specified boundaries.
 #'
 #' @export
-clean_coordinates <- function(data, study_area, overlapping = FALSE, decimal_digits = NULL, coords = c("decimalLongitude", "decimalLatitude"), by_timestamp = TRUE) {
+clean_coordinates <- function(data, study_area, overlapping = FALSE, sp_thin_dist = NULL, coords = c("decimalLongitude", "decimalLatitude"), by_timestamp = TRUE) {
   # Assumptions:
   # - Coordinates are in WGS84 (EPSG:4326) coordinate system
 
@@ -110,17 +140,16 @@ clean_coordinates <- function(data, study_area, overlapping = FALSE, decimal_dig
     data <- data[complete.cases(data[, coords]), ]
   }
 
-  # Round coordinates
-  if (!is.null(decimal_digits)) {
-    data[, coords[1]] <- round(data[, coords[1]], decimal_digits)
-    data[, coords[2]] <- round(data[, coords[2]], decimal_digits)
-  }
-
   # Remove duplicated points
   if (by_timestamp){
     data <- remove_duplicate_points(data, coords = c(coords, "timestamp"))
   } else {
     data <- remove_duplicate_points(data, coords = coords)
+  }
+
+  # Remove closer points
+  if (!is.null(sp_thin_dist)){
+    data <- remove_close_points(data, sp_thin_dist, coords)
   }
 
   # Remove points outside the study area

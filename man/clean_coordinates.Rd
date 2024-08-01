@@ -8,7 +8,7 @@ clean_coordinates(
   data,
   study_area,
   overlapping = FALSE,
-  decimal_digits = NULL,
+  sp_thin_dist = NULL,
   coords = c("decimalLongitude", "decimalLatitude"),
   by_timestamp = TRUE
 )
@@ -20,7 +20,7 @@ clean_coordinates(
 
 \item{overlapping}{Logical indicating whether points overlapping the polygon should be kept (TRUE) or removed (FALSE).}
 
-\item{decimal_digits}{Number of digits to round the coordinates to, if it is not NULL.}
+\item{sp_thin_dist}{Distance in kilometers that you want the occurrences to be separated by.}
 
 \item{coords}{Character vector specifying the column names for longitude and latitude.}
 

@@ -40,6 +40,8 @@ read_presences_absences_csv <- function(file_path, file_name = NULL, show_modal 
       msg <- paste0("'timestamp' column is not present in file ", file_name, ". We will assume all occurrences were observed in time 1.")
       warning(msg)
       if (show_modal) showNotification(msg, duration = 5, closeButton = TRUE, type = "warning")
+    } else {
+      data[, "timestamp"] <- data$timestamp - min(data$timestamp) + 1
     }
 
     # Check if "pa" column is present
@@ -93,11 +95,12 @@ read_presences_absences_csv <- function(file_path, file_name = NULL, show_modal 
 #' This function loads covariate layers from a ZIP file, verifies their spatial characteristics, and returns them as a list of raster layers.
 #'
 #' @param file_path Path to the ZIP file containing covariate layers.
+#' @param extend If TRUE it will take the largest extent, if FALSE the smallest.
 #' @param show_modal Optional. Logical. Whether to show a modal notification for warnings. Default is FALSE.
 #' @return A list containing raster layers for each covariate.
 #' @keywords internal
 #' @export
-read_layers_zip <- function(file_path, show_modal = FALSE) {
+read_layers_zip <- function(file_path, extend = TRUE,show_modal = FALSE) {
   # Extract contents of the zip file
   tmpdir <- tempdir()
   zip_contents <- utils::unzip(file_path, unzip = getOption("unzip"), exdir = tmpdir)
@@ -166,46 +169,61 @@ read_layers_zip <- function(file_path, show_modal = FALSE) {
     msg <- paste("There are layers with different extent. We will transform layers to biggest extent.")
     warning(msg)
     if (show_modal) showNotification(msg, duration = 5, closeButton = TRUE, type = "warning")
-
-    ext_df <- do.call(rbind, ext_list)
-    largest_ext <- terra::ext(c(min(ext_df[, 1]), max(ext_df[, 2]), min(ext_df[, 3]), max(ext_df[, 4]))) # xmin xmax ymin ymax
-    layers <- lapply(layers, function(x){
-      terra::extend(x, largest_ext)
-    })
   }
 
-  layers <- terra::rast(layers)
   layers <- list()
   for (cov_dir in covariates){
     cov_name <- basename(cov_dir)
     # Load layers
     layers[[cov_name]] <- terra::rast(list.files(cov_dir, full.names = TRUE))
+    layers[[cov_name]] <- terra::project(layers[[cov_name]], "epsg:4326")
   }
 
   # Organize layers by year
-  layers <- lapply(1:terra::nlyr(layers[[1]]), function(i){
-    layers_i <- lapply(layers, function(x){
-      terra::project(x[[i]], "epsg:4326")
+  layers_result <- list()
+  for (i in 1:terra::nlyr(layers[[1]])) {
+    ext_list <- lapply(layers, function(x){
+      as.vector(terra::ext(x[[i]]))
     })
-    ext_list <- lapply(layers_i, function(x){
-      as.vector(terra::ext(x))
+    orig_list <- lapply(layers, function(x){
+      as.vector(terra::origin(x[[i]]))
     })
     if (length(unique(ext_list)) != 1) {
       ext_df <- do.call(rbind, ext_list)
-      largest_ext <- terra::ext(c(min(ext_df[, 1]), max(ext_df[, 2]), min(ext_df[, 3]), max(ext_df[, 4]))) # xmin xmax ymin ymax
-      layers_i <- lapply(layers_i, function(x){
-        terra::extend(x, largest_ext)
-      })
+
+      if (extend == TRUE){
+        modified_ext <- c(floor(min(ext_df[, 1])), ceiling(max(ext_df[, 2])), floor(min(ext_df[, 3])), ceiling(max(ext_df[, 4]))) # xmin xmax ymin ymax
+      } else {
+        modified_ext <- c(ceiling(max(ext_df[, 1])), floor(min(ext_df[, 2])), ceiling(max(ext_df[, 3])), floor(min(ext_df[, 4]))) # xmin xmax ymin ymax
+      }
+
+      modified_ext <- c(
+        max(modified_ext[1], -180), min(modified_ext[2], 180),
+        max(modified_ext[3], -90), min(modified_ext[4], 90)
+      ) # Check it is not bigger than world polygon
+      modified_ext <- terra::ext(modified_ext)
+
+      if (length(unique(orig_list)) != 1){
+        layers_i <- lapply(layers, function(x){
+          r <- terra::rast(modified_ext, res=terra::res(x[[i]]))
+          terra::resample(x[[i]], r)
+        })
+      } else {
+        layers_i <- lapply(layers, function(x){
+          terra::extend(x[[i]], modified_ext)
+        })
+      }
+    } else {
+      layers_i <- lapply(layers, function(x){x[[i]]})
     }
 
-    layers_i <- terra::rast(layers_i)
-    layers_i
-  })
+    layers_result[[i]] <- terra::rast(layers_i)
+  }
 
   #unlink(tmpdir, recursive = TRUE)
 
   # If all checks passed, return layers
-  return(layers)
+  return(layers_result)
 }
 
 #' Read last layer for each environmental variable
@@ -256,12 +274,23 @@ read_last_layer <- function(file_path, show_modal = FALSE) {
   ext_list <- lapply(layers, function(x){
     as.vector(terra::ext(x))
   })
+  orig_list <- lapply(layers, function(x){
+    as.vector(terra::origin(x))
+  })
   if (length(unique(ext_list)) != 1) {
     ext_df <- do.call(rbind, ext_list)
-    largest_ext <- terra::ext(c(min(ext_df[, 1]), max(ext_df[, 2]), min(ext_df[, 3]), max(ext_df[, 4]))) # xmin xmax ymin ymax
-    layers <- lapply(layers, function(x){
-      terra::extend(x, largest_ext)
-    })
+    modified_ext <- terra::ext(c(min(ext_df[, 1]), max(ext_df[, 2]), min(ext_df[, 3]), max(ext_df[, 4]))) # xmin xmax ymin ymax
+
+    if (length(unique(orig_list)) != 1){
+      layers <- lapply(layers, function(x){
+        r <- terra::rast(modified_ext, res=terra::res(x))
+        terra::resample(x, r)
+      })
+    } else {
+      layers <- lapply(layers, function(x){
+        terra::extend(x, modified_ext)
+      })
+    }
   }
 
   layers <- terra::rast(layers)

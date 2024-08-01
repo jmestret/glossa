@@ -4,10 +4,12 @@
 \alias{read_layers_zip}
 \title{Load Covariate Layers from ZIP Files}
 \usage{
-read_layers_zip(file_path, show_modal = FALSE)
+read_layers_zip(file_path, extend = TRUE, show_modal = FALSE)
 }
 \arguments{
 \item{file_path}{Path to the ZIP file containing covariate layers.}
+
+\item{extend}{If TRUE it will take the largest extent, if FALSE the smallest.}
 
 \item{show_modal}{Optional. Logical. Whether to show a modal notification for warnings. Default is FALSE.}
 }

@@ -7,13 +7,13 @@
 #' @param raster_stack SpatRaster containing covariate data.
 #' @param predictor_variables Name of the predictor variables selected for this species.
 #' @param coords Character vector specifying the column names for latitude and longitude.
-#' @param digits Number of decimal digits to round for the coordinates.
+#' @param sp_thin_dist Distance in kilometers that you want the occurrences to be separated by.
 #' @param attempts Number of attempts to generate exact pseudo-absences.
 #'
 #' @return Data frame containing both presence and pseudo-absence points.
 #'
 #' @export
-generate_pseudo_absences <- function(presences, study_area, raster_stack, predictor_variables, coords = c("decimalLongitude", "decimalLatitude"), digits = NULL, attempts = 50) {
+generate_pseudo_absences <- function(presences, study_area, raster_stack, predictor_variables, coords = c("decimalLongitude", "decimalLatitude"), sp_thin_dist = NULL, attempts = 100) {
 
   # Check inputs
   if (!is.null(study_area)) {
@@ -57,8 +57,8 @@ generate_pseudo_absences <- function(presences, study_area, raster_stack, predic
     # Convert to data frame and round coordinates
     new_abs <- as.data.frame(sf::st_coordinates(new_abs))
     colnames(new_abs) <- coords
-    if (!is.null(digits)){
-      new_abs <- round(new_abs, digits) # Custom round precision
+    if (!is.null(sp_thin_dist) & nrow(new_abs) > 0){
+      new_abs <- remove_close_points(new_abs, sp_thin_dist, coords) # remove close points
     }
 
     # Sample timestamp values
@@ -91,7 +91,7 @@ generate_pseudo_absences <- function(presences, study_area, raster_stack, predic
 
     # Check for maximum attempts
     if (curr_attempt >= attempts) {
-      stop("Could not generate pseudo-absences. Try increasing the number of attempts.")
+      warning("Could not generate balanced pseudo-absences. Try increasing the number of attempts.")
     }
   }
 
