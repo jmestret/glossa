@@ -123,13 +123,14 @@ remove_close_points <- function(data, sp_thin_dist, coords = c("decimalLongitude
 #' @param sp_thin_dist Distance in kilometers that you want the occurrences to be separated by.
 #' @param coords Character vector specifying the column names for longitude and latitude.
 #' @param by_timestamp If TRUE it will be clean coordinates taking into account different time periods defined in the column `timestamp`.
+#' @param seed Optional; an integer seed for reproducibility of results.
 #'
 #' @return A cleaned data frame containing presence/absence data with valid coordinates.
 #'
 #' @details This function takes a data frame containing presence/absence data with longitude and latitude coordinates, a spatial polygon representing boundaries within which to keep points, and parameters for rounding coordinates and handling duplicated points. It returns a cleaned data frame with valid coordinates within the specified boundaries.
 #'
 #' @export
-clean_coordinates <- function(data, study_area, overlapping = FALSE, sp_thin_dist = NULL, coords = c("decimalLongitude", "decimalLatitude"), by_timestamp = TRUE) {
+clean_coordinates <- function(data, study_area, overlapping = FALSE, sp_thin_dist = NULL, coords = c("decimalLongitude", "decimalLatitude"), by_timestamp = TRUE, seed = NULL) {
   # Assumptions:
   # - Coordinates are in WGS84 (EPSG:4326) coordinate system
 
@@ -149,6 +150,7 @@ clean_coordinates <- function(data, study_area, overlapping = FALSE, sp_thin_dis
 
   # Remove closer points
   if (!is.null(sp_thin_dist)){
+    set.seed(seed)
     data <- remove_close_points(data, sp_thin_dist, coords)
   }
 

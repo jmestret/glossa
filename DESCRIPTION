@@ -30,6 +30,7 @@ Imports:
     jsonlite,
     leaflet,
     magrittr,
+    markdown,
     matrixStats,
     mcp,
     sf,

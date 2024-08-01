@@ -210,7 +210,7 @@ read_layers_zip <- function(file_path, extend = TRUE,show_modal = FALSE) {
         })
       } else {
         layers_i <- lapply(layers, function(x){
-          terra::extend(x[[i]], modified_ext)
+          terra::crop(terra::extend(x[[i]], modified_ext), modified_ext)
         })
       }
     } else {

@@ -425,10 +425,11 @@ body <- bs4Dash::bs4DashBody(
 
                 strong("Ocurrences processing"),
 
-                numericInput(
+                tags$head(tags$style(HTML(".not_bold label {font-weight:normal !important;;}"))),
+                div(numericInput(
                   inputId = "sp_thin_dist",
                   label = "Spatial thinning (km)",
-                  value = NULL, min = 0, width = "90%"),
+                  value = NULL, min = 0, width = "90%"), class="not_bold"),
 
                 strong("Layers processing"),
 
@@ -541,7 +542,7 @@ body <- bs4Dash::bs4DashBody(
                   prettyCheckboxGroup(
                     inputId = "analysis_options_other",
                     label = tags$span("Others", shiny::actionButton("analysis_options_others_info", label = NULL, icon = icon("circle-info", class = "fa-solid fa-circle-info", style = "color:#007bff;"), class = "btn btn-default action-button btn-xs", style="background-color:transparent;border-radius:0px;border-width:0px")),
-                    choiceNames = c("Functional repsonses", "Cross-validation"),
+                    choiceNames = c("Functional responses", "Cross-validation"),
                     choiceValues = c("functional_responses", "cross_validation"),
                     selected = NULL,
                     status = "primary",

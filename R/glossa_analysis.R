@@ -119,7 +119,8 @@ glossa_analysis <- function(
       overlapping = FALSE,
       sp_thin_dist = sp_thin_dist,
       coords = long_lat_cols,
-      by_timestamp = TRUE
+      by_timestamp = TRUE,
+      seed = seed
     )
   })
 
