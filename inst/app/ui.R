@@ -440,6 +440,13 @@ body <- bs4Dash::bs4DashBody(
                   fill = TRUE
                 ),
 
+                strong("Polygon processing"),
+
+                div(numericInput(
+                  inputId = "buff_poly",
+                  label = tags$span("Enlarge polygon (buffer arc degrees)", shiny::actionButton("preview_buff_poly", label = NULL, icon = icon("circle-play", class = "fa-solid fa-circle-play", style = "color:#efefef;"), class = "btn btn-default action-button btn-s", style="background-color:transparent;border-radius:0px;border-width:0px")),
+                  value = NULL, min = 0, max = 10, step = 100, width = "90%"), class="not_bold"),
+
                 shinyWidgets::pickerInput(
                   inputId = "model_choice",
                   label = "Model",
@@ -498,7 +505,7 @@ body <- bs4Dash::bs4DashBody(
                     label = "Study area",
                     button_label = "Add polygon (optional)",
                     multiple = FALSE,
-                    accept = c(".gpkg", ".shp"),
+                    accept = c(".gpkg", ".shp", ".kml", ".json", ".geojson"),
                     icon_name = "crop"
                   )
                 )

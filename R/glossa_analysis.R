@@ -10,6 +10,7 @@
 #' @param predictor_variables A list of predictor variables to be used in the analysis.
 #' @param sp_thin_dist Integer; Distance in kilometers that you want the occurrences to be separated by.
 #' @param scale_layers Logical; if TRUE, covariate layers will be scaled based on fit layers.
+#' @param buffer Buffer value or distance in decimal degrees (arc_degrees).
 #' @param native_range A vector of scenarios ('fit_layers', 'projections') where native range modeling should be performed.
 #' @param suitable_habitat A vector of scenarios ('fit_layers', 'projections') where habitat suitability modeling should be performed.
 #' @param other_analysis A vector of additional analyses to perform (e.g., 'variable_importance', 'functional_responses', 'cross_validation').
@@ -22,7 +23,8 @@
 #' @export
 glossa_analysis <- function(
     pa_data = NULL, fit_layers = NULL, proj_files = NULL,
-    study_area_poly = NULL, predictor_variables = NULL, sp_thin_dist = NULL, scale_layers = FALSE,
+    study_area_poly = NULL, predictor_variables = NULL,
+    sp_thin_dist = NULL, scale_layers = FALSE, buffer = NULL,
     native_range = NULL, suitable_habitat = NULL, other_analysis = NULL,
     seed = NA, waiter = NULL) {
 
@@ -96,11 +98,18 @@ glossa_analysis <- function(
     }
   }
 
+  # * Load extent polygon
+  # Apply buffer to polygon if requested
+  if (!is.na(buffer) & buffer != 0){
+    study_area_poly <- sf::st_geometry(sf::st_buffer(study_area_poly, buffer))
+  }
+
   # * Select predictor variables ----
   if (is.null(predictor_variables)){
     predictor_variables <- lapply(seq_along(presence_absence_list$raw_pa), function(x) cov_names)
   }
   names(predictor_variables) <- sp_names
+
 
   load_data_time <- Sys.time()
   print(paste("Load data execution time:", difftime(load_data_time, start_time, units = "secs"), "secs"))

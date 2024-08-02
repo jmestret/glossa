@@ -1,3 +1,18 @@
+#'  Enlarge/Buff a polygon
+#'
+#' This function enlarges a polygon with a buffer.
+#'
+#' @param sf_poly An sf polygon to be buffed
+#' @param buffer Buffer value or distance in decimal degrees (arc_degrees).
+#' @return An sf polygon representing the buffered area.
+#'
+#' @export
+buffer_polygon <- function(sf_poly, buffer){
+  buff_poly <- sf::st_buffer(sf_poly, buffer)
+
+  return(sf::st_geometry(buff_poly))
+}
+
 #' Invert a polygon
 #'
 #' This function inverts a polygon.

@@ -13,6 +13,7 @@ function(input, output, session) {
   proj_layers_path <- reactiveVal()
   proj_validation_table <- reactiveVal()
   study_area_poly <- reactiveVal()
+  study_area_poly_buff <- reactiveVal()
   extent_validation_table <- reactiveVal()
 
   # Analysis results
@@ -171,7 +172,7 @@ function(input, output, session) {
         fit_layers_path(fit_layers_input()[, "datapath"])
 
         # Read last layer for previsualization
-        fit_layers_previs(glossa::read_last_layer(fit_layers_input()[, "datapath"]))
+        fit_layers_previs(glossa::read_layers_zip(fit_layers_input()[, "datapath"], first_layer = TRUE)[[1]])
       }
 
       w$hide()
@@ -214,6 +215,7 @@ function(input, output, session) {
     # Check is not null and it was possible to upload the data
     if (is.null(study_area_poly_input())){
       study_area_poly(NULL)
+      study_area_poly_buff(NULL)
     } else {
       # Turn on waiter
       w <- waiter::Waiter$new(id = "data_upload",
@@ -225,8 +227,8 @@ function(input, output, session) {
       w$show()
 
       # Read files
-      study_area_poly(glossa::read_extent_poly(study_area_poly_input()["datapath"], show_modal = TRUE))
-
+      study_area_poly(glossa::read_extent_polygon(study_area_poly_input()["datapath"], show_modal = TRUE))
+      study_area_poly_buff(study_area_poly())
       w$hide()
     }
   })
@@ -273,7 +275,7 @@ function(input, output, session) {
       validation_table[, "name"] <- paste(as.character(icon("forward",style = "font-size:2rem; color:#007bff;")), validation_table[, "name"])
 
       if(!is.null(fit_layers_input())){
-        validation_table[, "validation"] <- !sapply(proj_layers_path(), is.null) & sapply(proj_layers_path(), function(x){glossa::validate_fit_proj_layers(fit_layers_path(), x, show_modal = TRUE)})
+        validation_table[, "validation"] <- !sapply(proj_layers_path(), is.null) & sapply(proj_layers_path(), function(x){glossa::validate_fit_projection_layers(fit_layers_path(), x, show_modal = TRUE)})
       } else {
         validation_table[, "validation"] <- !sapply(proj_layers_path(), is.null)
       }
@@ -294,6 +296,30 @@ function(input, output, session) {
       }
       extent_validation_table(validation_table)
     }
+  })
+
+  # * Polygon preprocessing ----
+  observeEvent(input$preview_buff_poly, {
+    req(input$buff_poly)
+    req(study_area_poly())
+
+    # Create waiter
+    w <- waiter::Waiter$new(id = "data_upload",
+                            html = tagList(
+                              img(src = "logo_glossa.gif", height = "200px")
+                            ),
+                            color = waiter::transparent(0.8)
+    )
+    w$show()
+
+    study_area_poly_buff(sf::st_geometry(sf::st_buffer(study_area_poly(), input$buff_poly)))
+
+    # Update previsualization plot
+    updatePrettySwitch(inputId = "previsualization_plot_extent", value = FALSE)
+    updatePrettySwitch(inputId = "previsualization_plot_extent", value = TRUE)
+
+    # Hide water
+    w$hide()
   })
 
   # * Info buttons ----
@@ -374,8 +400,7 @@ function(input, output, session) {
     )
   })
 
-  # * Run GLOSSA analysis ----
-  # Reset button
+  # * Reset button ----
   observeEvent(input$reset_input, {
     # Reset data upload
     pa_data(NULL)
@@ -386,6 +411,7 @@ function(input, output, session) {
     proj_layers_path(NULL)
     proj_validation_table(NULL)
     study_area_poly(NULL)
+    study_area_poly_buff(NULL)
     extent_validation_table(NULL)
 
     # Reset analysis options
@@ -393,9 +419,18 @@ function(input, output, session) {
     updatePrettyCheckboxGroup(inputId = "analysis_options_sh", selected = character(0))
     updatePrettyCheckboxGroup(inputId = "analysis_options_other", selected = character(0))
     updatePrettySwitch(inputId = "scale_layers", value = FALSE)
+    updateNumericInput(inputId = "sp_thin_dist", value = numeric(0))
+    updateNumericInput(inputId = "buff_poly", value = numeric(0))
     updateNumericInput(inputId = "seed", value = numeric(0))
+
+    # Reset preview plot
+    previsualization_plot %>%
+      leaflet::clearMarkers() %>%
+      leaflet::clearImages() %>%
+      leaflet::clearShapes()
   })
 
+  # * Run GLOSSA analysis ----
   # Confirmation dialog
   observeEvent(input$run_button, {
     shinyWidgets::ask_confirmation(
@@ -467,10 +502,11 @@ function(input, output, session) {
         pa_data = pa_data(),
         fit_layers = fit_layers_path(),
         proj_files = proj_layers_path(),
-        study_area_poly = study_area_poly(),
+        study_area_poly = study_area_poly_buff(),
         predictor_variables = predictor_variables,
         sp_thin_dist = input$sp_thin_dist,
         scale_layers = input$scale_layers,
+        buffer = input$buff_poly,
         native_range = input$analysis_options_nr,
         suitable_habitat = input$analysis_options_sh,
         other_analysis = input$analysis_options_other,
@@ -731,19 +767,19 @@ function(input, output, session) {
 
   # add study area polygon
   observeEvent(input$previsualization_plot_extent, {
-    req(study_area_poly())
+    req(study_area_poly_buff())
 
-    if(!is.null(study_area_poly()[[1]]) & input$previsualization_plot_extent){
+    if(!is.null(study_area_poly_buff()[[1]]) & input$previsualization_plot_extent){
       previsualization_plot %>%
         leaflet::clearShapes() %>%
-        addPolygons(data = study_area_poly(), color = "#353839", fill = TRUE, fillColor = "353839", fillOpacity = 0.25)
+        addPolygons(data = study_area_poly_buff(), color = "#353839", fill = TRUE, fillColor = "353839", fillOpacity = 0.25)
     } else{
       previsualization_plot %>%
         leaflet::clearShapes()
     }
   })
-  observeEvent(study_area_poly(), {
-    req(study_area_poly())
+  observeEvent(study_area_poly_buff(), {
+    req(study_area_poly_buff())
     shinyWidgets::updatePrettySwitch(inputId = "previsualization_plot_extent", value = TRUE)
   })
 
