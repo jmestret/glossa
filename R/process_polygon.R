@@ -1,47 +1,64 @@
-#'  Enlarge/Buff a polygon
+#' Enlarge/Buffer a Polygon
 #'
-#' This function enlarges a polygon with a buffer.
+#' This function enlarges a polygon by applying a buffer.
 #'
-#' @param sf_poly An sf polygon to be buffed
-#' @param buffer Buffer value or distance in decimal degrees (arc_degrees).
-#' @return An sf polygon representing the buffered area.
+#' @param polygon An sf object representing the polygon to be buffered.
+#' @param buffer_distance Numeric. The buffer distance in decimal degrees (arc degrees).
+#' @return An sf object representing the buffered polygon.
 #'
 #' @export
-buffer_polygon <- function(sf_poly, buffer){
-  buff_poly <- sf::st_buffer(sf_poly, buffer)
+buffer_polygon <- function(polygon, buffer_distance) {
+  if (!(inherits(polygon, "sf") | inherits(polygon, "sfc") | inherits(polygon, "sfc_MULTIPOLYGON") | inherits(polygon, "sfc_POLYGON"))) {
+    stop("Input must be an 'sf' object representing a polygon.")
+  }
 
-  return(sf::st_geometry(buff_poly))
+  if (!is.numeric(buffer_distance) || length(buffer_distance) != 1) {
+    stop("Buffer distance must be a single numeric value.")
+  }
+
+  buffered_polygon <- sf::st_buffer(polygon, buffer_distance)
+  return(sf::st_geometry(buffered_polygon))
 }
 
-#' Invert a polygon
+
+#' Invert a Polygon
 #'
-#' This function inverts a polygon.
+#' This function inverts a polygon by calculating the difference between the bounding box and the polygon.
 #'
-#' @param sf_poly An sf polygon to be inverted.
-#' @param bbox Optionally provide the resulting bounding box.
-#' @return An sf polygon representing the inverted area.
+#' @param polygon An sf object representing the polygon to be inverted.
+#' @param bbox Optional. An sf or bbox object representing the bounding box. If NULL, the bounding box of the input polygon is used.
+#' @return An sf object representing the inverted polygon.
 #'
 #' @export
-invert_polygon <- function(sf_poly, bbox = NULL) {
-  # Create bbox polygon
-  if (is.null(bbox)){
-    bbox <- sf::st_bbox(sf_poly)
+invert_polygon <- function(polygon, bbox = NULL) {
+  if (!(inherits(polygon, "sf") | inherits(polygon, "sfc") | inherits(polygon, "sfc_MULTIPOLYGON") | inherits(polygon, "sfc_POLYGON"))) {
+    stop("Input must be an 'sf' object representing a polygon.")
+  }
+
+  # Create bounding box polygon if bbox is not provided
+  if (is.null(bbox)) {
+    bbox <- sf::st_bbox(polygon)
     bbox_poly <- sf::st_as_sfc(bbox)
   } else {
-    bbox <- sf::st_bbox(bbox)
-    bbox_poly <- sf::st_as_sfc(bbox)
-    sf::st_crs(bbox_poly) <- sf::st_crs(sf_poly)
+    bbox_poly <- sf::st_as_sfc(sf::st_bbox(bbox))
+    sf::st_crs(bbox_poly) <- sf::st_crs(polygon)
+  }
+
+  # If they are the same buffer a little bit the bounding box to create a frame.
+  if (all(bbox_poly == polygon)){
+    bbox_poly <- suppressWarnings(sf::st_buffer(bbox_poly, 0.1))
   }
 
   # When it's projected sf has issues computing the difference
   # An alternative is to change sf_use_s2() to FALSE
-  #crs <- sf::st_crs(sf_poly)
-  #sf::st_crs(sf_poly) <- NA
+  #crs <- sf::st_crs(polygon)
+  #sf::st_crs(polygon) <- NA
   #sf::st_crs(bbox_poly) <- NA
+  sf::sf_use_s2(FALSE)
 
   # Invert the polygon
-  inverted_poly <- sf::st_difference(bbox_poly, sf_poly)
-  #sf::st_crs(inverted_poly) <- crs
+  inverted_polygon <- sf::st_difference(bbox_poly, polygon)
+  #sf::st_crs(inverted_polygon) <- crs
 
-  return(inverted_poly)
+  return(inverted_polygon)
 }

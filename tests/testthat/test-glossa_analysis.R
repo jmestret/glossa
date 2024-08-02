@@ -16,9 +16,10 @@ test_that("GLOSSA analysis", {
                     "sp2" = glossa::read_presences_absences_csv(file_path = file2, file_name = "sp2"))
   fit_layers <- file3
   proj_files <- list("proj1" = file4)
-  study_area_poly <- glossa::read_extent_poly(file_path = file5)
+  study_area_poly <- glossa::read_extent_polygon(file_path = file5)
   predictor_variables <- NULL
   sp_thin_dist <- 10
+  buffer <- 0.1
   scale_layers <- TRUE
   native_range <- c("fit_layers", "projections")
   suitable_habitat <- c("fit_layers", "projections")
@@ -34,6 +35,7 @@ test_that("GLOSSA analysis", {
     predictor_variables = predictor_variables,
     sp_thin_dist = sp_thin_dist,
     scale_layers = scale_layers,
+    buffer = buffer,
     native_range = native_range,
     suitable_habitat = suitable_habitat,
     other_analysis = other_analysis,

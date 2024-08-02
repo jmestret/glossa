@@ -98,10 +98,10 @@ glossa_analysis <- function(
     }
   }
 
-  # * Load extent polygon
+  # * Load extent polygon ----
   # Apply buffer to polygon if requested
-  if (!is.na(buffer) & buffer != 0){
-    study_area_poly <- sf::st_geometry(sf::st_buffer(study_area_poly, buffer))
+  if (!is.null(buffer)){
+    if (buffer != 0) study_area_poly <- buffer_polygon(study_area_poly, buffer)
   }
 
   # * Select predictor variables ----
@@ -123,7 +123,7 @@ glossa_analysis <- function(
 
   presence_absence_list$clean_pa <- lapply(presence_absence_list$raw_pa, function(x){
     clean_coordinates(
-      data = x,
+      df = x,
       study_area = study_area_poly,
       overlapping = FALSE,
       sp_thin_dist = sp_thin_dist,

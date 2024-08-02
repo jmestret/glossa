@@ -3,37 +3,55 @@
 #' This function fits a Bayesian Additive Regression Trees (BART) model using
 #' presence/absence data and environmental covariate layers.
 #'
-#' @param y Vector indicating presence (1) or absence (0).
-#' @param x Dataframe with same number of rows as the length of the vector `y` with the covariate values.
-#' @param seed Random seed.
+#' @param y A numeric vector indicating presence (1) or absence (0).
+#' @param x A data frame with the same number of rows as the length of the vector `y`, containing the covariate values.
+#' @param seed An optional integer value for setting the random seed for reproducibility.
 #'
 #' @return A BART model object.
 #'
 #' @export
 fit_bart_model <- function(y, x, seed = NULL) {
-  set.seed(seed)
+  # Input validation
+  if (!is.numeric(y) || !all(y %in% c(0, 1))) {
+    stop("Argument 'y' must be a numeric vector containing only 0s and 1s.")
+  }
+
+  if (!is.data.frame(x)) {
+    stop("Argument 'x' must be a data frame.")
+  }
+
+  if (length(y) != nrow(x)) {
+    stop("Length of 'y' must match the number of rows in 'x'.")
+  }
+
+  # Set random seed if provided
+  if (!is.null(seed)) {
+    set.seed(seed)
+  }
+
+  # Fit the BART model
   bart_model <- dbarts::bart(x.train = x,
                              y.train = y,
                              keeptrees = TRUE)
 
+  # Make the model fit state invisible so we can export it and use it to predict
   invisible(bart_model$fit$state)
 
-  # Return BART model object
+  # Return the fitted BART model object
   return(bart_model)
 }
-
 
 #' Make Predictions Using a BART Model
 #'
 #' This function makes predictions using a Bayesian Additive Regression Trees (BART) model
 #' on a stack of environmental covariates ('SpatRaster').
 #'
-#' @param bart_model A BART model object obtained from fitting BART ('dbarts::bart').
+#' @param bart_model A BART model object obtained from fitting BART using the 'dbarts' package.
 #' @param layers A SpatRaster object containing environmental covariates for prediction.
-#' @param cutoff An optional cutoff value for determining potential presences. If NULL potential presences and absences will not be computed.
+#' @param cutoff An optional numeric cutoff value for determining potential presences. If NULL, potential presences and absences will not be computed.
 #'
 #' @return A SpatRaster containing the mean, median, standard deviation, and quantiles
-#' of the posterior predictive distribution.
+#' of the posterior predictive distribution, as well as a potential presences layer if cutoff is provided.
 #'
 #' @export
 predict_bart <- function(bart_model, layers, cutoff = NULL) {
@@ -44,7 +62,7 @@ predict_bart <- function(bart_model, layers, cutoff = NULL) {
     # Convert raster stack to matrix
     input_matrix <- terra::as.matrix(layers)
 
-    # Create a blank data frame to store predictions
+    # Initialize output data frame for predictions
     blank_output <- data.frame(matrix(ncol = (4 + length(quantiles) + ifelse(!is.null(cutoff), 1, 0)),
                                       nrow = terra::ncell(layers[[1]])))
 
@@ -58,10 +76,12 @@ predict_bart <- function(bart_model, layers, cutoff = NULL) {
     pred <- dbarts:::predict.bart(bart_model, input_matrix)
 
     # Calculate summary statistics of predictions
-    pred_data <- cbind(data.frame(matrixStats::colMeans2(pred)),
-                       data.frame(matrixStats::colMedians(pred)),
-                       data.frame(matrixStats::colSds(pred)),
-                       data.frame(matrixStats::colQuantiles(pred, probs = quantiles)))
+    pred_data <- cbind(
+      data.frame(matrixStats::colMeans2(pred)),
+      data.frame(matrixStats::colMedians(pred)),
+      data.frame(matrixStats::colSds(pred)),
+      data.frame(matrixStats::colQuantiles(pred, probs = quantiles))
+    )
 
     # Calculate the difference between upper and lower quantiles
     pred_data$diff <- pred_data$X97.5. - pred_data$X2.5.
@@ -69,8 +89,8 @@ predict_bart <- function(bart_model, layers, cutoff = NULL) {
     # Rename columns
     names(pred_data) <- c("mean", "median", "sd", "q0.025", "q0.975", "diff")
 
-    # Potential presences
-    if (!is.null(cutoff)){
+    # Calculate potential presences
+    if (!is.null(cutoff)) {
       pred_data$potential_presences <- ifelse(pred_data$mean >= cutoff, 1, 0)
     }
 
@@ -79,9 +99,7 @@ predict_bart <- function(bart_model, layers, cutoff = NULL) {
 
     # Reshape output to SpatRaster format
     out_list <- lapply(1:ncol(blank_output), function(x) {
-      output_matrix <- t(matrix(blank_output[, x],
-                                nrow = ncol(layers),
-                                ncol = nrow(layers)))
+      output_matrix <- t(matrix(blank_output[, x], nrow = ncol(layers), ncol = nrow(layers)))
       return(terra::rast(output_matrix, extent = terra::ext(layers)))
     })
 
@@ -91,12 +109,13 @@ predict_bart <- function(bart_model, layers, cutoff = NULL) {
     # Set names for the raster stack
     names(out_list) <- names(pred_data)
 
-    # Set crs
+    # Set CRS
     terra::crs(out_list) <- terra::crs(layers)
 
     return(out_list)
   }, error = function(err) {
     message("Prediction failed: ", conditionMessage(err))
+    return(NULL) # Return NULL if prediction fails
   })
 }
 

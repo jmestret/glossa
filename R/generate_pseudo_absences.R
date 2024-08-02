@@ -1,24 +1,22 @@
-#' Generate pseudo-absence points based on presence points, covariates, and study area polygon
+#' Generate Pseudo-Absence Points Based on Presence Points, Covariates, and Study Area Polygon
 #'
 #' This function generates pseudo-absence points within the study area.
 #'
 #' @param presences Data frame containing presence points.
-#' @param study_area Spatial polygon defining the study area ('sf').
-#' @param raster_stack SpatRaster containing covariate data.
-#' @param predictor_variables Name of the predictor variables selected for this species.
-#' @param coords Character vector specifying the column names for latitude and longitude.
-#' @param sp_thin_dist Distance in kilometers that you want the occurrences to be separated by.
-#' @param attempts Number of attempts to generate exact pseudo-absences.
+#' @param study_area Spatial polygon defining the study area (`sf` object).
+#' @param raster_stack `SpatRaster` object containing covariate data.
+#' @param predictor_variables Character vector of the predictor variables selected for this species.
+#' @param coords Character vector specifying the column names for latitude and longitude. Defaults to `c("decimalLongitude", "decimalLatitude")`.
+#' @param sp_thin_dist Numeric value specifying the minimum distance (in kilometers) that must separate the data points. Defaults to `NULL`.
+#' @param attempts Integer specifying the number of attempts to generate exact pseudo-absences. Defaults to 100.
 #'
 #' @return Data frame containing both presence and pseudo-absence points.
 #'
 #' @export
 generate_pseudo_absences <- function(presences, study_area, raster_stack, predictor_variables, coords = c("decimalLongitude", "decimalLatitude"), sp_thin_dist = NULL, attempts = 100) {
-
   # Check inputs
-  if (!is.null(study_area)) {
-    stopifnot(inherits(study_area, "sf") || inherits(study_area, "sfc"))
-  }
+  stopifnot(is.data.frame(presences))
+  stopifnot(inherits(study_area, "sf") || inherits(study_area, "sfc"))
   stopifnot(inherits(raster_stack[[1]], "SpatRaster"))
 
   # Initialize variables
@@ -27,7 +25,8 @@ generate_pseudo_absences <- function(presences, study_area, raster_stack, predic
   col_names <- c(coords, "timestamp", predictor_variables)
   absences <- data.frame(matrix(ncol = length(col_names), nrow = 0))
   colnames(absences) <- col_names
-  if(is.null(study_area)){
+
+  if (is.null(study_area)) {
     crs <- terra::crs(raster_stack[[1]])
     bounding_box <- sf::st_bbox(as.vector(terra::ext(raster_stack[[1]]))[c("xmin", "ymin", "xmax", "ymax")])
   } else {
@@ -46,8 +45,8 @@ generate_pseudo_absences <- function(presences, study_area, raster_stack, predic
     new_abs <- sf::st_sample(bbox_hull_poly, size = n_presences - nrow(absences), type = "random", exact = TRUE, oriented=TRUE)
 
     # Remove points outside the study area polygon
-    if (!is.null(study_area)){
-      # Set CRS to NA to avoid sf annoying messages
+    if (!is.null(study_area)) {
+      # Set CRS to NA to avoid sf repetitive messages
       sf::st_crs(study_area) <- NA
       sf::st_crs(new_abs) <- NA
       absences_inside_pol <- sapply(sf::st_intersects(new_abs, study_area), any)
@@ -57,8 +56,9 @@ generate_pseudo_absences <- function(presences, study_area, raster_stack, predic
     # Convert to data frame and round coordinates
     new_abs <- as.data.frame(sf::st_coordinates(new_abs))
     colnames(new_abs) <- coords
-    if (!is.null(sp_thin_dist) & nrow(new_abs) > 0){
-      new_abs <- remove_close_points(new_abs, sp_thin_dist, coords) # remove close points
+
+    if (!is.null(sp_thin_dist) & nrow(new_abs) > 0) {
+      new_abs <- remove_close_points(new_abs, sp_thin_dist, coords) # Remove close points
     }
 
     # Sample timestamp values
@@ -66,11 +66,11 @@ generate_pseudo_absences <- function(presences, study_area, raster_stack, predic
     new_abs$timestamp <- timestamp_sampled
 
     # Extract covariate values and remove points with missing covariate values
-    if (nrow(new_abs) > 0){
+    if (nrow(new_abs) > 0) {
       new_abs <- extract_noNA_cov_values(new_abs, raster_stack, predictor_variables)
     }
 
-    if (nrow(new_abs) > 0){
+    if (nrow(new_abs) > 0) {
       timestamp_keeped <- new_abs$timestamp
 
       # Update remaining timestamp values
@@ -91,12 +91,9 @@ generate_pseudo_absences <- function(presences, study_area, raster_stack, predic
 
     # Check for maximum attempts
     if (curr_attempt >= attempts) {
-      warning("Could not generate balanced pseudo-absences. Try increasing the number of attempts.")
+      stop("Could not generate balanced pseudo-absences. Check your study area or spatial thinning.")
     }
   }
-
-  # Add species information to absences
-  # absences$species <- presences$species
 
   # Set presence/absence indicator
   presences$pa <- 1

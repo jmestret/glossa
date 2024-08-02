@@ -312,7 +312,7 @@ function(input, output, session) {
     )
     w$show()
 
-    study_area_poly_buff(sf::st_geometry(sf::st_buffer(study_area_poly(), input$buff_poly)))
+    study_area_poly_buff(buffer_polygon(study_area_poly(), input$buff_poly))
 
     # Update previsualization plot
     updatePrettySwitch(inputId = "previsualization_plot_extent", value = FALSE)
@@ -504,9 +504,9 @@ function(input, output, session) {
         proj_files = proj_layers_path(),
         study_area_poly = study_area_poly_buff(),
         predictor_variables = predictor_variables,
-        sp_thin_dist = input$sp_thin_dist,
+        sp_thin_dist = switch(is.na(input$sp_thin_dist) + 1, input$sp_thin_dist, NULL),
         scale_layers = input$scale_layers,
-        buffer = input$buff_poly,
+        buffer = switch(is.na(input$buff_poly) + 1, input$buff_poly, NULL),
         native_range = input$analysis_options_nr,
         suitable_habitat = input$analysis_options_sh,
         other_analysis = input$analysis_options_other,
@@ -515,8 +515,8 @@ function(input, output, session) {
       )
     },
     error = function(e) {
-      message(e)
-      NULL
+      print(e)
+      return(NULL)
     })
 
     if (!is.null(glossa_results)){
