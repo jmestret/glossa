@@ -10,8 +10,9 @@ glossa_analysis(
   proj_files = NULL,
   study_area_poly = NULL,
   predictor_variables = NULL,
-  sp_thin_dist = NULL,
+  decimal_digits = NULL,
   scale_layers = FALSE,
+  buffer = NULL,
   native_range = NULL,
   suitable_habitat = NULL,
   other_analysis = NULL,
@@ -30,9 +31,11 @@ glossa_analysis(
 
 \item{predictor_variables}{A list of predictor variables to be used in the analysis.}
 
-\item{sp_thin_dist}{Integer; Distance in kilometers that you want the occurrences to be separated by.}
+\item{decimal_digits}{An integer specifying the number of decimal places to which coordinates should be rounded.}
 
 \item{scale_layers}{Logical; if TRUE, covariate layers will be scaled based on fit layers.}
+
+\item{buffer}{Buffer value or distance in decimal degrees (arc_degrees).}
 
 \item{native_range}{A vector of scenarios ('fit_layers', 'projections') where native range modeling should be performed.}
 

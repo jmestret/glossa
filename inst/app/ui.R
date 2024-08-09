@@ -423,13 +423,13 @@ body <- bs4Dash::bs4DashBody(
                 background = "#6c757d",
                 icon = NULL,
 
-                strong("Ocurrences processing"),
+                strong("Ocurrences thinning"),
 
                 tags$head(tags$style(HTML(".not_bold label {font-weight:normal !important;;}"))),
                 div(numericInput(
-                  inputId = "sp_thin_dist",
-                  label = "Spatial thinning (km)",
-                  value = NULL, min = 0, width = "90%"), class="not_bold"),
+                  inputId = "decimal_digits",
+                  label = "Rounding precision",
+                  value = NULL, min = 0, step = 1, width = "90%"), class="not_bold"),
 
                 strong("Layers processing"),
 

@@ -8,7 +8,7 @@
 #' @param proj_files A list of file paths containing environmental layers for projection scenarios.
 #' @param study_area_poly A spatial polygon defining the study area.
 #' @param predictor_variables A list of predictor variables to be used in the analysis.
-#' @param sp_thin_dist Integer; Distance in kilometers that you want the occurrences to be separated by.
+#' @param decimal_digits An integer specifying the number of decimal places to which coordinates should be rounded.
 #' @param scale_layers Logical; if TRUE, covariate layers will be scaled based on fit layers.
 #' @param buffer Buffer value or distance in decimal degrees (arc_degrees).
 #' @param native_range A vector of scenarios ('fit_layers', 'projections') where native range modeling should be performed.
@@ -24,7 +24,7 @@
 glossa_analysis <- function(
     pa_data = NULL, fit_layers = NULL, proj_files = NULL,
     study_area_poly = NULL, predictor_variables = NULL,
-    sp_thin_dist = NULL, scale_layers = FALSE, buffer = NULL,
+    decimal_digits = NULL, scale_layers = FALSE, buffer = NULL,
     native_range = NULL, suitable_habitat = NULL, other_analysis = NULL,
     seed = NA, waiter = NULL) {
 
@@ -126,7 +126,7 @@ glossa_analysis <- function(
       df = x,
       study_area = study_area_poly,
       overlapping = FALSE,
-      sp_thin_dist = sp_thin_dist,
+      decimal_digits = decimal_digits,
       coords = long_lat_cols,
       by_timestamp = TRUE,
       seed = seed
@@ -230,7 +230,7 @@ glossa_analysis <- function(
   presence_absence_list$model_pa <- lapply(seq_along(presence_absence_list$model_pa), function(i) {
     x <- presence_absence_list$model_pa[[i]]
     if (all(x[, "pa"] == 1)){
-      x <- generate_pseudo_absences(x, study_area_poly, covariate_list$fit_layers, predictor_variables = predictor_variables[[i]], coords = long_lat_cols, sp_thin_dist = sp_thin_dist)
+      x <- generate_pseudo_absences(x, study_area_poly, covariate_list$fit_layers, predictor_variables = predictor_variables[[i]], coords = long_lat_cols, decimal_digits = decimal_digits)
     }
     return(x)
   })

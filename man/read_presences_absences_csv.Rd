@@ -18,7 +18,7 @@ read_presences_absences_csv(
 
 \item{file_name}{Optional. The name of the file. If not provided, the base name of the file path is used.}
 
-\item{show_modal}{Optional. Logical. Whether to show a modal notification for warnings. Default is FALSE.}
+\item{show_modal}{Optional. Logical. Whether to show a modal notification for warnings (use in Shiny). Default is FALSE.}
 
 \item{coords}{Optional. Character vector of length 2 specifying the names of the columns containing the longitude and latitude coordinates. Default is c("decimalLongitude", "decimalLatitude").}
 
@@ -30,6 +30,7 @@ read_presences_absences_csv(
 A data frame with the validated data if the file has the expected columns and formats, NULL otherwise.
 }
 \description{
-This function reads and validates a CSV file containing presences and absences data for species occurrences. It checks if the file has the expected columns and formats.
+This function reads and validates a CSV file containing presences and absences data for species occurrences.
+It checks if the file has the expected columns and formats.
 }
 \keyword{internal}

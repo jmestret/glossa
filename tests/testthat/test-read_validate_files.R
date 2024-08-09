@@ -45,7 +45,7 @@ test_that("Validate projection layers", {
   file1 <- system.file("extdata", "fit_layers.zip", package="glossa")
   file2 <- system.file("extdata", "project_layers_1.zip", package="glossa")
 
-  expect_type(glossa::validate_layers_zip(file_path = file1), "logical")
+  expect_type(suppressWarnings(glossa::validate_layers_zip(file_path = file1)), "logical")
   expect_equal(glossa::validate_fit_projection_layers(file1, file2), TRUE)
 })
 

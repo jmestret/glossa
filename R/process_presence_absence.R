@@ -82,70 +82,6 @@ remove_points_polygon <- function(df, polygon, overlapping = FALSE, coords = c("
   return(filtered_points_df)
 }
 
-
-#' Remove Close Points
-#'
-#' Filters out data points that are closer together than a specified distance.
-#'
-#' @param df A data frame containing the spatial data to be thinned. This data frame must include columns for longitude and latitude.
-#' @param sp_thin_dist A numeric value specifying the minimum distance (in kilometers) that must separate the data points.
-#' @param coords A character vector of length 2, specifying the column names in `df` that contain the longitude and latitude values, respectively. Defaults to `c("decimalLongitude", "decimalLatitude")`.
-#'
-#' @return A data frame that contains the subset of the original data, filtered to ensure that no two points are closer together than the specified `sp_thin_dist`.
-#'
-#' @export
-remove_close_points <- function(df, sp_thin_dist, coords = c("decimalLongitude", "decimalLatitude")) {
-  # Check if data is a dataframe
-  if (!is.data.frame(df)) {
-    stop("Input must be a data frame.")
-  }
-
-  # Check if sp_thin_dist is a numeric value
-  if (!is.numeric(sp_thin_dist) || length(sp_thin_dist) != 1) {
-    stop("The thinning distance must be a single numeric value.")
-  }
-
-  # Check if coords is a character vector with exactly two elements
-  if (!is.character(coords) || length(coords) != 2) {
-    stop("Coordinate columns must be specified as a character vector with exactly two elements.")
-  }
-
-  # Ensure specified coordinate columns exist in the dataframe
-  missing_coords <- setdiff(coords, colnames(df))
-  if (length(missing_coords) > 0) {
-    stop(paste("Coordinate column(s) not found in dataframe:", paste(missing_coords, collapse = ", ")))
-  }
-
-  # Add a temporary species column for the thinning process
-  df$SPEC <- "SPEC"
-
-  # Perform spatial thinning
-  thinned_occ <- spThin::thin(
-    loc.data = df,
-    long.col = coords[1],
-    lat.col = coords[2],
-    spec.col = "SPEC",
-    thin.par = sp_thin_dist,
-    reps = 100,
-    locs.thinned.list.return = TRUE,
-    write.files = FALSE,
-    write.log.file = FALSE,
-    verbose = FALSE
-  )
-
-  # Determine the maximum number of records after thinning
-  max_occ <- max(sapply(thinned_occ, nrow))
-  n_occ <- sapply(thinned_occ, nrow)
-  max_records <- thinned_occ[[which(n_occ == max_occ)[1]]]
-
-  # Filter the original data to keep only the thinned records
-  filtered_data <- df[as.numeric(rownames(max_records)),]
-  filtered_data$SPEC <- NULL
-
-  return(filtered_data)
-}
-
-
 #' Clean Coordinates of Presence/Absence Data
 #'
 #' This function cleans coordinates of presence/absence data by removing NA coordinates, rounding coordinates if specified, removing duplicated points, and removing points outside specified spatial polygon boundaries.
@@ -153,7 +89,7 @@ remove_close_points <- function(df, sp_thin_dist, coords = c("decimalLongitude",
 #' @param df A dataframe object with rows representing points. Coordinates are in WGS84 (EPSG:4326) coordinate system.
 #' @param study_area A spatial polygon in WGS84 (EPSG:4326) representing the boundaries within which coordinates should be kept.
 #' @param overlapping Logical indicating whether points overlapping the polygon should be removed (TRUE) or kept (FALSE).
-#' @param sp_thin_dist Distance in kilometers that you want the occurrences to be separated by.
+#' @param decimal_digits An integer specifying the number of decimal places to which coordinates should be rounded.
 #' @param coords Character vector specifying the column names for longitude and latitude.
 #' @param by_timestamp If TRUE, clean coordinates taking into account different time periods defined in the column `timestamp`.
 #' @param seed Optional; an integer seed for reproducibility of results.
@@ -163,7 +99,7 @@ remove_close_points <- function(df, sp_thin_dist, coords = c("decimalLongitude",
 #' @details This function takes a data frame containing presence/absence data with longitude and latitude coordinates, a spatial polygon representing boundaries within which to keep points, and parameters for rounding coordinates and handling duplicated points. It returns a cleaned data frame with valid coordinates within the specified boundaries.
 #'
 #' @export
-clean_coordinates <- function(df, study_area, overlapping = FALSE, sp_thin_dist = NULL, coords = c("decimalLongitude", "decimalLatitude"), by_timestamp = TRUE, seed = NULL) {
+clean_coordinates <- function(df, study_area, overlapping = FALSE, decimal_digits = NULL, coords = c("decimalLongitude", "decimalLatitude"), by_timestamp = TRUE, seed = NULL) {
   # Remove NA coordinates
   if (by_timestamp) {
     df <- df[complete.cases(df[, c(coords, "timestamp")]), ]
@@ -171,17 +107,22 @@ clean_coordinates <- function(df, study_area, overlapping = FALSE, sp_thin_dist 
     df <- df[complete.cases(df[, coords]), ]
   }
 
-  # Remove duplicated points
-  if (by_timestamp) {
-    df <- remove_duplicate_points(df, coords = c(coords, "timestamp"))
+  # Remove duplicated and closer points
+  if (!is.null(decimal_digits)) {
+    group_col <- NULL
+    if (by_timestamp) group_col <- "timestamp"
+    df <- GeoThinneR::thin_points(
+      df, lon_col = coords[1], lat_col = coords[2], group_col = group_col,
+      method = "precision_thin", trials = 1, all_trials = FALSE, seed = seed,
+      precision = decimal_digits
+    )[[1]]
   } else {
-    df <- remove_duplicate_points(df, coords = coords)
-  }
-
-  # Remove closer points
-  if (!is.null(sp_thin_dist)) {
-    if (!is.null(seed)) set.seed(seed)
-    df <- remove_close_points(df, sp_thin_dist, coords)
+    # Remove duplicated points
+    if (by_timestamp) {
+      df <- remove_duplicate_points(df, coords = c(coords, "timestamp"))
+    } else {
+      df <- remove_duplicate_points(df, coords = coords)
+    }
   }
 
   # Remove points outside the study area

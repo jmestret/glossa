@@ -9,8 +9,8 @@ toy_data <- data.frame(
 
 # Create a fake study area as an sf polygon
 study_area_coords <- matrix(c(-123, 36, -121, 36, -121, 38, -123, 38, -123, 36), ncol = 2, byrow = TRUE)
-study_area_polygon <- st_polygon(list(study_area_coords))
-study_area <- st_sfc(study_area_polygon, crs = 4326) # EPSG:4326
+study_area_polygon <- sf::st_polygon(list(study_area_coords))
+study_area <- sf::st_sfc(study_area_polygon, crs = 4326) # EPSG:4326
 
 test_that("clean_coordinates returns a data frame", {
   cleaned_data <- clean_coordinates(toy_data, study_area)
@@ -27,9 +27,9 @@ test_that("clean_coordinates removes duplicate points", {
   expect_equal(nrow(cleaned_data), 2) # After cleaning, we should have 2 unique points
 })
 
-test_that("clean_coordinates removes close points based on sp_thin_dist", {
-  cleaned_data <- clean_coordinates(toy_data, study_area, sp_thin_dist = 0.001)
-  expect_equal(nrow(cleaned_data), 1) # After cleaning, we should have 1 point left
+test_that("clean_coordinates removes close points based on decimal_digits", {
+  cleaned_data <- clean_coordinates(toy_data, study_area, decimal_digits = 0)
+  expect_equal(nrow(cleaned_data), 2) # After cleaning, we should have 1 point left
 })
 
 test_that("clean_coordinates removes points outside the study area", {
@@ -59,10 +59,11 @@ test_that("clean_coordinates cleans based on timestamp", {
 
 test_that("clean_coordinates is reproducible with seed", {
   set.seed(123)
-  cleaned_data1 <- clean_coordinates(toy_data, study_area, sp_thin_dist = 0.001, seed = 123)
+  cleaned_data1 <- clean_coordinates(toy_data, study_area, decimal_digits = 1, seed = 123)
 
   set.seed(123)
-  cleaned_data2 <- clean_coordinates(toy_data, study_area, sp_thin_dist = 0.001, seed = 123)
+  cleaned_data2 <- clean_coordinates(toy_data, study_area, decimal_digits = 1, seed = 123)
 
   expect_equal(cleaned_data1, cleaned_data2) # Results should be the same
 })
+

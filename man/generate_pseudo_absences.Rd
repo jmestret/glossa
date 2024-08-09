@@ -2,7 +2,7 @@
 % Please edit documentation in R/generate_pseudo_absences.R
 \name{generate_pseudo_absences}
 \alias{generate_pseudo_absences}
-\title{Generate pseudo-absence points based on presence points, covariates, and study area polygon}
+\title{Generate Pseudo-Absence Points Based on Presence Points, Covariates, and Study Area Polygon}
 \usage{
 generate_pseudo_absences(
   presences,
@@ -10,24 +10,24 @@ generate_pseudo_absences(
   raster_stack,
   predictor_variables,
   coords = c("decimalLongitude", "decimalLatitude"),
-  sp_thin_dist = NULL,
+  decimal_digits = NULL,
   attempts = 100
 )
 }
 \arguments{
 \item{presences}{Data frame containing presence points.}
 
-\item{study_area}{Spatial polygon defining the study area ('sf').}
+\item{study_area}{Spatial polygon defining the study area (`sf` object).}
 
-\item{raster_stack}{SpatRaster containing covariate data.}
+\item{raster_stack}{`SpatRaster` object containing covariate data.}
 
-\item{predictor_variables}{Name of the predictor variables selected for this species.}
+\item{predictor_variables}{Character vector of the predictor variables selected for this species.}
 
-\item{coords}{Character vector specifying the column names for latitude and longitude.}
+\item{coords}{Character vector specifying the column names for latitude and longitude. Defaults to `c("decimalLongitude", "decimalLatitude")`.}
 
-\item{sp_thin_dist}{Distance in kilometers that you want the occurrences to be separated by.}
+\item{decimal_digits}{An integer specifying the number of decimal places to which coordinates should be rounded.}
 
-\item{attempts}{Number of attempts to generate exact pseudo-absences.}
+\item{attempts}{Integer specifying the number of attempts to generate exact pseudo-absences. Defaults to 100.}
 }
 \value{
 Data frame containing both presence and pseudo-absence points.

@@ -419,7 +419,7 @@ function(input, output, session) {
     updatePrettyCheckboxGroup(inputId = "analysis_options_sh", selected = character(0))
     updatePrettyCheckboxGroup(inputId = "analysis_options_other", selected = character(0))
     updatePrettySwitch(inputId = "scale_layers", value = FALSE)
-    updateNumericInput(inputId = "sp_thin_dist", value = numeric(0))
+    updateNumericInput(inputId = "decimal_digits", value = numeric(0))
     updateNumericInput(inputId = "buff_poly", value = numeric(0))
     updateNumericInput(inputId = "seed", value = numeric(0))
 
@@ -504,7 +504,7 @@ function(input, output, session) {
         proj_files = proj_layers_path(),
         study_area_poly = study_area_poly_buff(),
         predictor_variables = predictor_variables,
-        sp_thin_dist = switch(is.na(input$sp_thin_dist) + 1, input$sp_thin_dist, NULL),
+        decimal_digits = switch(is.na(input$decimal_digits) + 1, as.integer(input$decimal_digits), NULL),
         scale_layers = input$scale_layers,
         buffer = switch(is.na(input$buff_poly) + 1, input$buff_poly, NULL),
         native_range = input$analysis_options_nr,

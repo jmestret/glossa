@@ -7,11 +7,11 @@
 fit_bart_model(y, x, seed = NULL)
 }
 \arguments{
-\item{y}{Vector indicating presence (1) or absence (0).}
+\item{y}{A numeric vector indicating presence (1) or absence (0).}
 
-\item{x}{Dataframe with same number of rows as the length of the vector `y` with the covariate values.}
+\item{x}{A data frame with the same number of rows as the length of the vector `y`, containing the covariate values.}
 
-\item{seed}{Random seed.}
+\item{seed}{An optional integer value for setting the random seed for reproducibility.}
 }
 \value{
 A BART model object.

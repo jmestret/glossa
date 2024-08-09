@@ -36,7 +36,6 @@ Imports:
     sf,
     shinyWidgets,
     sparkline,
-    spThin,
     svglite,
     terra,
     tidyr,
@@ -44,10 +43,13 @@ Imports:
     waiter,
     zip
 Suggests:
+    GeoThinneR,
     knitr,
     rmarkdown,
     testthat (>= 3.0.0),
     tidyverse
+Remotes:
+    jmestret/GeoThinneR
 VignetteBuilder: knitr
 BuildVignettes: true
 Encoding: UTF-8

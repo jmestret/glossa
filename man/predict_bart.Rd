@@ -7,15 +7,15 @@
 predict_bart(bart_model, layers, cutoff = NULL)
 }
 \arguments{
-\item{bart_model}{A BART model object obtained from fitting BART ('dbarts::bart').}
+\item{bart_model}{A BART model object obtained from fitting BART using the 'dbarts' package.}
 
 \item{layers}{A SpatRaster object containing environmental covariates for prediction.}
 
-\item{cutoff}{An optional cutoff value for determining potential presences. If NULL potential presences and absences will not be computed.}
+\item{cutoff}{An optional numeric cutoff value for determining potential presences. If NULL, potential presences and absences will not be computed.}
 }
 \value{
 A SpatRaster containing the mean, median, standard deviation, and quantiles
-of the posterior predictive distribution.
+of the posterior predictive distribution, as well as a potential presences layer if cutoff is provided.
 }
 \description{
 This function makes predictions using a Bayesian Additive Regression Trees (BART) model

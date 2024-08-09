@@ -7,13 +7,13 @@
 #' @param raster_stack `SpatRaster` object containing covariate data.
 #' @param predictor_variables Character vector of the predictor variables selected for this species.
 #' @param coords Character vector specifying the column names for latitude and longitude. Defaults to `c("decimalLongitude", "decimalLatitude")`.
-#' @param sp_thin_dist Numeric value specifying the minimum distance (in kilometers) that must separate the data points. Defaults to `NULL`.
+#' @param decimal_digits An integer specifying the number of decimal places to which coordinates should be rounded.
 #' @param attempts Integer specifying the number of attempts to generate exact pseudo-absences. Defaults to 100.
 #'
 #' @return Data frame containing both presence and pseudo-absence points.
 #'
 #' @export
-generate_pseudo_absences <- function(presences, study_area, raster_stack, predictor_variables, coords = c("decimalLongitude", "decimalLatitude"), sp_thin_dist = NULL, attempts = 100) {
+generate_pseudo_absences <- function(presences, study_area, raster_stack, predictor_variables, coords = c("decimalLongitude", "decimalLatitude"), decimal_digits = NULL, attempts = 100) {
   # Check inputs
   stopifnot(is.data.frame(presences))
   stopifnot(inherits(study_area, "sf") || inherits(study_area, "sfc"))
@@ -57,13 +57,17 @@ generate_pseudo_absences <- function(presences, study_area, raster_stack, predic
     new_abs <- as.data.frame(sf::st_coordinates(new_abs))
     colnames(new_abs) <- coords
 
-    if (!is.null(sp_thin_dist) & nrow(new_abs) > 0) {
-      new_abs <- remove_close_points(new_abs, sp_thin_dist, coords) # Remove close points
-    }
-
     # Sample timestamp values
     timestamp_sampled <- sample(timestamp_values, nrow(new_abs))
     new_abs$timestamp <- timestamp_sampled
+
+    if (!is.null(decimal_digits) & nrow(new_abs) > 0) {
+      new_abs <- GeoThinneR::thin_points(
+        new_abs, lon_col = coords[1], lat_col = coords[2], group_col = "timestamp",
+        method = "precision_thin", trials = 1, all_trials = FALSE,
+        precision = decimal_digits
+      )[[1]] # Remove close points by precision
+    }
 
     # Extract covariate values and remove points with missing covariate values
     if (nrow(new_abs) > 0) {

@@ -7,7 +7,7 @@
 validate_layers_zip(file_path, show_modal = FALSE)
 }
 \arguments{
-\item{file_path}{Path to the zip file containing environmental layers.}
+\item{file_path}{Path to the ZIP file containing environmental layers.}
 
 \item{show_modal}{Optional. Logical. Whether to show a modal notification for warnings. Default is FALSE.}
 }
@@ -15,6 +15,6 @@ validate_layers_zip(file_path, show_modal = FALSE)
 TRUE if the layers pass validation criteria, FALSE otherwise.
 }
 \description{
-This function validates a zip file containing environmental layers. It checks if the layers have the same number of files, CRS (Coordinate Reference System), and resolution.
+This function validates a ZIP file containing environmental layers. It checks if the layers have the same number of files, CRS (Coordinate Reference System), and resolution.
 }
 \keyword{internal}
