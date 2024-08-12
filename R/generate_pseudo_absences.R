@@ -16,7 +16,9 @@
 generate_pseudo_absences <- function(presences, study_area, raster_stack, predictor_variables, coords = c("decimalLongitude", "decimalLatitude"), decimal_digits = NULL, attempts = 100) {
   # Check inputs
   stopifnot(is.data.frame(presences))
-  stopifnot(inherits(study_area, "sf") || inherits(study_area, "sfc"))
+  if (!is.null(study_area)){
+    stopifnot(inherits(study_area, "sf") || inherits(study_area, "sfc"))
+  }
   stopifnot(inherits(raster_stack[[1]], "SpatRaster"))
 
   # Initialize variables
