@@ -112,8 +112,8 @@ clean_coordinates <- function(df, study_area, overlapping = FALSE, decimal_digit
     group_col <- NULL
     if (by_timestamp) group_col <- "timestamp"
     df <- GeoThinneR::thin_points(
-      df, lon_col = coords[1], lat_col = coords[2], group_col = group_col,
-      method = "precision_thin", trials = 1, all_trials = FALSE, seed = seed,
+      df, long_col = coords[1], lat_col = coords[2], group_col = group_col,
+      method = "precision", trials = 1, all_trials = FALSE, seed = seed,
       precision = decimal_digits
     )[[1]]
   } else {

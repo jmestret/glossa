@@ -63,8 +63,8 @@ generate_pseudo_absences <- function(presences, study_area, raster_stack, predic
 
     if (!is.null(decimal_digits) & nrow(new_abs) > 0) {
       new_abs <- GeoThinneR::thin_points(
-        new_abs, lon_col = coords[1], lat_col = coords[2], group_col = "timestamp",
-        method = "precision_thin", trials = 1, all_trials = FALSE,
+        new_abs, long_col = coords[1], lat_col = coords[2], group_col = "timestamp",
+        method = "precision", trials = 1, all_trials = FALSE,
         precision = decimal_digits
       )[[1]] # Remove close points by precision
     }
