@@ -54,7 +54,7 @@ glossa_analysis <- function(
   presence_absence_list <- list(raw_pa = NULL, clean_pa = NULL, model_pa = NULL)
   covariate_list <- list(fit_layers = NULL, projections = NULL)
   projections_results <- list(fit_layers = NULL, projections = NULL)
-  other_results <- list(variable_importance = NULL, response_curve = NULL, cross_validation = NULL)
+  other_results <- list(variable_importance = NULL, response_curve = NULL, cross_validation = NULL, model_diagnostic = NULL)
   pa_cutoff <- list(native_range = NULL, suitable_habitat = NULL)
   habitat_suitability <- list(fit_layers = NULL, projections = NULL)
 
@@ -339,9 +339,6 @@ glossa_analysis <- function(
     pred_nr_time <- Sys.time()
     print(paste("Native range projections execution time:", difftime(pred_nr_time, hist_nr_time, units = "mins"), "mins"))
 
-    # Free memory by removing fitted models
-    rm(models_native_range)
-
     end_nr_time <- Sys.time()
     print(paste("Native range execution time:", difftime(end_nr_time, start_nr_time, units = "mins"), "mins"))
   }
@@ -468,11 +465,6 @@ glossa_analysis <- function(
     hab_sh_time <- Sys.time()
     print(paste("Habitat suitability execution time:", difftime(hab_sh_time, pred_sh_time, units = "mins"), "mins"))
 
-    # Free memory by removing fitted models
-    if (scale_layers | !"functional_responses" %in% other_analysis){
-      rm(models_suitable_habitat)
-    }
-
     end_sh_time <- Sys.time()
     print(paste("Suitable habitat execution time:", difftime(end_sh_time, start_sh_time, units = "mins"), "mins"))
   }
@@ -514,11 +506,6 @@ glossa_analysis <- function(
     })
     names(other_results$response_curve) <- names(presence_absence_list$model_pa)
 
-    # Free memory by removing fitted models
-    if (!scale_layers){
-      rm(models_suitable_habitat)
-    }
-
     end_fr_time <- Sys.time()
     print(paste("Functional responses execution time:", difftime(end_fr_time, start_fr_time, units = "mins"), "mins"))
   }
@@ -554,9 +541,44 @@ glossa_analysis <- function(
     print(paste("Cross-validation execution time:", difftime(end_cv_time, start_cv_time, units = "mins"), "mins"))
   }
 
+  #=========================================================#
+  # 10. Model diagnostic ----
+  #=========================================================#
+  if (!is.null(waiter)){waiter$update(html = tagList(img(src = "logo_glossa.gif", height = "200px"), h4("Loading..."), h4("Sit back, relax, and let us do the math!"),  h6("Model diagnostic")))}
+  start_diag_time <- Sys.time()
+
+  if (!is.null(native_range)){
+    other_results$model_diagnostic$native_range <- lapply(models_native_range, function(model){
+      y <- model$fit$data@y
+      x <- as.data.frame(model$fit$data@x)
+      df <- data.frame(
+        observed = y,
+        probability = colMeans(dbarts:::predict.bart(model, x))
+      )
+      temp_cutoff <- glossa::pa_optimal_cutoff(y, x, model)
+      df$predicted = ifelse(df$probability >= temp_cutoff, 1, 0)
+      return(df)
+    })
+  }
+
+  if (!is.null(suitable_habitat)){
+    other_results$model_diagnostic$suitable_habitat <- lapply(models_native_range, function(model){
+      y <- model$fit$data@y
+      x <- as.data.frame(model$fit$data@x)
+      df <- data.frame(
+        observed = y,
+        probability = colMeans(dbarts:::predict.bart(model, x))
+      )
+      temp_cutoff <- glossa::pa_optimal_cutoff(y, x, model)
+      df$predicted = ifelse(df$probability >= temp_cutoff, 1, 0)
+      return(df)
+    })
+  }
+  end_diag_time <- Sys.time()
+  print(paste("Cross-validation execution time:", difftime(end_diag_time, start_diag_time, units = "mins"), "mins"))
 
   #=========================================================#
-  # 10. Finalizing -----
+  # 11. Finalizing -----
   #=========================================================#
   if (!is.null(waiter)){waiter$update(html = tagList(img(src = "logo_glossa.gif", height = "200px"), h4("Loading..."), h4("Sit back, relax, and let us do the math!"),  h6("Finalizing")))}
 

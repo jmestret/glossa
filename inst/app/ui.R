@@ -525,7 +525,7 @@ body <- bs4Dash::bs4DashBody(
                   prettyCheckboxGroup(
                     inputId = "analysis_options_nr",
                     label = tags$span("Native range", shiny::actionButton("analysis_options_nr_info", label = NULL, icon = icon("circle-info", class = "fa-solid fa-circle-info", style = "color:#007bff;"), class = "btn btn-default action-button btn-xs", style="background-color:transparent;border-radius:0px;border-width:0px")),
-                    choiceNames = c("Model fitting", "Model prediction"),
+                    choiceNames = c("Model fitting", "Model projection"),
                     choiceValues = c("fit_layers", "projections"),
                     selected = NULL,
                     status = "primary",
@@ -537,7 +537,7 @@ body <- bs4Dash::bs4DashBody(
                   prettyCheckboxGroup(
                     inputId = "analysis_options_sh",
                     label = tags$span("Suitable habitat", shiny::actionButton("analysis_options_sh_info", label = NULL, icon = icon("circle-info", class = "fa-solid fa-circle-info", style = "color:#007bff;"), class = "btn btn-default action-button btn-xs", style="background-color:transparent;border-radius:0px;border-width:0px")),
-                    choiceNames = c("Model fitting", "Model prediction"),
+                    choiceNames = c("Model fitting", "Model projection"),
                     choiceValues = c("fit_layers", "projections"),
                     selected = NULL,
                     status = "primary",
@@ -880,7 +880,7 @@ body <- bs4Dash::bs4DashBody(
       ),
 
       fluidRow(
-        # ** FUnctional responses ----
+        # ** Functional responses ----
         bs4Dash::box(
           title = strong("Functional responses"),
           status = NULL,
@@ -957,7 +957,7 @@ body <- bs4Dash::bs4DashBody(
 
           sidebar = bs4Dash::boxSidebar(
             startOpen = FALSE,
-            id = "fr_plot_sidebar",
+            id = "cv_plot_sidebar",
             background = "#adb5bd",
             icon = icon("ellipsis", class = "fa-solid fa-ellipsis", style = "color:#3b444b;"),
             shinyWidgets::pickerInput(
@@ -970,6 +970,104 @@ body <- bs4Dash::bs4DashBody(
           ),
 
           plotOutput("cv_plot", height = "100%")
+        )
+      ),
+
+      fluidRow(column(width = 12, strong("Model diagnostic"))),
+
+      # Model diagnostic
+      fluidRow(
+        # ** Distribution of fitted values ----
+        bs4Dash::box(
+          title = strong("Distribution of fitted values"),
+          status = NULL,
+          width = 4,
+          height = 200,
+          solidHeader = FALSE,
+          background = NULL,
+          maximizable = TRUE,
+          collapsible = FALSE,
+          headerBorder = FALSE,
+          elevation = 2,
+          label = glossa::export_plot_ui("export_fv_plot"),
+
+          sidebar = bs4Dash::boxSidebar(
+            startOpen = FALSE,
+            id = "fv_plot_sidebar",
+            background = "#adb5bd",
+            icon = icon("ellipsis", class = "fa-solid fa-ellipsis", style = "color:#3b444b;"),
+            shinyWidgets::pickerInput(
+              inputId = "fv_plot_mode",
+              label = NULL,
+              choices = NULL,
+              width = "90%",
+              options = list(size = 5)
+            )
+          ),
+
+          plotOutput("fv_plot", height = "100%")
+        ),
+
+        # ** Classified values ----
+        bs4Dash::box(
+          title = strong("Classified values"),
+          status = NULL,
+          width = 4,
+          height = 200,
+          solidHeader = FALSE,
+          background = NULL,
+          maximizable = TRUE,
+          collapsible = FALSE,
+          headerBorder = FALSE,
+          elevation = 2,
+          label = glossa::export_plot_ui("export_class_val_plot"),
+
+          sidebar = bs4Dash::boxSidebar(
+            startOpen = FALSE,
+            id = "class_val_plot_sidebar",
+            background = "#adb5bd",
+            icon = icon("ellipsis", class = "fa-solid fa-ellipsis", style = "color:#3b444b;"),
+            shinyWidgets::pickerInput(
+              inputId = "class_val_plot_mode",
+              label = NULL,
+              choices = NULL,
+              width = "90%",
+              options = list(size = 5)
+            )
+          ),
+
+          plotOutput("class_val_plot", height = "100%")
+        ),
+
+        # ** ROC curve ----
+        bs4Dash::box(
+          title = strong("ROC curve"),
+          status = NULL,
+          width = 4,
+          height = 200,
+          solidHeader = FALSE,
+          background = NULL,
+          maximizable = TRUE,
+          collapsible = FALSE,
+          headerBorder = FALSE,
+          elevation = 2,
+          label = glossa::export_plot_ui("export_roc_plot"),
+
+          sidebar = bs4Dash::boxSidebar(
+            startOpen = FALSE,
+            id = "roc_plot_sidebar",
+            background = "#adb5bd",
+            icon = icon("ellipsis", class = "fa-solid fa-ellipsis", style = "color:#3b444b;"),
+            shinyWidgets::pickerInput(
+              inputId = "roc_plot_mode",
+              label = NULL,
+              choices = NULL,
+              width = "90%",
+              options = list(size = 5)
+            )
+          ),
+
+          plotOutput("roc_plot", height = "100%")
         )
       )
     ),
@@ -1085,6 +1183,29 @@ body <- bs4Dash::bs4DashBody(
         ) # End column
       ) # End fluidRow
     ), # End exports tab
+
+    # * Documentation tab
+    bs4Dash::tabItem(
+      tabName = "documentation",
+
+      fluidRow(
+        bs4Dash::column(
+          width = 8, offset = 2,
+          bs4Dash::box(title = NULL,
+                       status = NULL,
+                       width = 12,
+                       solidHeader = FALSE,
+                       background = NULL,
+                       collapsible = FALSE,
+                       headerBorder = FALSE,
+                       elevation = 2,
+                       label = NULL,
+
+                       shiny::includeMarkdown("Rmd/documentation.Rmd")
+          ) # End box
+        ) # End column
+      ) # End fluidRow
+    ), # End documentation tab
 
     # * How to cite tab ----
     bs4Dash::tabItem(

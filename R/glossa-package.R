@@ -1,8 +1,9 @@
-#' @import bs4Dash leaflet sparkline svglite waiter ggplot2
+#' @import bs4Dash leaflet sparkline svglite waiter ggplot2 markdown
 #' @importFrom magrittr "%>%"
 #' @importFrom grDevices gray
 #' @importFrom stats complete.cases median na.omit quantile reorder sd
 #' @importFrom GeoThinneR thin_points
+#' @importFrom pROC roc auc ggroc
 #' @importFrom utils head read.csv2 tail unzip write.table
 #' @importFrom DT DTOutput renderDT datatable
 #' @importFrom zip zip

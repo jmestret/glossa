@@ -46,7 +46,7 @@ invert_polygon <- function(polygon, bbox = NULL) {
 
   # If they are the same buffer a little bit the bounding box to create a frame.
   equal <- tryCatch({
-    length(st_equals(bbox_poly, polygon)[[1]]) > 0
+    length(sf::st_equals(bbox_poly, polygon)[[1]]) > 0
   }, error = function(e) FALSE)
   if (equal){
     bbox_poly <- suppressWarnings(sf::st_buffer(bbox_poly, 0.1))

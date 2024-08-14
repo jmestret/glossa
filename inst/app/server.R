@@ -623,6 +623,30 @@ function(input, output, session) {
     updatePickerInput(session, "cv_plot_mode", choices = names(other_results()[["cross_validation"]]))
   })
 
+  # ** Fitted values plot selectizer ----
+  observe({
+    req(other_results())
+    req(other_results()[["model_diagnostic"]])
+    req(input$sp)
+    updatePickerInput(session, "fv_plot_mode", choices = names(other_results()[["model_diagnostic"]]))
+  })
+
+  # ** Classified values plot selectizer ----
+  observe({
+    req(other_results())
+    req(other_results()[["model_diagnostic"]])
+    req(input$sp)
+    updatePickerInput(session, "class_val_plot_mode", choices = names(other_results()[["model_diagnostic"]]))
+  })
+
+  # ** ROC plot selectizer ----
+  observe({
+    req(other_results())
+    req(other_results()[["model_diagnostic"]])
+    req(input$sp)
+    updatePickerInput(session, "roc_plot_mode", choices = names(other_results()[["model_diagnostic"]]))
+  })
+
   # * Exports server ----
   # Update selectizers
   observe({
@@ -677,7 +701,7 @@ function(input, output, session) {
   output$pred_plot_year_slider <- renderUI({
     req(input$pred_plot_layers == "projections")
     req(input$pred_plot_scenario)
-    sliderInput(inputId = "pred_plot_year", label = "Year", value = 1, step = 1, round = TRUE, min = 1, max = length(projections_results()[[input$pred_plot_layers]][[input$pred_plot_model]][[input$sp]][[input$pred_plot_scenario]]))
+    sliderInput(inputId = "pred_plot_year", label = "Timestamp", value = 1, step = 1, round = TRUE, min = 1, max = length(projections_results()[[input$pred_plot_layers]][[input$pred_plot_model]][[input$sp]][[input$pred_plot_scenario]]))
   })
 
   # Update layers plot selectizers
@@ -689,7 +713,7 @@ function(input, output, session) {
   output$layers_plot_year_slider <- renderUI({
     req(input$layers_plot_mode == "projections")
     req(input$layers_plot_scenario)
-    sliderInput(inputId = "layers_plot_year", label = "Year", round = TRUE, step = 1, width = "90%", value = 1, min = 1, max = length(covariate_list()[[input$layers_plot_mode]][[input$layers_plot_scenario]]))
+    sliderInput(inputId = "layers_plot_year", label = "Timestamp", round = TRUE, step = 1, width = "90%", value = 1, min = 1, max = length(covariate_list()[[input$layers_plot_mode]][[input$layers_plot_scenario]]))
   })
 
   # * Input validation table ----
@@ -1009,6 +1033,75 @@ function(input, output, session) {
     cv_plot()
   })
 
+  # * Fitted values plot ----
+  fv_plot <- reactive({
+    if (!is.null(input$fv_plot_mode)){
+      x <- other_results()[["model_diagnostic"]][[input$fv_plot_mode]][[input$sp]]
+    } else {
+      x <- data.frame(matrix(ncol = 1, nrow = 0))
+      colnames(x) <- "probability"
+    }
+    ggplot(x, aes(probability )) +
+      geom_histogram(stat = "bin", binwidth = 0.05, fill = "#007bff", color = "white") +
+      ylab("Count of train data") +
+      xlab("Predicted probability") +
+      theme_minimal(base_size = 15)
+  })
+  output$fv_plot<-renderPlot({
+    fv_plot()
+  })
+
+  # * Classified values plot ----
+  class_val_plot <- reactive({
+    if (!is.null(input$class_val_plot_mode)){
+      x <- other_results()[["model_diagnostic"]][[input$class_val_plot_mode]][[input$sp]]
+      tmp_cutoff <- pa_cutoff()[[input$class_val_plot_mode]][[input$sp]]
+    } else {
+      x <- data.frame(matrix(ncol = 3, nrow = 0))
+      colnames(x) <- c("observed", "probability", "predicted")
+      tmp_cutoff <- 0.5
+    }
+    ggplot(x, aes(x = probability,
+                  y = factor(observed),
+                  fill = factor(predicted),
+                  color = factor(predicted))) +
+      geom_jitter(height = 0.2, size = 2, alpha = 0.7, width = 0.05) +
+      xlab("Predicted probability") +
+      ylab("Observed") +
+      theme_minimal(base_size = 15) +
+      theme(legend.position = "none") +
+      geom_vline(xintercept = tmp_cutoff, col = 'black', linetype = "dashed", linewidth = 1) +
+      annotate("text", x = tmp_cutoff, y = 1.5, label = paste("Cutoff =", round(tmp_cutoff,3)),
+               color = "black", vjust = -1, size = 4)
+  })
+  output$class_val_plot<-renderPlot({
+    class_val_plot()
+  })
+
+  # * ROC plot ----
+  roc_plot <- reactive({
+    if (!is.null(input$roc_plot_mode)){
+      x <- other_results()[["model_diagnostic"]][[input$roc_plot_mode]][[input$sp]]
+      x <- pROC::roc(x$observed, x$probability, )
+      auc <- round(pROC::auc(x) ,4)
+
+      p <- pROC::ggroc(x, colour = "#007bff", linewidth = 1.5)
+    } else {
+      auc <- 0
+      p <- ggplot()
+    }
+    p +
+      geom_abline(intercept=1,slope=1,col="grey", linetype = "dashed", linewidth = 1.5) +
+      xlab("False Positive Rate (FPR)") +
+      ylab("True Positive Rate (TPR)") +
+      annotate("text", x = 0.25, y = 0.25, label = paste("AUC =", auc),
+               color = "black", vjust = -1, size = 4) +
+      theme_minimal(base_size = 15)
+  })
+  output$roc_plot<-renderPlot({
+    roc_plot()
+  })
+
   #=========================================================#
   # Exports ----
   #=========================================================#
@@ -1021,6 +1114,9 @@ function(input, output, session) {
   glossa::export_plot_server("export_fr_plot", fr_plot())
   glossa::export_plot_server("export_varimp_plot", varimp_plot())
   glossa::export_plot_server("export_cv_plot", cv_plot())
+  glossa::export_plot_server("export_fv_plot", fv_plot())
+  glossa::export_plot_server("export_class_val_plot", class_val_plot())
+  glossa::export_plot_server("export_roc_plot", roc_plot())
 
   # * Export results downloadHandler ----
   output$export_button <- downloadHandler(

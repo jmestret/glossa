@@ -29,10 +29,9 @@ Imports:
     htmltools,
     jsonlite,
     leaflet,
-    magrittr,
-    markdown,
     matrixStats,
     mcp,
+    pROC,
     sf,
     shinyWidgets,
     sparkline,
@@ -45,6 +44,7 @@ Imports:
 Suggests:
     GeoThinneR,
     knitr,
+    markdown,
     rmarkdown,
     testthat (>= 3.0.0),
     tidyverse
