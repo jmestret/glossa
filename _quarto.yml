@@ -1,0 +1,69 @@
+project:
+  type: website
+  output-dir: docs
+
+website:
+  title: "Quarto"
+  favicon: "images/logo_glossa.png"
+  repo-url: https://github.com/jmestret/glossa
+  repo-actions: [edit, issue]
+  page-navigation: true
+  page-footer:
+    left: |
+      Developed by
+      [![](images/logo_imares.png){fig-alt="iMARES" width=65px}](https://x.com/iMARES_group)
+  navbar:
+    background: light
+    logo: "images/logo_glossa_text.png"
+    logo-alt: "GLOSSA logo"
+    title: false
+    left:
+      - href: home.qmd
+        text: Home
+      - text: Get started
+        href: get_started.qmd
+      - text: "Documentation"
+        href: pages/guide/index.qmd
+      - href: index.qmd
+        text: Tutorials
+      - href: course.qmd
+        text: Course
+      - href: publications.qmd
+        text: Publications
+      - href: how_to_cite.qmd
+        text: Cite us
+      - href: contact_us.qmd
+        text: Contact us
+      - text: Help
+        menu:
+          - href: index.qmd
+            text: Report a bug
+          - href: index.qmd
+            text: FAQs
+            
+    tools:
+      - icon: github
+        href: https://github.com/jmestret/glossa
+        
+    sidebar:
+      - id: guide
+        collapse-level: 1
+        contents:
+          - section: "Guide"
+            href: pages/guide/index.qmd
+            contents:
+              - section: "Input"
+                contents:
+                  - pages/input/index.qmd
+                  - pages/input/index.qmd
+                  - pages/input/index.qmd
+                  - pages/input/index.qmd
+                  
+format:
+  html:
+    theme: cosmo
+    css: styles.css
+    toc: true
+
+editor: visual
+

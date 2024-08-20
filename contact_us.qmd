@@ -1,0 +1,27 @@
+---
+pagetitle: "Contact us - GLOSSA"
+---
+
+# Contact us
+
+We value your feedback and are here to help you with any questions, support needs or collaboration requests. Please use the following means to get in touch with us:
+
+## GitHub
+
+For issues, feature requests, questions, or general feedback, please use the Issues tab on our GitHub repository:
+
+- [GLOSSA GitHub](https://github.com/jmestret/glossa/issues)
+
+## Contact form
+
+For special support or collaboration requests, please contact us via the contact form at the end of the iMARES website:
+
+- [iMARES](https://imares.science/)
+
+## X (Twitter)
+
+Follow our research group on Twitter for the latest news and updates:
+
+-   [\@iMARES_group](https://x.com/iMARES_group)
+
+Thank you for your support! If you want to know more about the group go and visit our website: [iMARES](https://imares.science/)
