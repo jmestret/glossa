@@ -1,7 +1,7 @@
 Package: glossa
 Type: Package
 Title: GLobal Ocean Species Spatiotemporal Analysis
-Version: 0.0.1
+Version: 0.1.0
 Authors@R:
     c(person(given = "Alba",
              family = "Fuster-Alonso",
@@ -48,8 +48,6 @@ Suggests:
     rmarkdown,
     testthat (>= 3.0.0),
     tidyverse
-Remotes:
-    jmestret/GeoThinneR
 VignetteBuilder: knitr
 BuildVignettes: true
 Encoding: UTF-8

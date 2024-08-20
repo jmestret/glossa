@@ -1,3 +1,5 @@
-# glossa 0.0.1
+# glossa (development version)
+
+# glossa 0.1.0
 
 * Initial CRAN submission.
