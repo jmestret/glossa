@@ -13,7 +13,7 @@ Authors@R:
              role = c("aut", "cre"),
              email = "jorge.mestre.tomas@csic.es",
              comment = c(ORCID = "0000-0002-8983-3417")))
-Description: An R package and Shiny app for exploring the past and future of marine species distribution worldwide with BART modeling.
+Description: A user-friendly R shiny app for machine learning analysis of marine species distribution.
 License: GPL (>=3) + file LICENSE
 URL: https://github.com/jmestret/glossa
 BugReports: https://github.com/jmestret/glossa/issues
