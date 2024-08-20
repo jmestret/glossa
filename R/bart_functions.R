@@ -55,6 +55,7 @@ fit_bart_model <- function(y, x, seed = NULL) {
 #'
 #' @export
 predict_bart <- function(bart_model, layers, cutoff = NULL) {
+  predict.bart <- utils::getFromNamespace("predict.bart", "dbarts")
   tryCatch({
     # Define quantiles for posterior predictive distribution
     quantiles <- c(0.025, 0.975)
@@ -73,7 +74,7 @@ predict_bart <- function(bart_model, layers, cutoff = NULL) {
     input_matrix <- input_matrix[complete.cases(input_matrix), , drop = FALSE]
 
     # Make predictions using the BART model
-    pred <- dbarts:::predict.bart(bart_model, input_matrix)
+    pred <- predict.bart(bart_model, input_matrix)
 
     # Calculate summary statistics of predictions
     pred_data <- cbind(
@@ -191,8 +192,9 @@ variable_importance <- function(bart_model) {
 #'
 #' @export
 pa_optimal_cutoff <- function(y, x, model, seed = NULL) {
+  predict.bart <- utils::getFromNamespace("predict.bart", "dbarts")
   set.seed(seed)
-  pred_data <- dbarts:::predict.bart(model, newdata = x)
+  pred_data <- predict.bart(model, newdata = x)
   pred_mean <- colMeans(pred_data)
 
   pa_cutoff <- optimalCutoff(
@@ -220,6 +222,7 @@ pa_optimal_cutoff <- function(y, x, model, seed = NULL) {
 #'
 #' @export
 cv_bart <- function(data, k = 10, seed = NULL){
+  predict.bart <- utils::getFromNamespace("predict.bart", "dbarts")
   set.seed(seed)
   n <- nrow(data)
   # Create index vector
@@ -250,7 +253,7 @@ cv_bart <- function(data, k = 10, seed = NULL){
       bart_model
     )
 
-    pred <- dbarts:::predict.bart(bart_model, test[, colnames(test) != "pa", drop = FALSE])
+    pred <- predict.bart(bart_model, test[, colnames(test) != "pa", drop = FALSE])
     pred <- colMeans(pred)
     potential_presences <- ifelse(pred >= cutoff, 1, 0)
 

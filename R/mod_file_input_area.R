@@ -7,6 +7,8 @@
 #' @keywords internal
 file_input_area_ui <- function(id, label = "Input text: ", multiple = FALSE, accept = NULL,
                                width = NULL, button_label = "Browse...", icon_name = NULL) {
+  shinyInputLabel <- utils::getFromNamespace("shinyInputLabel", "shiny")
+
   ns <- NS(id)
 
   # Restore the input value if it exists
@@ -43,7 +45,7 @@ file_input_area_ui <- function(id, label = "Input text: ", multiple = FALSE, acc
   input_structure <- div(
     class = "form-group shiny-input-container w-100",
     style = htmltools::css(width = htmltools::validateCssUnit(width)),
-    shiny:::shinyInputLabel(id, ""),
+    shinyInputLabel(id, ""),
     div(
       class = "input-group mb-3",
       style = "z-index: 0",

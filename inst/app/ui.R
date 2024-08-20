@@ -973,13 +973,13 @@ body <- bs4Dash::bs4DashBody(
         )
       ),
 
-      fluidRow(column(width = 12, strong("Model diagnostic"))),
+      fluidRow(column(width = 12, strong("Model summary"))),
 
-      # Model diagnostic
+      # Model summary
       fluidRow(
-        # ** Distribution of fitted values ----
+        # ** ROC curve ----
         bs4Dash::box(
-          title = strong("Distribution of fitted values"),
+          title = strong("ROC curve"),
           status = NULL,
           width = 4,
           height = 200,
@@ -989,15 +989,15 @@ body <- bs4Dash::bs4DashBody(
           collapsible = FALSE,
           headerBorder = FALSE,
           elevation = 2,
-          label = glossa::export_plot_ui("export_fv_plot"),
+          label = glossa::export_plot_ui("export_roc_plot"),
 
           sidebar = bs4Dash::boxSidebar(
             startOpen = FALSE,
-            id = "fv_plot_sidebar",
+            id = "roc_plot_sidebar",
             background = "#adb5bd",
             icon = icon("ellipsis", class = "fa-solid fa-ellipsis", style = "color:#3b444b;"),
             shinyWidgets::pickerInput(
-              inputId = "fv_plot_mode",
+              inputId = "roc_plot_mode",
               label = NULL,
               choices = NULL,
               width = "90%",
@@ -1005,7 +1005,7 @@ body <- bs4Dash::bs4DashBody(
             )
           ),
 
-          plotOutput("fv_plot", height = "100%")
+          plotOutput("roc_plot", height = "100%")
         ),
 
         # ** Classified values ----
@@ -1039,9 +1039,9 @@ body <- bs4Dash::bs4DashBody(
           plotOutput("class_val_plot", height = "100%")
         ),
 
-        # ** ROC curve ----
+        # ** Distribution of fitted values ----
         bs4Dash::box(
-          title = strong("ROC curve"),
+          title = strong("Distribution of fitted values"),
           status = NULL,
           width = 4,
           height = 200,
@@ -1051,15 +1051,15 @@ body <- bs4Dash::bs4DashBody(
           collapsible = FALSE,
           headerBorder = FALSE,
           elevation = 2,
-          label = glossa::export_plot_ui("export_roc_plot"),
+          label = glossa::export_plot_ui("export_fv_plot"),
 
           sidebar = bs4Dash::boxSidebar(
             startOpen = FALSE,
-            id = "roc_plot_sidebar",
+            id = "fv_plot_sidebar",
             background = "#adb5bd",
             icon = icon("ellipsis", class = "fa-solid fa-ellipsis", style = "color:#3b444b;"),
             shinyWidgets::pickerInput(
-              inputId = "roc_plot_mode",
+              inputId = "fv_plot_mode",
               label = NULL,
               choices = NULL,
               width = "90%",
@@ -1067,7 +1067,7 @@ body <- bs4Dash::bs4DashBody(
             )
           ),
 
-          plotOutput("roc_plot", height = "100%")
+          plotOutput("fv_plot", height = "100%")
         )
       )
     ),

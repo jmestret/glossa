@@ -1082,19 +1082,36 @@ function(input, output, session) {
   roc_plot <- reactive({
     if (!is.null(input$roc_plot_mode)){
       x <- other_results()[["model_diagnostic"]][[input$roc_plot_mode]][[input$sp]]
+      TP <- sum(x$observed == 1 & x$predicted == 1)
+      FP <- sum(x$observed == 0 & x$predicted == 1)
+      TN <- sum(x$observed == 0 & x$predicted == 0)
+      FN <- sum(x$observed == 1 & x$predicted == 0)
+
       x <- pROC::roc(x$observed, x$probability, )
       auc <- round(pROC::auc(x) ,4)
+      sn <- TP/(TP + FN)
+      sp <- TN/(TN + FP)
+      tss <- sn + sp - 1
+      tss <- round(tss, 4)
+      kappa <- (2 * (TP * TN - FN * FP)) / ((TP + FP) * (FP + TN) + (TP + FN) * (FN + TN))
+      kappa <- round(kappa, 4)
 
       p <- pROC::ggroc(x, colour = "#007bff", linewidth = 1.5)
     } else {
       auc <- 0
-      p <- ggplot()
+      tss <- 0
+      kappa <- 0
+      p <- ggplot() + xlim(c(1, 0)) + ylim(c(0, 1))
     }
     p +
       geom_abline(intercept=1,slope=1,col="grey", linetype = "dashed", linewidth = 1.5) +
       xlab("False Positive Rate (FPR)") +
       ylab("True Positive Rate (TPR)") +
-      annotate("text", x = 0.25, y = 0.25, label = paste("AUC =", auc),
+      annotate("text", x = 0.25, y = 0.35, label = paste("AUC =", auc),
+               color = "black", vjust = -1, size = 4) +
+      annotate("text", x = 0.25, y = 0.25, label = paste("TSS =", tss),
+               color = "black", vjust = -1, size = 4) +
+      annotate("text", x = 0.25, y = 0.15, label = paste("k =", kappa),
                color = "black", vjust = -1, size = 4) +
       theme_minimal(base_size = 15)
   })

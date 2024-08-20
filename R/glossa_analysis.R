@@ -31,6 +31,8 @@ glossa_analysis <- function(
   start_time <- Sys.time()
   print(paste("Start time:", start_time))
 
+  predict.bart <- utils::getFromNamespace("predict.bart", "dbarts")
+
   #=========================================================#
   # 0. Check inputs and load necessary data ----
   #=========================================================#
@@ -542,7 +544,7 @@ glossa_analysis <- function(
   }
 
   #=========================================================#
-  # 10. Model diagnostic ----
+  # 10. Model summary ----
   #=========================================================#
   if (!is.null(waiter)){waiter$update(html = tagList(img(src = "logo_glossa.gif", height = "200px"), h4("Loading..."), h4("Sit back, relax, and let us do the math!"),  h6("Model diagnostic")))}
   start_diag_time <- Sys.time()
@@ -553,7 +555,7 @@ glossa_analysis <- function(
       x <- as.data.frame(model$fit$data@x)
       df <- data.frame(
         observed = y,
-        probability = colMeans(dbarts:::predict.bart(model, x))
+        probability = colMeans(predict.bart(model, x))
       )
       temp_cutoff <- glossa::pa_optimal_cutoff(y, x, model)
       df$predicted = ifelse(df$probability >= temp_cutoff, 1, 0)
@@ -562,12 +564,12 @@ glossa_analysis <- function(
   }
 
   if (!is.null(suitable_habitat)){
-    other_results$model_diagnostic$suitable_habitat <- lapply(models_native_range, function(model){
+    other_results$model_diagnostic$suitable_habitat <- lapply(models_suitable_habitat, function(model){
       y <- model$fit$data@y
       x <- as.data.frame(model$fit$data@x)
       df <- data.frame(
         observed = y,
-        probability = colMeans(dbarts:::predict.bart(model, x))
+        probability = colMeans(predict.bart(model, x))
       )
       temp_cutoff <- glossa::pa_optimal_cutoff(y, x, model)
       df$predicted = ifelse(df$probability >= temp_cutoff, 1, 0)
@@ -575,7 +577,7 @@ glossa_analysis <- function(
     })
   }
   end_diag_time <- Sys.time()
-  print(paste("Cross-validation execution time:", difftime(end_diag_time, start_diag_time, units = "mins"), "mins"))
+  print(paste("Model summary execution time:", difftime(end_diag_time, start_diag_time, units = "mins"), "mins"))
 
   #=========================================================#
   # 11. Finalizing -----
