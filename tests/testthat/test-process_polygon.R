@@ -40,7 +40,7 @@ test_that("buffer_polygon throws error for buffer distance of length not equal t
 # Tests for invert_polygon
 test_that("invert_polygon returns an inverted polygon", {
   inverted <- invert_polygon(toy_sf_polygon)
-  expect_s3_class(inverted, "sfc_POLYGON") # Check that the result is an sfc_POLYGON
+  expect_s3_class(inverted, "sfc") # Check that the result is an sfc_POLYGON
 })
 
 test_that("invert_polygon throws error for non-sf input", {

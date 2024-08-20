@@ -288,7 +288,7 @@ glossa_export <- function(species = NULL, models = NULL, layer_results = NULL, f
 
 #' Compute specificity and sensitivity
 #'
-#' @details This function was obtained from the InformationValue R package (https://github.com/selva86/InformationValue).
+#' @details This function was obtained from the InformationValue R package (\url{https://github.com/selva86/InformationValue}).
 #' @keywords internal
 getFprTpr<- function(actuals, predictedScores, threshold=0.5){
   return(list(1-specificity(actuals=actuals, predictedScores=predictedScores, threshold=threshold),
@@ -297,31 +297,31 @@ getFprTpr<- function(actuals, predictedScores, threshold=0.5){
 
 #' Calculate the specificity for a given logit model
 #'
-#' @details This function was obtained from the InformationValue R package (https://github.com/selva86/InformationValue).
+#' @details This function was obtained from the InformationValue R package (\url{https://github.com/selva86/InformationValue}).
 #' @keywords internal
 specificity <- function(actuals, predictedScores, threshold=0.5){
   predicted_dir <- ifelse(predictedScores < threshold, 0, 1)
   actual_dir <- actuals
-  no_without_and_predicted_to_not_have_event <- sum(actual_dir != 1 & predicted_dir != 1, na.rm=T)
-  no_without_event <- sum(actual_dir != 1, na.rm=T)
+  no_without_and_predicted_to_not_have_event <- sum(actual_dir != 1 & predicted_dir != 1, na.rm=TRUE)
+  no_without_event <- sum(actual_dir != 1, na.rm=TRUE)
   return(no_without_and_predicted_to_not_have_event/no_without_event)
 }
 
 #' Calculate the sensitivity for a given logit model
 #'
-#' @details This function was obtained from the InformationValue R package (https://github.com/selva86/InformationValue).
+#' @details This function was obtained from the InformationValue R package (\url{https://github.com/selva86/InformationValue}).
 #' @keywords internal
 sensitivity <- function(actuals, predictedScores, threshold=0.5){
   predicted_dir <- ifelse(predictedScores < threshold, 0, 1)
   actual_dir <- actuals
-  no_with_and_predicted_to_have_event <- sum(actual_dir == 1 & predicted_dir == 1, na.rm=T)
-  no_with_event <- sum(actual_dir == 1, na.rm=T)
+  no_with_and_predicted_to_have_event <- sum(actual_dir == 1 & predicted_dir == 1, na.rm=TRUE)
+  no_with_event <- sum(actual_dir == 1, na.rm=TRUE)
   return(no_with_and_predicted_to_have_event/no_with_event)
 }
 
 #' Calculate Youden's index
 #'
-#' @details This function was obtained from the InformationValue R package (https://github.com/selva86/InformationValue).
+#' @details This function was obtained from the InformationValue R package (\url{https://github.com/selva86/InformationValue}).
 #' @keywords internal
 youdensIndex <- function(actuals, predictedScores, threshold=0.5){
   Sensitivity <- sensitivity(actuals, predictedScores, threshold = threshold)
@@ -331,17 +331,17 @@ youdensIndex <- function(actuals, predictedScores, threshold=0.5){
 
 #' Misclassification Error
 #'
-#' @details This function was obtained from the InformationValue R package (https://github.com/selva86/InformationValue).
+#' @details This function was obtained from the InformationValue R package (\url{https://github.com/selva86/InformationValue}).
 #' @keywords internal
 misClassError <- function(actuals, predictedScores, threshold=0.5){
   predicted_dir <- ifelse(predictedScores < threshold, 0, 1)
   actual_dir <- actuals
-  return(round(sum(predicted_dir != actual_dir, na.rm=T)/length(actual_dir), 4))
+  return(round(sum(predicted_dir != actual_dir, na.rm=TRUE)/length(actual_dir), 4))
 }
 
 #' Compute the optimal probability cutoff score
 #'
-#' @details This function was obtained from the InformationValue R package (https://github.com/selva86/InformationValue).
+#' @details This function was obtained from the InformationValue R package (\url{https://github.com/selva86/InformationValue}).
 #' @keywords internal
 optimalCutoff <- function(actuals, predictedScores, optimiseFor="misclasserror", returnDiagnostics=FALSE){
   # initialise the diagnostics dataframe to study the effect of various cutoff values.
@@ -623,11 +623,12 @@ generate_cv_plot <- function(data){
   data <- data[, c("PREC", "SEN", "SPC", "FDR", "NPV", "FNR", "FPR", "Fscore", "ACC", "BA")]
   data_mean <- colMeans(data, na.rm = TRUE)
   data_median <- apply(data, 2, function(x) median(x, na.rm = TRUE))
-  data <- data.frame(id = 1:ncol(data), metric = colnames(data), mean_value = data_mean, median_value = data_median)
+  data <- data.frame(id = seq_len(ncol(data)), metric = colnames(data), mean_value = data_mean, median_value = data_median)
+  data$metric <- reorder(data$metric, data$mean_value)
 
   ggplot2::ggplot(data) +
     ggplot2::geom_col(
-      aes(x = reorder(metric, mean_value), y = mean_value, fill = mean_value),
+      aes(x = .data$metric, y = .data$mean_value, fill = .data$mean_value),
       position = "dodge2",
       show.legend = TRUE,
       alpha = 0.9
@@ -638,13 +639,13 @@ generate_cv_plot <- function(data){
       name = "mean"
     ) +
     ggplot2::geom_point(
-      aes(x = reorder(metric, mean_value), y = median_value, color = "median"),
+      aes(x = .data$metric, y = .data$median_value, color = "median"),
       size = 3
     ) +
     scale_color_manual(values = "gray12", name = "") +
     ggplot2::geom_segment(
-      aes(x = reorder(metric, mean_value), y = 0,
-          xend = reorder(metric, mean_value), yend = 1),
+      aes(x = .data$metric, y = 0,
+          xend = .data$metric, yend = 1),
       linetype = "dashed",
       color = "gray12"
     ) +

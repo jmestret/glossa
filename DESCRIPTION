@@ -1,26 +1,22 @@
-Package: glossa
 Type: Package
+Package: glossa
 Title: GLobal Ocean Species Spatiotemporal Analysis
 Version: 0.1.0
-Authors@R:
-    c(person(given = "Alba",
-             family = "Fuster-Alonso",
-             role = c("aut"),
-             email = "",
-             comment = c(ORCID = "0000-0002-8983-3417")),
-      person(given = "Jorge",
-             family = "Mestre-Tomás",
-             role = c("aut", "cre"),
-             email = "jorge.mestre.tomas@csic.es",
-             comment = c(ORCID = "0000-0002-8983-3417")))
-Description: A user-friendly R shiny app for machine learning analysis of marine species distribution.
+Authors@R: c(
+    person("Alba", "Fuster-Alonso", role = "aut",
+           comment = c(ORCID = "0000-0002-8983-3417")),
+    person("Jorge", "Mestre-Tomás", , "jorge.mestre.tomas@csic.es", role = c("aut", "cre"),
+           comment = c(ORCID = "0000-0002-8983-3417"))
+  )
+Description: A user-friendly R shiny app for machine learning analysis of
+    marine species distribution.
 License: GPL (>=3) + file LICENSE
 URL: https://github.com/jmestret/glossa
 BugReports: https://github.com/jmestret/glossa/issues
 Depends:
+    bs4Dash,
     R (>= 3.5.0),
-    shiny,
-    bs4Dash
+    shiny
 Imports:
     dbarts,
     dplyr,
@@ -48,10 +44,11 @@ Suggests:
     rmarkdown,
     testthat (>= 3.0.0),
     tidyverse
-VignetteBuilder: knitr
+VignetteBuilder: 
+    knitr
 BuildVignettes: true
+Config/testthat/edition: 3
 Encoding: UTF-8
 Language: en-US
 LazyData: true
 RoxygenNote: 7.3.1
-Config/testthat/edition: 3

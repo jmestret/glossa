@@ -492,7 +492,7 @@ function(input, output, session) {
     )
     w$show()
     # Get predictor variables for each sp
-    predictor_variables <- lapply(1:length(species_files_names()), function(i){
+    predictor_variables <- lapply(seq_len(length(species_files_names())), function(i){
       input[[paste0("pred_vars_", i)]]
     })
 
@@ -686,7 +686,7 @@ function(input, output, session) {
       validate("Upload species ocurrences and fit layers")
     }
 
-    lapply(1:length(species_files_names()), function(i){
+    lapply(seq_len(length(species_files_names())), function(i){
       selectInput(inputId = paste0("pred_vars_", i), label = species_files_names()[i], choices = predictor_variables(), selected = predictor_variables(), multiple = TRUE)
     })
   })

@@ -10,6 +10,6 @@ sensitivity(actuals, predictedScores, threshold = 0.5)
 Calculate the sensitivity for a given logit model
 }
 \details{
-This function was obtained from the InformationValue R package (https://github.com/selva86/InformationValue).
+This function was obtained from the InformationValue R package (\url{https://github.com/selva86/InformationValue}).
 }
 \keyword{internal}

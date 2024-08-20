@@ -99,7 +99,7 @@ predict_bart <- function(bart_model, layers, cutoff = NULL) {
     blank_output[which_vals, ] <- as.matrix(pred_data)
 
     # Reshape output to SpatRaster format
-    out_list <- lapply(1:ncol(blank_output), function(x) {
+    out_list <- lapply(seq_len(ncol(blank_output)), function(x) {
       output_matrix <- t(matrix(blank_output[, x], nrow = ncol(layers), ncol = nrow(layers)))
       return(terra::rast(output_matrix, extent = terra::ext(layers)))
     })
@@ -265,17 +265,17 @@ cv_bart <- function(data, k = 10, seed = NULL){
   }
 
   # Metrics
-  PREC = TP / (TP + FP)
-  SEN = TP / (TP + FN)
-  SPC = TN / (TN + FP)
-  FDR = FP / (TP + FP)
-  NPV = TN / (FN + TN)
-  FNR = FN / (TP + FN)
-  FPR = FP / (FP + TN)
-  Fscore = 2 * ((PREC * SEN) / (PREC + SEN))
-  ACC = (TP + TN)/(TP + FP + FN + TN)
-  BA = (SEN + SPC) / 2
-  TSS = SEN + SPC - 1
+  PREC <- TP / (TP + FP)
+  SEN <- TP / (TP + FN)
+  SPC <- TN / (TN + FP)
+  FDR <- FP / (TP + FP)
+  NPV <- TN / (FN + TN)
+  FNR <- FN / (TP + FN)
+  FPR <- FP / (FP + TN)
+  Fscore <- 2 * ((PREC * SEN) / (PREC + SEN))
+  ACC <- (TP + TN)/(TP + FP + FN + TN)
+  BA <- (SEN + SPC) / 2
+  TSS <- SEN + SPC - 1
 
   cv_res <- data.frame(
     TP = TP, FP = FP, FN = FN, TN = TN, PREC = PREC, SEN = SEN, SPC = SPC,

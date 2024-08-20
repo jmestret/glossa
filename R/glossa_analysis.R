@@ -558,7 +558,7 @@ glossa_analysis <- function(
         probability = colMeans(predict.bart(model, x))
       )
       temp_cutoff <- glossa::pa_optimal_cutoff(y, x, model)
-      df$predicted = ifelse(df$probability >= temp_cutoff, 1, 0)
+      df$predicted <- ifelse(df$probability >= temp_cutoff, 1, 0)
       return(df)
     })
   }
@@ -572,7 +572,7 @@ glossa_analysis <- function(
         probability = colMeans(predict.bart(model, x))
       )
       temp_cutoff <- glossa::pa_optimal_cutoff(y, x, model)
-      df$predicted = ifelse(df$probability >= temp_cutoff, 1, 0)
+      df$predicted <- ifelse(df$probability >= temp_cutoff, 1, 0)
       return(df)
     })
   }

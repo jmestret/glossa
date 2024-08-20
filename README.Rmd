@@ -18,6 +18,7 @@ knitr::opts_chunk$set(
 <!-- badges: start -->
 [![CRAN status](https://www.r-pkg.org/badges/version/glossa)](https://CRAN.R-project.org/package=glossa)
 [![License: GPL v3](https://img.shields.io/badge/License-GPL%20v3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
+[![R-CMD-check](https://github.com/jmestret/glossa/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/jmestret/glossa/actions/workflows/R-CMD-check.yaml)
 <!-- badges: end -->
 
 ***
