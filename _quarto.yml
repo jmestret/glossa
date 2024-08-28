@@ -18,14 +18,14 @@ website:
     logo-alt: "GLOSSA logo"
     title: false
     left:
-      - href: home.qmd
+      - href: index.qmd
         text: Home
       - text: Get started
         href: get_started.qmd
-      - text: "Documentation"
-        href: pages/guide/index.qmd
-      - href: index.qmd
-        text: Tutorials
+      - text: Documentation
+        href: index2.qmd
+      - text: Tutorials
+        href: pages/tutorials_examples/index.qmd
       - href: course.qmd
         text: Course
       - href: publications.qmd
@@ -36,9 +36,9 @@ website:
         text: Contact us
       - text: Help
         menu:
-          - href: index.qmd
+          - href: index2.qmd
             text: Report a bug
-          - href: index.qmd
+          - href: index2.qmd
             text: FAQs
             
     tools:
@@ -46,24 +46,22 @@ website:
         href: https://github.com/jmestret/glossa
         
     sidebar:
-      - id: guide
-        collapse-level: 1
+      - id: tutorials_examples
+        title: "Tutorials and Examples"
         contents:
-          - section: "Guide"
-            href: pages/guide/index.qmd
-            contents:
-              - section: "Input"
-                contents:
-                  - pages/input/index.qmd
-                  - pages/input/index.qmd
-                  - pages/input/index.qmd
-                  - pages/input/index.qmd
+          - pages/tutorials_examples/index.qmd
+          - text: "Example: Global scale yellowfin tuna"
+            href: pages/tutorials_examples/Thunnus_albacares_example1.qmd
+          - text: "Example: Mediterranean Sea logerhead turtle"
+            href: pages/tutorials_examples/Caretta_caretta_example2.qmd
+          - text: "Example: Greek Seas risk of invasive species"
+            href: pages/tutorials_examples/Siganus_luridus_example3.qmd
                   
 format:
   html:
     theme: cosmo
     css: styles.css
     toc: true
+    sidebar: true
 
-editor: visual
-
+editor: source
