@@ -413,7 +413,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="cell">
 <div class="sourceCode cell-code" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="fu">run_glossa</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
-<p>We upload the occurrence file for <em>S. luridus</em> and the environmental layers for model fitting and projection (in this case, the year 2020). To compute the native range and suitable habitat, we select the <em>Model fitting</em> and <em>Model projection</em> options for both the <em>Native range</em> and <em>Suitable habitat</em> models. Additionally, we enable <em>Functional responses</em> and <em>Cross-validation</em> in the <em>Others</em> section.</p>
+<p>We upload the occurrence file for <em>S. luridus</em> and the environmental layers for model fitting and projection (in this case, the year 2020). To compute the native range and suitable habitat, we select the <em>Model fitting</em> and <em>Model projection</em> options for both the <em>Native range</em> and <em>Suitable habitat</em> models. Additionally, we enable <em>Functional responses</em>, <em>Variable importance</em> and <em>Cross-validation</em> in the <em>Others</em> section.</p>
 <p>In the advanced options, we standardize the environmental data, choose the BART model (Chipman, <em>et al.</em>, 2010; Dorie, 2024), and set the seed to 1984 for reproducibility.</p>
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
@@ -480,59 +480,59 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <tbody>
 <tr class="odd">
 <td>Loading input data</td>
-<td>1.84 secs</td>
+<td>1.92 secs</td>
 </tr>
 <tr class="even">
 <td>Processing P/A coordinates</td>
-<td>0.01 secs</td>
+<td>0.004 secs</td>
 </tr>
 <tr class="odd">
 <td>Processing covariate layers</td>
-<td>1.05 secs</td>
+<td>1.23 secs</td>
 </tr>
 <tr class="even">
 <td>Building model matrix</td>
-<td>1.20 secs</td>
+<td>1.26 secs</td>
 </tr>
 <tr class="odd">
 <td>Fitting native range models</td>
-<td>0.02 mins</td>
+<td>0.018 mins</td>
 </tr>
 <tr class="even">
 <td>Variable importance (native range)</td>
-<td>0.00001 mins</td>
+<td>0.60 mins</td>
 </tr>
 <tr class="odd">
 <td>P/A cutoff (native range)</td>
-<td>0.01 mins</td>
+<td>0.009 mins</td>
 </tr>
 <tr class="even">
 <td>Projections on fit layers (native range)</td>
-<td>0.40 mins</td>
+<td>0.997 mins</td>
 </tr>
 <tr class="odd">
 <td>Native range projections</td>
-<td>0.39 mins</td>
+<td>0.42 mins</td>
 </tr>
 <tr class="even">
 <td>Native range</td>
-<td>0.82 mins</td>
+<td>1.45 mins</td>
 </tr>
 <tr class="odd">
 <td>Fitting suitable habitat models</td>
-<td>0.01 mins</td>
+<td>0.016 mins</td>
 </tr>
 <tr class="even">
 <td>Variable importance (suitable habitat)</td>
-<td>0.000007 mins</td>
+<td>0.41 mins</td>
 </tr>
 <tr class="odd">
 <td>P/A cutoff (suitable habitat)</td>
-<td>0.01 mins</td>
+<td>0.008 mins</td>
 </tr>
 <tr class="even">
 <td>Projections on fit layers (suitable habitat)</td>
-<td>0.37 mins</td>
+<td>0.79 mins</td>
 </tr>
 <tr class="odd">
 <td>Suitable habitat projections</td>
@@ -544,23 +544,23 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </tr>
 <tr class="odd">
 <td>Suitable habitat</td>
-<td>0.78 mins</td>
+<td>1.20 mins</td>
 </tr>
 <tr class="even">
 <td>Computing functional responses</td>
-<td>0.70 mins</td>
+<td>0.69 mins</td>
 </tr>
 <tr class="odd">
 <td>Cross-validation</td>
-<td>0.51 mins</td>
+<td>0.48 mins</td>
 </tr>
 <tr class="even">
 <td>Model summary</td>
-<td>0.03 mins</td>
+<td>0.016 mins</td>
 </tr>
 <tr class="odd">
 <td><strong>Total GLOSSA analysis</strong></td>
-<td><strong>2.92 mins</strong></td>
+<td><strong>3.91 mins</strong></td>
 </tr>
 </tbody>
 </table>

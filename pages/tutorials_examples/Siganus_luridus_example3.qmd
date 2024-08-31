@@ -227,7 +227,7 @@ With the data formatted and ready, we run the GLOSSA Shiny app.
 run_glossa()
 ```
 
-We upload the occurrence file for *S. luridus* and the environmental layers for model fitting and projection (in this case, the year 2020). To compute the native range and suitable habitat, we select the *Model fitting* and *Model projection* options for both the *Native range* and *Suitable habitat* models. Additionally, we enable *Functional responses* and *Cross-validation* in the *Others* section.
+We upload the occurrence file for *S. luridus* and the environmental layers for model fitting and projection (in this case, the year 2020). To compute the native range and suitable habitat, we select the *Model fitting* and *Model projection* options for both the *Native range* and *Suitable habitat* models. Additionally, we enable *Functional responses*, *Variable importance* and *Cross-validation* in the *Others* section.
 
 In the advanced options, we standardize the environmental data, choose the BART model (Chipman, *et al.*, 2010; Dorie, 2024), and set the seed to 1984 for reproducibility.
 
@@ -267,27 +267,27 @@ The table below summarizes the computation times for the various steps of the GL
 <p align="center"><b>Table 1.</b> Computation times for different steps of the GLOSSA analysis for <i>Siganus luridus</i> in the Greek Seas.</p>
 | **Task**                            | **Execution Time**         |
 |-------------------------------------|----------------------------|
-| Loading input data                  | 1.84 secs                  |
-| Processing P/A coordinates           | 0.01 secs                  |
-| Processing covariate layers          | 1.05 secs                  |
-| Building model matrix               | 1.20 secs                  |
-| Fitting native range models         | 0.02 mins                  |
-| Variable importance (native range)   | 0.00001 mins               |
-| P/A cutoff (native range)            | 0.01 mins                  |
-| Projections on fit layers (native range) | 0.40 mins              |
-| Native range projections            | 0.39 mins                  |
-| Native range                        | 0.82 mins                  |
-| Fitting suitable habitat models     | 0.01 mins                  |
-| Variable importance (suitable habitat) | 0.000007 mins            |
-| P/A cutoff (suitable habitat)       | 0.01 mins                  |
-| Projections on fit layers (suitable habitat) | 0.37 mins           |
+| Loading input data                  | 1.92 secs                  |
+| Processing P/A coordinates           | 0.004 secs                 |
+| Processing covariate layers          | 1.23 secs                  |
+| Building model matrix               | 1.26 secs                  |
+| Fitting native range models         | 0.018 mins                 |
+| Variable importance (native range)   | 0.60 mins                  |
+| P/A cutoff (native range)            | 0.009 mins                 |
+| Projections on fit layers (native range) | 0.997 mins             |
+| Native range projections            | 0.42 mins                  |
+| Native range                        | 1.45 mins                  |
+| Fitting suitable habitat models     | 0.016 mins                 |
+| Variable importance (suitable habitat) | 0.41 mins               |
+| P/A cutoff (suitable habitat)       | 0.008 mins                 |
+| Projections on fit layers (suitable habitat) | 0.79 mins          |
 | Suitable habitat projections        | 0.38 mins                  |
 | Habitat suitability                 | 0.002 mins                 |
-| Suitable habitat                    | 0.78 mins                  |
-| Computing functional responses      | 0.70 mins                  |
-| Cross-validation                    | 0.51 mins                  |
-| Model summary                        | 0.03 mins                  |
-| **Total GLOSSA analysis**           | **2.92 mins**              |
+| Suitable habitat                    | 1.20 mins                  |
+| Computing functional responses      | 0.69 mins                  |
+| Cross-validation                    | 0.48 mins                  |
+| Model summary                        | 0.016 mins                 |
+| **Total GLOSSA analysis**           | **3.91 mins**              |
 
 ## References
 
@@ -298,4 +298,3 @@ The table below summarizes the computation times for the various steps of the GL
 - Gothel, H. (1992). Fauna marina del Mediterráneo. *Ediciones Omega, SA, Barcelona, 319*.
 
 - Sini M, Ragkousis M, Koukourouvli N, Katsanevakis S & Zenetos A (2024). Marine impactful cryptogenic and alien species in the Greek Seas: A georeferenced dataset (1893-2020). Version 2.0. Hellenic Center for Marine Research. Occurrence dataset. <https://doi.org/10.25607/t2smha>
-

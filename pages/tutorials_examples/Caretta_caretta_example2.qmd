@@ -108,7 +108,7 @@ citation
 
 ### Download environmental data
 
-Bio-ORACLE provides environmental layers at a spatial resolution of 0.05 degrees and in decadal steps. We will download environmental variables such as ocean surface temperature (`thetao` in $^{\circ}$C), dissolved molecular oxygen (`o2` in $\text{mmol} \cdot \text{m}^{-3}$), primary productivity (`phyc` in $\text{mmol} \cdot \text{m}^{-3}$), and salinity (`so`). Bathymetry (`bat`) will be obtained from the ETOPO 2022 Global Relief Model by NOAA (<https://www.ncei.noaa.gov/products/etopo-global-relief-model>).
+Bio-ORACLE provides environmental layers at a spatial resolution of 0.05 degrees and in decadal steps. We will download environmental variables such as ocean surface temperature (`thetao` in $^{\circ}$C), primary productivity (`phyc` in $\text{mmol} \cdot \text{m}^{-3}$), and salinity (`so`). Bathymetry (`bat`) will be obtained from the ETOPO 2022 Global Relief Model by NOAA (<https://www.ncei.noaa.gov/products/etopo-global-relief-model>).
 
 ```{r}
 #| eval: !expr run_code
@@ -123,8 +123,6 @@ names(constraints) = c("time", "longitude", "latitude")
 # Download environmental layers from Bio-Oracle
 thetao_hist <- download_layers("thetao_baseline_2000_2019_depthsurf", 
                                "thetao_mean", constraints)
-o2_hist <- download_layers("o2_baseline_2000_2018_depthsurf", 
-                           "o2_mean", constraints)
 phyc_hist <- download_layers("phyc_baseline_2000_2020_depthsurf", 
                              "phyc_mean", constraints)
 so_hist <- download_layers("so_baseline_2000_2019_depthsurf", 
@@ -143,8 +141,8 @@ We will prepare the downloaded environmental data and save it in the directory s
 dir.create("data/fit_layers")
 
 # Prepare environmental variables for modeling
-env_var <- list(thetao_hist, so_hist, phyc_hist, o2_hist)
-names(env_var) <- c("thetao", "so", "phyc", "o2")
+env_var <- list(thetao_hist, so_hist, phyc_hist)
+names(env_var) <- c("thetao", "so", "phyc")
 
 for (i in seq_along(env_var)) {
   var_dir <- paste0("data/fit_layers/", names(env_var)[i])
@@ -204,11 +202,9 @@ env_var_ssp126 <- list(
   so_ssp126 = download_layers("so_ssp126_2020_2100_depthsurf", 
                               "so_mean", constraints),
   phyc_ssp126 = download_layers("phyc_ssp126_2020_2100_depthsurf", 
-                                "phyc_mean", constraints),
-  o2_ssp126 = download_layers("o2_ssp126_2020_2100_depthsurf", 
-                              "o2_mean", constraints)
+                                "phyc_mean", constraints)
 )
-names(env_var_ssp126) <- c("thetao", "so", "phyc", "o2")
+names(env_var_ssp126) <- c("thetao", "so", "phyc")
 
 dir.create("data/proj_ssp126")
 for (i in seq_along(env_var_ssp126)) {
@@ -262,11 +258,9 @@ env_var_ssp585 <- list(
   so_ssp585 = download_layers("so_ssp585_2020_2100_depthsurf", 
                               "so_mean", constraints),
   phyc_ssp585 = download_layers("phyc_ssp585_2020_2100_depthsurf", 
-                                "phyc_mean", constraints),
-  o2_ssp585 = download_layers("o2_ssp585_2020_2100_depthsurf", 
-                              "o2_mean", constraints)
+                                "phyc_mean", constraints)
 )
-names(env_var_ssp585) <- c("thetao", "so", "phyc", "o2")
+names(env_var_ssp585) <- c("thetao", "so", "phyc")
 
 
 dir.create("data/proj_ssp585")
@@ -334,7 +328,7 @@ With the data prepared and formatted for the GLOSSA framework, we use the `gloss
 run_glossa()
 ```
 
-Upload the occurrence file for *C. caretta* and the environmental layers for model fitting and projection scenarios. For habitat suitability analysis, select the *Model fitting* and *Model projection* options from the *Suitable habitat* model. Enable *Functional responses* in the *Others* section to compute response curves.
+Upload the occurrence file for *C. caretta* and the environmental layers for model fitting and projection scenarios. For habitat suitability analysis, select the *Model fitting* and *Model projection* options from the *Suitable habitat* model. Enable *Variable importance* in the *Others* section to check the decrease of the F-score.
 
 In the advanced options, set the following parameters: thinning precision to 2, standardize environmental data, and enlarge the polygon by 0.01 degrees to account for the lower resolution of the polygon and ensure the boundaries match properly -previously, many points near the coast were lost due to an insufficient buffer size-. Select the BART (Chipman, *et al*., 2010; Dorie, 2024) model and set the seed to 5648 for reproducibility.
 
@@ -346,15 +340,15 @@ Once the analysis is completed, we observe occurrence records that were excluded
 
 ![Validation of presence points for *Caretta caretta*. Points are filtered based on their proximity and location relative to the study area, resulting in 5572 presence records (blue points).](images/caretta_presence_validation.png){width=60% fig-align="center" fig-pos="H"}
 
-The model summary indicates a decent predictive capacity with an AUC of 0.9 and a sensitivity of 0.8. The distribution of fitted values can also be explored. Note that the model was fitted using randomly generated pseudo-absences rather than real absences.
+The model summary indicates a decent predictive capacity with an AUC of 0.9 and an F-score of 0.8 The distribution of fitted values can also be explored. Note that the model was fitted using randomly generated pseudo-absences rather than real absences.
 
 ![Summary of the fitted model for *Caretta caretta*. From left to right: the ROC curve, a plot representing the confusion matrix with the associated probabilities, and the distribution on the fitted values.](images/caretta_model_summary.png){fig-align="center" fig-pos="H"}
 
-We can also explore the functional responses, for example, response curves reveal that as depth increases, the probability of occurrence decreases, probably because most observations are near coastal areas, where loggerhead turtles migrate during their life cycle.
+We can also determine which predictors play a more significant role in predicting the outcome by examining the variable importance plot. This plot shows the decrease in model F-score using permutation feature importance, which measures the increase in prediction error after shuffling the predictor values. We see that the most important variable is the sea surface temperature followed by the bathymetry. Sea turtles live their entire lives in the ocean, but they migrate to nest on coastal land, with their sex being determined by the temperature during incubation (Mancino *et al*., 2022).
 
-![Response curves showing the relationship between sea depth and the probability of occurrence of *Caretta caretta*. The probability decreases with increasing depth, reflecting a preference for shallow areas.](images/caretta_bat_fr.png){width=60% fig-align="center" fig-pos="H"}
+![Variable importance plot using the F-score as the performance metric](images/caretta_var_imp.png){width=60% fig-align="center" fig-pos="H"}
 
-For the climate projections, there is a predicted decrease of 10.6\% in suitable habitat area ($\text{km}^2$) in the SSP1-2.6 scenario and about 77.3\% in the SSP5-8.5 scenario from the 2020s to the 2090s. The western Mediterranean and the Adriatic Sea are projected to have relatively better habitat suitability.
+For the climate projections, there is a predicted decrease of 16.4\% in suitable habitat area ($\text{km}^2$) in the SSP1-2.6 scenario and about 78.2\% in the SSP5-8.5 scenario from the 2020s to the 2090s. The western Mediterranean and the Adriatic Sea are projected to have relatively better habitat suitability.
 
 ![Projected changes in suitable habitat for *Caretta caretta* under different climate scenarios.](images/caretta_projections.png){fig-align="center" fig-pos="H"}
 
@@ -369,22 +363,27 @@ The analysis was performed on a single Windows 11 machine equipped with 64 GB of
 <p align="center"><b>Table 1.</b> Computation times for different stages of the GLOSSA analysis for the loggerhead sea turtle (<i>Caretta caretta</i>) in the Mediterranean Sea.</p>
 | **Task**                            | **Execution Time**         |
 |-------------------------------------|----------------------------|
-| Loading input data                  | 32.86 secs                 |
-| Processing P/A coordinates           | 0.23 secs                  |
-| Processing covariate layers          | 8.37 secs                  |
-| Building model matrix               | 9.55 secs                  |
-| Fitting suitable habitat models     | 0.23 mins                  |
-| Variable importance                 | 0.00007 mins               |
-| P/A cutoff                          | 0.18 mins                  |
-| Projections on fit layers            | 1.43 mins                  |
-| Suitable habitat projections         | 8.70 mins                  |
-| Habitat suitability                 | 0.01 mins                  |
-| Suitable habitat                    | 10.55 mins                 |
-| Computing functional responses      | 15.51 mins                 |
-| Cross-validation                    | 3.91 mins                  |
-| Model summary                        | 0.36 mins                  |
-| **Total GLOSSA analysis**           | **31.19 mins**             |
-
+| Loading input data                  | 33.65 secs                 |
+| Processing P/A coordinates           | 0.21 secs                  |
+| Processing covariate layers          | 9.80 secs                  |
+| Building model matrix               | 12.01 secs                 |
+| Fitting native range models         | 0.232 mins                 |
+| Variable importance (native range)   | 8.31 mins                  |
+| P/A cutoff (native range)            | 0.191 mins                 |
+| Projections on fit layers (native range) | 9.84 mins               |
+| Native range projections            | 9.47 mins                  |
+| Native range                        | 19.74 mins                 |
+| Fitting suitable habitat models     | 0.232 mins                 |
+| Variable importance (suitable habitat) | 8.31 mins               |
+| P/A cutoff (suitable habitat)       | 0.191 mins                 |
+| Projections on fit layers (suitable habitat) | 9.84 mins          |
+| Suitable habitat projections        | 9.47 mins                  |
+| Habitat suitability                 | 0.006 mins                 |
+| Suitable habitat                    | 19.74 mins                 |
+| Computing functional responses      | 13.35 mins                 |
+| Cross-validation                    | 4.19 mins                  |
+| Model summary                        | 0.18 mins                  |
+| **Total GLOSSA analysis**           | **38.39 mins**             |
 
 ## References
 
@@ -402,6 +401,9 @@ The analysis was performed on a single Windows 11 machine equipped with 64 GB of
 
 - Hijmans, R. (2024). *terra: Spatial Data Analysis*. R package version 1.7-81, <https://rspatial.github.io/terra/>, <https://rspatial.org/>.
 
+- Mancino, C., Canestrelli, D., & Maiorano, L. (2022). Going west: Range expansion for loggerhead sea turtles in the Mediterranean Sea under climate change. Global Ecology and Conservation, 38, e02264.
+
 - Pebesma E (2018). *Simple Features for R: Standardized Support for Spatial Vector Data*. The R Journal, 10(1), 439–446. [doi:10.32614/RJ-2018-009](https://doi.org/10.32614/RJ-2018-009).
 
 - Wickham H, François R, Henry L, Müller K & Vaughan D (2023). *dplyr: A Grammar of Data Manipulation.* R package version 1.1.4, <https://github.com/tidyverse/dplyr>, <https://dplyr.tidyverse.org>.
+

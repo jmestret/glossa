@@ -310,7 +310,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </section>
 <section id="download-environmental-data" class="level3">
 <h3 class="anchored" data-anchor-id="download-environmental-data">Download environmental data</h3>
-<p>Bio-ORACLE provides environmental layers at a spatial resolution of 0.05 degrees and in decadal steps. We will download environmental variables such as ocean surface temperature (<code>thetao</code> in <span class="math inline">\(^{\circ}\)</span>C), dissolved molecular oxygen (<code>o2</code> in <span class="math inline">\(\text{mmol} \cdot \text{m}^{-3}\)</span>), primary productivity (<code>phyc</code> in <span class="math inline">\(\text{mmol} \cdot \text{m}^{-3}\)</span>), and salinity (<code>so</code>). Bathymetry (<code>bat</code>) will be obtained from the ETOPO 2022 Global Relief Model by NOAA (<a href="https://www.ncei.noaa.gov/products/etopo-global-relief-model" class="uri">https://www.ncei.noaa.gov/products/etopo-global-relief-model</a>).</p>
+<p>Bio-ORACLE provides environmental layers at a spatial resolution of 0.05 degrees and in decadal steps. We will download environmental variables such as ocean surface temperature (<code>thetao</code> in <span class="math inline">\(^{\circ}\)</span>C), primary productivity (<code>phyc</code> in <span class="math inline">\(\text{mmol} \cdot \text{m}^{-3}\)</span>), and salinity (<code>so</code>). Bathymetry (<code>bat</code>) will be obtained from the ETOPO 2022 Global Relief Model by NOAA (<a href="https://www.ncei.noaa.gov/products/etopo-global-relief-model" class="uri">https://www.ncei.noaa.gov/products/etopo-global-relief-model</a>).</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Define temporal and spatial constraints</span></span>
 <span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>time <span class="ot">=</span> <span class="fu">c</span>(<span class="st">"2000-01-01T00:00:00Z"</span>, <span class="st">"2010-01-01T00:00:00Z"</span>)</span>
@@ -322,24 +322,22 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a><span class="co"># Download environmental layers from Bio-Oracle</span></span>
 <span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a>thetao_hist <span class="ot">&lt;-</span> <span class="fu">download_layers</span>(<span class="st">"thetao_baseline_2000_2019_depthsurf"</span>, </span>
 <span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a>                               <span class="st">"thetao_mean"</span>, constraints)</span>
-<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a>o2_hist <span class="ot">&lt;-</span> <span class="fu">download_layers</span>(<span class="st">"o2_baseline_2000_2018_depthsurf"</span>, </span>
-<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a>                           <span class="st">"o2_mean"</span>, constraints)</span>
-<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a>phyc_hist <span class="ot">&lt;-</span> <span class="fu">download_layers</span>(<span class="st">"phyc_baseline_2000_2020_depthsurf"</span>, </span>
-<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a>                             <span class="st">"phyc_mean"</span>, constraints)</span>
-<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a>so_hist <span class="ot">&lt;-</span> <span class="fu">download_layers</span>(<span class="st">"so_baseline_2000_2019_depthsurf"</span>, </span>
-<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a>                           <span class="st">"so_mean"</span>, constraints)</span>
-<span id="cb4-17"><a href="#cb4-17" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-18"><a href="#cb4-18" aria-hidden="true" tabindex="-1"></a><span class="co"># Download bathymetry data</span></span>
-<span id="cb4-19"><a href="#cb4-19" aria-hidden="true" tabindex="-1"></a><span class="fu">download.file</span>(<span class="st">"https://www.ngdc.noaa.gov/thredds/fileServer/global/ETOPO2022/60s/60s_bed_elev_netcdf/ETOPO_2022_v1_60s_N90W180_bed.nc"</span>,</span>
-<span id="cb4-20"><a href="#cb4-20" aria-hidden="true" tabindex="-1"></a>              <span class="at">destfile =</span> <span class="st">"data/ETOPO_2022_v1_60s_N90W180_bed.nc"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a>phyc_hist <span class="ot">&lt;-</span> <span class="fu">download_layers</span>(<span class="st">"phyc_baseline_2000_2020_depthsurf"</span>, </span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a>                             <span class="st">"phyc_mean"</span>, constraints)</span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a>so_hist <span class="ot">&lt;-</span> <span class="fu">download_layers</span>(<span class="st">"so_baseline_2000_2019_depthsurf"</span>, </span>
+<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a>                           <span class="st">"so_mean"</span>, constraints)</span>
+<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a><span class="co"># Download bathymetry data</span></span>
+<span id="cb4-17"><a href="#cb4-17" aria-hidden="true" tabindex="-1"></a><span class="fu">download.file</span>(<span class="st">"https://www.ngdc.noaa.gov/thredds/fileServer/global/ETOPO2022/60s/60s_bed_elev_netcdf/ETOPO_2022_v1_60s_N90W180_bed.nc"</span>,</span>
+<span id="cb4-18"><a href="#cb4-18" aria-hidden="true" tabindex="-1"></a>              <span class="at">destfile =</span> <span class="st">"data/ETOPO_2022_v1_60s_N90W180_bed.nc"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <p>We will prepare the downloaded environmental data and save it in the directory structure required by GLOSSA.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="fu">dir.create</span>(<span class="st">"data/fit_layers"</span>)</span>
 <span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Prepare environmental variables for modeling</span></span>
-<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>env_var <span class="ot">&lt;-</span> <span class="fu">list</span>(thetao_hist, so_hist, phyc_hist, o2_hist)</span>
-<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a><span class="fu">names</span>(env_var) <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"thetao"</span>, <span class="st">"so"</span>, <span class="st">"phyc"</span>, <span class="st">"o2"</span>)</span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>env_var <span class="ot">&lt;-</span> <span class="fu">list</span>(thetao_hist, so_hist, phyc_hist)</span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a><span class="fu">names</span>(env_var) <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"thetao"</span>, <span class="st">"so"</span>, <span class="st">"phyc"</span>)</span>
 <span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="fu">seq_along</span>(env_var)) {</span>
 <span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>  var_dir <span class="ot">&lt;-</span> <span class="fu">paste0</span>(<span class="st">"data/fit_layers/"</span>, <span class="fu">names</span>(env_var)[i])</span>
@@ -396,44 +394,42 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a>  <span class="at">so_ssp126 =</span> <span class="fu">download_layers</span>(<span class="st">"so_ssp126_2020_2100_depthsurf"</span>, </span>
 <span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a>                              <span class="st">"so_mean"</span>, constraints),</span>
 <span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a>  <span class="at">phyc_ssp126 =</span> <span class="fu">download_layers</span>(<span class="st">"phyc_ssp126_2020_2100_depthsurf"</span>, </span>
-<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a>                                <span class="st">"phyc_mean"</span>, constraints),</span>
-<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a>  <span class="at">o2_ssp126 =</span> <span class="fu">download_layers</span>(<span class="st">"o2_ssp126_2020_2100_depthsurf"</span>, </span>
-<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a>                              <span class="st">"o2_mean"</span>, constraints)</span>
-<span id="cb6-17"><a href="#cb6-17" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb6-18"><a href="#cb6-18" aria-hidden="true" tabindex="-1"></a><span class="fu">names</span>(env_var_ssp126) <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"thetao"</span>, <span class="st">"so"</span>, <span class="st">"phyc"</span>, <span class="st">"o2"</span>)</span>
-<span id="cb6-19"><a href="#cb6-19" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-20"><a href="#cb6-20" aria-hidden="true" tabindex="-1"></a><span class="fu">dir.create</span>(<span class="st">"data/proj_ssp126"</span>)</span>
-<span id="cb6-21"><a href="#cb6-21" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="fu">seq_along</span>(env_var_ssp126)) {</span>
-<span id="cb6-22"><a href="#cb6-22" aria-hidden="true" tabindex="-1"></a>  var_dir <span class="ot">&lt;-</span> <span class="fu">paste0</span>(<span class="st">"data/proj_ssp126/"</span>, <span class="fu">names</span>(env_var_ssp126)[i])</span>
-<span id="cb6-23"><a href="#cb6-23" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dir.create</span>(var_dir, <span class="at">showWarnings =</span> <span class="cn">FALSE</span>)</span>
-<span id="cb6-24"><a href="#cb6-24" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb6-25"><a href="#cb6-25" aria-hidden="true" tabindex="-1"></a>  terra<span class="sc">::</span><span class="fu">writeRaster</span>(</span>
-<span id="cb6-26"><a href="#cb6-26" aria-hidden="true" tabindex="-1"></a>    env_var_ssp126[[i]][[<span class="dv">1</span>]], </span>
-<span id="cb6-27"><a href="#cb6-27" aria-hidden="true" tabindex="-1"></a>    <span class="at">filename =</span> <span class="fu">paste0</span>(var_dir, <span class="st">"/"</span>, <span class="fu">names</span>(env_var_ssp126)[i], <span class="st">"_1.tif"</span>)</span>
-<span id="cb6-28"><a href="#cb6-28" aria-hidden="true" tabindex="-1"></a>  )</span>
-<span id="cb6-29"><a href="#cb6-29" aria-hidden="true" tabindex="-1"></a>  terra<span class="sc">::</span><span class="fu">writeRaster</span>(</span>
-<span id="cb6-30"><a href="#cb6-30" aria-hidden="true" tabindex="-1"></a>    env_var_ssp126[[i]][[<span class="dv">4</span>]], </span>
-<span id="cb6-31"><a href="#cb6-31" aria-hidden="true" tabindex="-1"></a>    <span class="at">filename =</span> <span class="fu">paste0</span>(var_dir, <span class="st">"/"</span>, <span class="fu">names</span>(env_var_ssp126)[i], <span class="st">"_2.tif"</span>)</span>
-<span id="cb6-32"><a href="#cb6-32" aria-hidden="true" tabindex="-1"></a>  )</span>
-<span id="cb6-33"><a href="#cb6-33" aria-hidden="true" tabindex="-1"></a>  terra<span class="sc">::</span><span class="fu">writeRaster</span>(</span>
-<span id="cb6-34"><a href="#cb6-34" aria-hidden="true" tabindex="-1"></a>    env_var_ssp126[[i]][[<span class="dv">8</span>]], </span>
-<span id="cb6-35"><a href="#cb6-35" aria-hidden="true" tabindex="-1"></a>    <span class="at">filename =</span> <span class="fu">paste0</span>(var_dir, <span class="st">"/"</span>, <span class="fu">names</span>(env_var_ssp126)[i], <span class="st">"_3.tif"</span>)</span>
-<span id="cb6-36"><a href="#cb6-36" aria-hidden="true" tabindex="-1"></a>  )</span>
-<span id="cb6-37"><a href="#cb6-37" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb6-38"><a href="#cb6-38" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Clean up auxiliary files</span></span>
-<span id="cb6-39"><a href="#cb6-39" aria-hidden="true" tabindex="-1"></a>  aux_files <span class="ot">&lt;-</span> <span class="fu">list.files</span>(var_dir, <span class="at">pattern =</span> <span class="st">"</span><span class="sc">\\</span><span class="st">.aux</span><span class="sc">\\</span><span class="st">.json$"</span>, <span class="at">full.names =</span> <span class="cn">TRUE</span>)</span>
-<span id="cb6-40"><a href="#cb6-40" aria-hidden="true" tabindex="-1"></a>  <span class="fu">file.remove</span>(aux_files)</span>
-<span id="cb6-41"><a href="#cb6-41" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb6-42"><a href="#cb6-42" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-43"><a href="#cb6-43" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-44"><a href="#cb6-44" aria-hidden="true" tabindex="-1"></a><span class="co"># Prepare bathymetry data for SSP1 2.6</span></span>
-<span id="cb6-45"><a href="#cb6-45" aria-hidden="true" tabindex="-1"></a><span class="fu">dir.create</span>(<span class="st">"data/proj_ssp126/bat"</span>, <span class="at">showWarnings =</span> <span class="cn">FALSE</span>)</span>
-<span id="cb6-46"><a href="#cb6-46" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">3</span>) {</span>
-<span id="cb6-47"><a href="#cb6-47" aria-hidden="true" tabindex="-1"></a>  terra<span class="sc">::</span><span class="fu">writeRaster</span>(bat, <span class="at">filename =</span> <span class="fu">paste0</span>(<span class="st">"data/proj_ssp126/bat/bat_"</span>, i, <span class="st">".tif"</span>))</span>
-<span id="cb6-48"><a href="#cb6-48" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb6-49"><a href="#cb6-49" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-50"><a href="#cb6-50" aria-hidden="true" tabindex="-1"></a><span class="co"># Zip the data</span></span>
-<span id="cb6-51"><a href="#cb6-51" aria-hidden="true" tabindex="-1"></a><span class="fu">zip</span>(<span class="at">zipfile =</span> <span class="st">"data/proj_ssp126.zip"</span>, <span class="at">files =</span> <span class="st">"data/proj_ssp126"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a>                                <span class="st">"phyc_mean"</span>, constraints)</span>
+<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a><span class="fu">names</span>(env_var_ssp126) <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"thetao"</span>, <span class="st">"so"</span>, <span class="st">"phyc"</span>)</span>
+<span id="cb6-17"><a href="#cb6-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-18"><a href="#cb6-18" aria-hidden="true" tabindex="-1"></a><span class="fu">dir.create</span>(<span class="st">"data/proj_ssp126"</span>)</span>
+<span id="cb6-19"><a href="#cb6-19" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="fu">seq_along</span>(env_var_ssp126)) {</span>
+<span id="cb6-20"><a href="#cb6-20" aria-hidden="true" tabindex="-1"></a>  var_dir <span class="ot">&lt;-</span> <span class="fu">paste0</span>(<span class="st">"data/proj_ssp126/"</span>, <span class="fu">names</span>(env_var_ssp126)[i])</span>
+<span id="cb6-21"><a href="#cb6-21" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dir.create</span>(var_dir, <span class="at">showWarnings =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb6-22"><a href="#cb6-22" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb6-23"><a href="#cb6-23" aria-hidden="true" tabindex="-1"></a>  terra<span class="sc">::</span><span class="fu">writeRaster</span>(</span>
+<span id="cb6-24"><a href="#cb6-24" aria-hidden="true" tabindex="-1"></a>    env_var_ssp126[[i]][[<span class="dv">1</span>]], </span>
+<span id="cb6-25"><a href="#cb6-25" aria-hidden="true" tabindex="-1"></a>    <span class="at">filename =</span> <span class="fu">paste0</span>(var_dir, <span class="st">"/"</span>, <span class="fu">names</span>(env_var_ssp126)[i], <span class="st">"_1.tif"</span>)</span>
+<span id="cb6-26"><a href="#cb6-26" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb6-27"><a href="#cb6-27" aria-hidden="true" tabindex="-1"></a>  terra<span class="sc">::</span><span class="fu">writeRaster</span>(</span>
+<span id="cb6-28"><a href="#cb6-28" aria-hidden="true" tabindex="-1"></a>    env_var_ssp126[[i]][[<span class="dv">4</span>]], </span>
+<span id="cb6-29"><a href="#cb6-29" aria-hidden="true" tabindex="-1"></a>    <span class="at">filename =</span> <span class="fu">paste0</span>(var_dir, <span class="st">"/"</span>, <span class="fu">names</span>(env_var_ssp126)[i], <span class="st">"_2.tif"</span>)</span>
+<span id="cb6-30"><a href="#cb6-30" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb6-31"><a href="#cb6-31" aria-hidden="true" tabindex="-1"></a>  terra<span class="sc">::</span><span class="fu">writeRaster</span>(</span>
+<span id="cb6-32"><a href="#cb6-32" aria-hidden="true" tabindex="-1"></a>    env_var_ssp126[[i]][[<span class="dv">8</span>]], </span>
+<span id="cb6-33"><a href="#cb6-33" aria-hidden="true" tabindex="-1"></a>    <span class="at">filename =</span> <span class="fu">paste0</span>(var_dir, <span class="st">"/"</span>, <span class="fu">names</span>(env_var_ssp126)[i], <span class="st">"_3.tif"</span>)</span>
+<span id="cb6-34"><a href="#cb6-34" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb6-35"><a href="#cb6-35" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb6-36"><a href="#cb6-36" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Clean up auxiliary files</span></span>
+<span id="cb6-37"><a href="#cb6-37" aria-hidden="true" tabindex="-1"></a>  aux_files <span class="ot">&lt;-</span> <span class="fu">list.files</span>(var_dir, <span class="at">pattern =</span> <span class="st">"</span><span class="sc">\\</span><span class="st">.aux</span><span class="sc">\\</span><span class="st">.json$"</span>, <span class="at">full.names =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb6-38"><a href="#cb6-38" aria-hidden="true" tabindex="-1"></a>  <span class="fu">file.remove</span>(aux_files)</span>
+<span id="cb6-39"><a href="#cb6-39" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb6-40"><a href="#cb6-40" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-41"><a href="#cb6-41" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-42"><a href="#cb6-42" aria-hidden="true" tabindex="-1"></a><span class="co"># Prepare bathymetry data for SSP1 2.6</span></span>
+<span id="cb6-43"><a href="#cb6-43" aria-hidden="true" tabindex="-1"></a><span class="fu">dir.create</span>(<span class="st">"data/proj_ssp126/bat"</span>, <span class="at">showWarnings =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb6-44"><a href="#cb6-44" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">3</span>) {</span>
+<span id="cb6-45"><a href="#cb6-45" aria-hidden="true" tabindex="-1"></a>  terra<span class="sc">::</span><span class="fu">writeRaster</span>(bat, <span class="at">filename =</span> <span class="fu">paste0</span>(<span class="st">"data/proj_ssp126/bat/bat_"</span>, i, <span class="st">".tif"</span>))</span>
+<span id="cb6-46"><a href="#cb6-46" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb6-47"><a href="#cb6-47" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-48"><a href="#cb6-48" aria-hidden="true" tabindex="-1"></a><span class="co"># Zip the data</span></span>
+<span id="cb6-49"><a href="#cb6-49" aria-hidden="true" tabindex="-1"></a><span class="fu">zip</span>(<span class="at">zipfile =</span> <span class="st">"data/proj_ssp126.zip"</span>, <span class="at">files =</span> <span class="st">"data/proj_ssp126"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </section>
 <section id="ssp5-8.5" class="level4">
@@ -452,44 +448,42 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a>  <span class="at">so_ssp585 =</span> <span class="fu">download_layers</span>(<span class="st">"so_ssp585_2020_2100_depthsurf"</span>, </span>
 <span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a>                              <span class="st">"so_mean"</span>, constraints),</span>
 <span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a>  <span class="at">phyc_ssp585 =</span> <span class="fu">download_layers</span>(<span class="st">"phyc_ssp585_2020_2100_depthsurf"</span>, </span>
-<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a>                                <span class="st">"phyc_mean"</span>, constraints),</span>
-<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a>  <span class="at">o2_ssp585 =</span> <span class="fu">download_layers</span>(<span class="st">"o2_ssp585_2020_2100_depthsurf"</span>, </span>
-<span id="cb7-16"><a href="#cb7-16" aria-hidden="true" tabindex="-1"></a>                              <span class="st">"o2_mean"</span>, constraints)</span>
-<span id="cb7-17"><a href="#cb7-17" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb7-18"><a href="#cb7-18" aria-hidden="true" tabindex="-1"></a><span class="fu">names</span>(env_var_ssp585) <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"thetao"</span>, <span class="st">"so"</span>, <span class="st">"phyc"</span>, <span class="st">"o2"</span>)</span>
-<span id="cb7-19"><a href="#cb7-19" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-20"><a href="#cb7-20" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-21"><a href="#cb7-21" aria-hidden="true" tabindex="-1"></a><span class="fu">dir.create</span>(<span class="st">"data/proj_ssp585"</span>)</span>
-<span id="cb7-22"><a href="#cb7-22" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="fu">seq_along</span>(env_var_ssp585)) {</span>
-<span id="cb7-23"><a href="#cb7-23" aria-hidden="true" tabindex="-1"></a>  var_dir <span class="ot">&lt;-</span> <span class="fu">paste0</span>(<span class="st">"data/proj_ssp585/"</span>, <span class="fu">names</span>(env_var_ssp585)[i])</span>
-<span id="cb7-24"><a href="#cb7-24" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dir.create</span>(var_dir, <span class="at">showWarnings =</span> <span class="cn">FALSE</span>)</span>
-<span id="cb7-25"><a href="#cb7-25" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb7-26"><a href="#cb7-26" aria-hidden="true" tabindex="-1"></a>  terra<span class="sc">::</span><span class="fu">writeRaster</span>(</span>
-<span id="cb7-27"><a href="#cb7-27" aria-hidden="true" tabindex="-1"></a>    env_var_ssp585[[i]][[<span class="dv">1</span>]], </span>
-<span id="cb7-28"><a href="#cb7-28" aria-hidden="true" tabindex="-1"></a>    <span class="at">filename =</span> <span class="fu">paste0</span>(var_dir, <span class="st">"/"</span>, <span class="fu">names</span>(env_var_ssp585)[i], <span class="st">"_1.tif"</span>)</span>
-<span id="cb7-29"><a href="#cb7-29" aria-hidden="true" tabindex="-1"></a>  )</span>
-<span id="cb7-30"><a href="#cb7-30" aria-hidden="true" tabindex="-1"></a>  terra<span class="sc">::</span><span class="fu">writeRaster</span>(</span>
-<span id="cb7-31"><a href="#cb7-31" aria-hidden="true" tabindex="-1"></a>    env_var_ssp585[[i]][[<span class="dv">4</span>]], </span>
-<span id="cb7-32"><a href="#cb7-32" aria-hidden="true" tabindex="-1"></a>    <span class="at">filename =</span> <span class="fu">paste0</span>(var_dir, <span class="st">"/"</span>, <span class="fu">names</span>(env_var_ssp585)[i], <span class="st">"_2.tif"</span>)</span>
-<span id="cb7-33"><a href="#cb7-33" aria-hidden="true" tabindex="-1"></a>  )</span>
-<span id="cb7-34"><a href="#cb7-34" aria-hidden="true" tabindex="-1"></a>  terra<span class="sc">::</span><span class="fu">writeRaster</span>(</span>
-<span id="cb7-35"><a href="#cb7-35" aria-hidden="true" tabindex="-1"></a>    env_var_ssp585[[i]][[<span class="dv">8</span>]], </span>
-<span id="cb7-36"><a href="#cb7-36" aria-hidden="true" tabindex="-1"></a>    <span class="at">filename =</span> <span class="fu">paste0</span>(var_dir, <span class="st">"/"</span>, <span class="fu">names</span>(env_var_ssp585)[i], <span class="st">"_3.tif"</span>)</span>
-<span id="cb7-37"><a href="#cb7-37" aria-hidden="true" tabindex="-1"></a>  )</span>
-<span id="cb7-38"><a href="#cb7-38" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb7-39"><a href="#cb7-39" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Clean up auxiliary files</span></span>
-<span id="cb7-40"><a href="#cb7-40" aria-hidden="true" tabindex="-1"></a>  aux_files <span class="ot">&lt;-</span> <span class="fu">list.files</span>(var_dir, <span class="at">pattern =</span> <span class="st">"</span><span class="sc">\\</span><span class="st">.aux</span><span class="sc">\\</span><span class="st">.json$"</span>, <span class="at">full.names =</span> <span class="cn">TRUE</span>)</span>
-<span id="cb7-41"><a href="#cb7-41" aria-hidden="true" tabindex="-1"></a>  <span class="fu">file.remove</span>(aux_files)</span>
-<span id="cb7-42"><a href="#cb7-42" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb7-43"><a href="#cb7-43" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-44"><a href="#cb7-44" aria-hidden="true" tabindex="-1"></a><span class="co"># Prepare bathymetry data for SSP5 8.5</span></span>
-<span id="cb7-45"><a href="#cb7-45" aria-hidden="true" tabindex="-1"></a><span class="fu">dir.create</span>(<span class="st">"data/proj_ssp585/bat"</span>, <span class="at">showWarnings =</span> <span class="cn">FALSE</span>)</span>
-<span id="cb7-46"><a href="#cb7-46" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">3</span>) {</span>
-<span id="cb7-47"><a href="#cb7-47" aria-hidden="true" tabindex="-1"></a>  terra<span class="sc">::</span><span class="fu">writeRaster</span>(bat, <span class="at">filename =</span> <span class="fu">paste0</span>(<span class="st">"data/proj_ssp585/bat/bat_"</span>, i, <span class="st">".tif"</span>))</span>
-<span id="cb7-48"><a href="#cb7-48" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb7-49"><a href="#cb7-49" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-50"><a href="#cb7-50" aria-hidden="true" tabindex="-1"></a><span class="co"># Zip the data</span></span>
-<span id="cb7-51"><a href="#cb7-51" aria-hidden="true" tabindex="-1"></a><span class="fu">zip</span>(<span class="at">zipfile =</span> <span class="st">"data/proj_ssp585.zip"</span>, <span class="at">files =</span> <span class="st">"data/proj_ssp585"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a>                                <span class="st">"phyc_mean"</span>, constraints)</span>
+<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb7-16"><a href="#cb7-16" aria-hidden="true" tabindex="-1"></a><span class="fu">names</span>(env_var_ssp585) <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"thetao"</span>, <span class="st">"so"</span>, <span class="st">"phyc"</span>)</span>
+<span id="cb7-17"><a href="#cb7-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-18"><a href="#cb7-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-19"><a href="#cb7-19" aria-hidden="true" tabindex="-1"></a><span class="fu">dir.create</span>(<span class="st">"data/proj_ssp585"</span>)</span>
+<span id="cb7-20"><a href="#cb7-20" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="fu">seq_along</span>(env_var_ssp585)) {</span>
+<span id="cb7-21"><a href="#cb7-21" aria-hidden="true" tabindex="-1"></a>  var_dir <span class="ot">&lt;-</span> <span class="fu">paste0</span>(<span class="st">"data/proj_ssp585/"</span>, <span class="fu">names</span>(env_var_ssp585)[i])</span>
+<span id="cb7-22"><a href="#cb7-22" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dir.create</span>(var_dir, <span class="at">showWarnings =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb7-23"><a href="#cb7-23" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb7-24"><a href="#cb7-24" aria-hidden="true" tabindex="-1"></a>  terra<span class="sc">::</span><span class="fu">writeRaster</span>(</span>
+<span id="cb7-25"><a href="#cb7-25" aria-hidden="true" tabindex="-1"></a>    env_var_ssp585[[i]][[<span class="dv">1</span>]], </span>
+<span id="cb7-26"><a href="#cb7-26" aria-hidden="true" tabindex="-1"></a>    <span class="at">filename =</span> <span class="fu">paste0</span>(var_dir, <span class="st">"/"</span>, <span class="fu">names</span>(env_var_ssp585)[i], <span class="st">"_1.tif"</span>)</span>
+<span id="cb7-27"><a href="#cb7-27" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb7-28"><a href="#cb7-28" aria-hidden="true" tabindex="-1"></a>  terra<span class="sc">::</span><span class="fu">writeRaster</span>(</span>
+<span id="cb7-29"><a href="#cb7-29" aria-hidden="true" tabindex="-1"></a>    env_var_ssp585[[i]][[<span class="dv">4</span>]], </span>
+<span id="cb7-30"><a href="#cb7-30" aria-hidden="true" tabindex="-1"></a>    <span class="at">filename =</span> <span class="fu">paste0</span>(var_dir, <span class="st">"/"</span>, <span class="fu">names</span>(env_var_ssp585)[i], <span class="st">"_2.tif"</span>)</span>
+<span id="cb7-31"><a href="#cb7-31" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb7-32"><a href="#cb7-32" aria-hidden="true" tabindex="-1"></a>  terra<span class="sc">::</span><span class="fu">writeRaster</span>(</span>
+<span id="cb7-33"><a href="#cb7-33" aria-hidden="true" tabindex="-1"></a>    env_var_ssp585[[i]][[<span class="dv">8</span>]], </span>
+<span id="cb7-34"><a href="#cb7-34" aria-hidden="true" tabindex="-1"></a>    <span class="at">filename =</span> <span class="fu">paste0</span>(var_dir, <span class="st">"/"</span>, <span class="fu">names</span>(env_var_ssp585)[i], <span class="st">"_3.tif"</span>)</span>
+<span id="cb7-35"><a href="#cb7-35" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb7-36"><a href="#cb7-36" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb7-37"><a href="#cb7-37" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Clean up auxiliary files</span></span>
+<span id="cb7-38"><a href="#cb7-38" aria-hidden="true" tabindex="-1"></a>  aux_files <span class="ot">&lt;-</span> <span class="fu">list.files</span>(var_dir, <span class="at">pattern =</span> <span class="st">"</span><span class="sc">\\</span><span class="st">.aux</span><span class="sc">\\</span><span class="st">.json$"</span>, <span class="at">full.names =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb7-39"><a href="#cb7-39" aria-hidden="true" tabindex="-1"></a>  <span class="fu">file.remove</span>(aux_files)</span>
+<span id="cb7-40"><a href="#cb7-40" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb7-41"><a href="#cb7-41" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-42"><a href="#cb7-42" aria-hidden="true" tabindex="-1"></a><span class="co"># Prepare bathymetry data for SSP5 8.5</span></span>
+<span id="cb7-43"><a href="#cb7-43" aria-hidden="true" tabindex="-1"></a><span class="fu">dir.create</span>(<span class="st">"data/proj_ssp585/bat"</span>, <span class="at">showWarnings =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb7-44"><a href="#cb7-44" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">3</span>) {</span>
+<span id="cb7-45"><a href="#cb7-45" aria-hidden="true" tabindex="-1"></a>  terra<span class="sc">::</span><span class="fu">writeRaster</span>(bat, <span class="at">filename =</span> <span class="fu">paste0</span>(<span class="st">"data/proj_ssp585/bat/bat_"</span>, i, <span class="st">".tif"</span>))</span>
+<span id="cb7-46"><a href="#cb7-46" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb7-47"><a href="#cb7-47" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-48"><a href="#cb7-48" aria-hidden="true" tabindex="-1"></a><span class="co"># Zip the data</span></span>
+<span id="cb7-49"><a href="#cb7-49" aria-hidden="true" tabindex="-1"></a><span class="fu">zip</span>(<span class="at">zipfile =</span> <span class="st">"data/proj_ssp585.zip"</span>, <span class="at">files =</span> <span class="st">"data/proj_ssp585"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </section>
 </section>
@@ -523,7 +517,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="cell">
 <div class="sourceCode cell-code" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="fu">run_glossa</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
-<p>Upload the occurrence file for <em>C. caretta</em> and the environmental layers for model fitting and projection scenarios. For habitat suitability analysis, select the <em>Model fitting</em> and <em>Model projection</em> options from the <em>Suitable habitat</em> model. Enable <em>Functional responses</em> in the <em>Others</em> section to compute response curves.</p>
+<p>Upload the occurrence file for <em>C. caretta</em> and the environmental layers for model fitting and projection scenarios. For habitat suitability analysis, select the <em>Model fitting</em> and <em>Model projection</em> options from the <em>Suitable habitat</em> model. Enable <em>Variable importance</em> in the <em>Others</em> section to check the decrease of the F-score.</p>
 <p>In the advanced options, set the following parameters: thinning precision to 2, standardize environmental data, and enlarge the polygon by 0.01 degrees to account for the lower resolution of the polygon and ensure the boundaries match properly -previously, many points near the coast were lost due to an insufficient buffer size-. Select the BART (Chipman, <em>et al</em>., 2010; Dorie, 2024) model and set the seed to 5648 for reproducibility.</p>
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
@@ -541,21 +535,21 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <figcaption class="figure-caption">Validation of presence points for <em>Caretta caretta</em>. Points are filtered based on their proximity and location relative to the study area, resulting in 5572 presence records (blue points).</figcaption>
 </figure>
 </div>
-<p>The model summary indicates a decent predictive capacity with an AUC of 0.9 and a sensitivity of 0.8. The distribution of fitted values can also be explored. Note that the model was fitted using randomly generated pseudo-absences rather than real absences.</p>
+<p>The model summary indicates a decent predictive capacity with an AUC of 0.9 and an F-score of 0.8 The distribution of fitted values can also be explored. Note that the model was fitted using randomly generated pseudo-absences rather than real absences.</p>
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
 <p><img src="images/caretta_model_summary.png" class="img-fluid figure-img"></p>
 <figcaption class="figure-caption">Summary of the fitted model for <em>Caretta caretta</em>. From left to right: the ROC curve, a plot representing the confusion matrix with the associated probabilities, and the distribution on the fitted values.</figcaption>
 </figure>
 </div>
-<p>We can also explore the functional responses, for example, response curves reveal that as depth increases, the probability of occurrence decreases, probably because most observations are near coastal areas, where loggerhead turtles migrate during their life cycle.</p>
+<p>We can also determine which predictors play a more significant role in predicting the outcome by examining the variable importance plot. This plot shows the decrease in model F-score using permutation feature importance, which measures the increase in prediction error after shuffling the predictor values. We see that the most important variable is the sea surface temperature followed by the bathymetry. Sea turtles live their entire lives in the ocean, but they migrate to nest on coastal land, with their sex being determined by the temperature during incubation (Mancino <em>et al</em>., 2022).</p>
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
-<p><img src="images/caretta_bat_fr.png" class="img-fluid figure-img" style="width:60.0%"></p>
-<figcaption class="figure-caption">Response curves showing the relationship between sea depth and the probability of occurrence of <em>Caretta caretta</em>. The probability decreases with increasing depth, reflecting a preference for shallow areas.</figcaption>
+<p><img src="images/caretta_var_imp.png" class="img-fluid figure-img" style="width:60.0%"></p>
+<figcaption class="figure-caption">Variable importance plot using the F-score as the performance metric</figcaption>
 </figure>
 </div>
-<p>For the climate projections, there is a predicted decrease of 10.6% in suitable habitat area (<span class="math inline">\(\text{km}^2\)</span>) in the SSP1-2.6 scenario and about 77.3% in the SSP5-8.5 scenario from the 2020s to the 2090s. The western Mediterranean and the Adriatic Sea are projected to have relatively better habitat suitability.</p>
+<p>For the climate projections, there is a predicted decrease of 16.4% in suitable habitat area (<span class="math inline">\(\text{km}^2\)</span>) in the SSP1-2.6 scenario and about 78.2% in the SSP5-8.5 scenario from the 2020s to the 2090s. The western Mediterranean and the Adriatic Sea are projected to have relatively better habitat suitability.</p>
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
 <p><img src="images/caretta_projections.png" class="img-fluid figure-img"></p>
@@ -583,63 +577,87 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <tbody>
 <tr class="odd">
 <td>Loading input data</td>
-<td>32.86 secs</td>
+<td>33.65 secs</td>
 </tr>
 <tr class="even">
 <td>Processing P/A coordinates</td>
-<td>0.23 secs</td>
+<td>0.21 secs</td>
 </tr>
 <tr class="odd">
 <td>Processing covariate layers</td>
-<td>8.37 secs</td>
+<td>9.80 secs</td>
 </tr>
 <tr class="even">
 <td>Building model matrix</td>
-<td>9.55 secs</td>
+<td>12.01 secs</td>
+</tr>
+<tr class="odd">
+<td>Fitting native range models</td>
+<td>0.232 mins</td>
+</tr>
+<tr class="even">
+<td>Variable importance (native range)</td>
+<td>8.31 mins</td>
+</tr>
+<tr class="odd">
+<td>P/A cutoff (native range)</td>
+<td>0.191 mins</td>
+</tr>
+<tr class="even">
+<td>Projections on fit layers (native range)</td>
+<td>9.84 mins</td>
+</tr>
+<tr class="odd">
+<td>Native range projections</td>
+<td>9.47 mins</td>
+</tr>
+<tr class="even">
+<td>Native range</td>
+<td>19.74 mins</td>
 </tr>
 <tr class="odd">
 <td>Fitting suitable habitat models</td>
-<td>0.23 mins</td>
+<td>0.232 mins</td>
 </tr>
 <tr class="even">
-<td>Variable importance</td>
-<td>0.00007 mins</td>
+<td>Variable importance (suitable habitat)</td>
+<td>8.31 mins</td>
 </tr>
 <tr class="odd">
-<td>P/A cutoff</td>
-<td>0.18 mins</td>
+<td>P/A cutoff (suitable habitat)</td>
+<td>0.191 mins</td>
 </tr>
 <tr class="even">
-<td>Projections on fit layers</td>
-<td>1.43 mins</td>
+<td>Projections on fit layers (suitable habitat)</td>
+<td>9.84 mins</td>
 </tr>
 <tr class="odd">
 <td>Suitable habitat projections</td>
-<td>8.70 mins</td>
+<td>9.47 mins</td>
 </tr>
 <tr class="even">
 <td>Habitat suitability</td>
-<td>0.01 mins</td>
+<td>0.006 mins</td>
 </tr>
 <tr class="odd">
 <td>Suitable habitat</td>
-<td>10.55 mins</td>
+<td>19.74 mins</td>
 </tr>
 <tr class="even">
 <td>Computing functional responses</td>
-<td>15.51 mins</td>
+<td>13.35 mins</td>
 </tr>
 <tr class="odd">
 <td>Cross-validation</td>
-<td>3.91 mins</td>
+<td>4.19 mins</td>
 </tr>
 <tr class="even">
 <td>Model summary</td>
-<td>0.36 mins</td>
+<td>0.18 mins</td>
 </tr>
 <tr class="odd">
 <td><strong>Total GLOSSA analysis</strong></td>
-<td><strong>31.19 mins</strong></td>
+<td><strong>38.39 mins</strong></td>
 </tr>
 </tbody>
 </table>
@@ -654,6 +672,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <li><p>Fernandez-Bejarano, S. J. &amp; Salazar, V. W. (2024). <em>biooraclee: R package to access Bio-Oracle data via ERDDAP</em>. R package version 0.0.0.9, <a href="https://github.com/bio-oracle/biooracler" class="uri">https://github.com/bio-oracle/biooracler</a></p></li>
 <li><p>GBIF.org (26 August 2024) GBIF Occurrence Download <a href="https://doi.org/10.15468/dl.es7562" class="uri">https://doi.org/10.15468/dl.es7562</a></p></li>
 <li><p>Hijmans, R. (2024). <em>terra: Spatial Data Analysis</em>. R package version 1.7-81, <a href="https://rspatial.github.io/terra/" class="uri">https://rspatial.github.io/terra/</a>, <a href="https://rspatial.org/" class="uri">https://rspatial.org/</a>.</p></li>
+<li><p>Mancino, C., Canestrelli, D., &amp; Maiorano, L. (2022). Going west: Range expansion for loggerhead sea turtles in the Mediterranean Sea under climate change. Global Ecology and Conservation, 38, e02264.</p></li>
 <li><p>Pebesma E (2018). <em>Simple Features for R: Standardized Support for Spatial Vector Data</em>. The R Journal, 10(1), 439–446. <a href="https://doi.org/10.32614/RJ-2018-009">doi:10.32614/RJ-2018-009</a>.</p></li>
 <li><p>Wickham H, François R, Henry L, Müller K &amp; Vaughan D (2023). <em>dplyr: A Grammar of Data Manipulation.</em> R package version 1.1.4, <a href="https://github.com/tidyverse/dplyr" class="uri">https://github.com/tidyverse/dplyr</a>, <a href="https://dplyr.tidyverse.org" class="uri">https://dplyr.tidyverse.org</a>.</p></li>
 </ul>
