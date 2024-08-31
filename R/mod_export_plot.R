@@ -26,20 +26,21 @@ export_plot_ui <- function(id) {
 #'
 #' @keywords internal
 export_plot_server <- function(id, exported_plot) {
-  moduleServer(id, function(input, output, session){
+  moduleServer(id, function(input, output, session) {
     ns <- session$ns
-    # Return the UI for a modal dialog with data selection input
+
+    # Create a modal dialog for export options
     export_plot_modal <- function() {
       modalDialog(
         title = "Export plot",
         fluidRow(
           column(
             width = 4,
-            numericInput(ns("height"), label = "Height", value = 7)
+            numericInput(ns("height"), label = "Height", value = 7, min = 1)
           ),
           column(
             width = 4,
-            numericInput(ns("width"), label = "Width", value = 7)
+            numericInput(ns("width"), label = "Width", value = 7, min = 1)
           ),
           column(
             width = 4,
@@ -59,11 +60,14 @@ export_plot_server <- function(id, exported_plot) {
       showModal(export_plot_modal())
     })
 
-    # When Download button is pressed attempt to download plot
+    # Generate the download handler for plot export
     output$download <- downloadHandler(
-      filename = function() { paste("glossa_plot_", format(Sys.time(), "%D_%X"), ".", input$format, sep="") },
+      filename = function() {
+        paste0("glossa_plot_", format(Sys.time(), "%Y-%m-%d_%H-%M-%S"), ".", input$format)
+      },
       content = function(file) {
-        ggsave(file, plot = exported_plot, device = input$format)
+        # Use ggsave or any plotting function as needed
+        ggsave(file, plot = exported_plot(), width = input$width, height = input$height, device = input$format)
       }
     )
   })

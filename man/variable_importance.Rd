@@ -4,14 +4,19 @@
 \alias{variable_importance}
 \title{Variable Importance in BART Model}
 \usage{
-variable_importance(bart_model)
+variable_importance(bart_model, cutoff = 0, n_repeats = 10, seed = NULL)
 }
 \arguments{
 \item{bart_model}{A BART model object.}
-}
-\value{
-A numeric vector containing the name of the variable and its corresponding importance value. The variables are sorted such that the first variable listed is the one that has the greatest influence.
+
+\item{cutoff}{A numeric threshold for converting predicted probabilities into presence-absence.}
+
+\item{n_repeats}{An integer indicating the number of times to repeat the permutation for each variable.}
+
+\item{seed}{An optional seed for random number generation.}
 }
 \description{
-Calculate variable importance, measured as the proportion of total branches used for a given variable.
+This function computes the variable importance scores for a fitted BART (Bayesian Additive Regression Trees) model
+using a permutation-based approach. It measures the impact of each predictor variable on the model's performance
+by permuting the values of that variable and evaluating the change in performance (F-score is the performance metric).
 }

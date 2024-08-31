@@ -10,6 +10,7 @@ glossa_export(
   layer_results = NULL,
   fields = NULL,
   model_data = FALSE,
+  model_summary = FALSE,
   fr = FALSE,
   prob_cut = FALSE,
   varimp = FALSE,

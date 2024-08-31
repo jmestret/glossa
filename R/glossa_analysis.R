@@ -102,7 +102,7 @@ glossa_analysis <- function(
 
   # * Load extent polygon ----
   # Apply buffer to polygon if requested
-  if (!is.null(buffer)){
+  if (!is.null(buffer) & !is.null(study_area_poly)){
     if (buffer != 0) study_area_poly <- buffer_polygon(study_area_poly, buffer)
   }
 
@@ -272,7 +272,6 @@ glossa_analysis <- function(
     print("Fitting native range models...")
 
     models_native_range <- lapply(seq_along(presence_absence_list$model_pa), function(i){
-      print(head(presence_absence_list$model_pa[[i]]))
       fit_bart_model(
         y = presence_absence_list$model_pa[[i]][, "pa"],
         x = presence_absence_list$model_pa[[i]][, c(predictor_variables[[i]], names(coords_layer)), drop = FALSE],
@@ -283,14 +282,6 @@ glossa_analysis <- function(
 
     fit_nr_time <- Sys.time()
     print(paste("Fit native range model execution time:", difftime(fit_nr_time, start_nr_time, units = "mins"), "mins"))
-
-
-    # * Variable importance ----
-    other_results$variable_importance$native_range <- lapply(models_native_range, variable_importance)
-
-    var_imp_nr_time <- Sys.time()
-    print(paste("Variable importance execution time:", difftime(var_imp_nr_time, fit_nr_time, units = "mins"), "mins"))
-
 
     # * Optimal cutoff ----
     pa_cutoff$native_range <- lapply(names(models_native_range), function(sp) {
@@ -303,8 +294,26 @@ glossa_analysis <- function(
     names(pa_cutoff$native_range) <- names(models_native_range)
 
     pa_cutoff_nr_time <- Sys.time()
-    print(paste("P/A cutoff execution time:", difftime(pa_cutoff_nr_time, var_imp_nr_time, units = "mins"), "mins"))
+    print(paste("P/A cutoff execution time:", difftime(pa_cutoff_nr_time, fit_nr_time, units = "mins"), "mins"))
 
+
+    # * Variable importance ----
+    if ("variable_importance" %in% other_analysis){
+      other_results$variable_importance$native_range <- lapply(names(models_native_range), function(sp){
+        variable_importance(
+          models_native_range[[sp]],
+          cutoff = pa_cutoff$native_range[[sp]],
+          seed = seed
+        )
+      })
+      names(other_results$variable_importance$native_range) <- names(models_native_range)
+
+      var_imp_nr_time <- Sys.time()
+      print(paste("Variable importance execution time:", difftime(var_imp_nr_time, pa_cutoff_nr_time, units = "mins"), "mins"))
+
+    } else {
+      var_imp_nr_time <- Sys.time()
+    }
 
     # * fit_layers projections ----
     if (!is.null(waiter)){waiter$update(html = tagList(img(src = "logo_glossa.gif", height = "200px"), h4("Loading..."), h4("Sit back, relax, and let us do the math!"),  h6("Predicting native range for fit layer")))}
@@ -368,12 +377,6 @@ glossa_analysis <- function(
     fit_sh_time <- Sys.time()
     print(paste("Fit suitable habitat model execution time:", difftime(fit_sh_time, start_sh_time, units = "mins"), "mins"))
 
-    # * Variable importance ----
-    other_results$variable_importance$suitable_habitat <- lapply(models_suitable_habitat, variable_importance)
-
-    var_imp_sh_time <- Sys.time()
-    print(paste("Variable importance execution time:", difftime(var_imp_sh_time, fit_sh_time, units = "mins"), "mins"))
-
     # * Optimal cutoff ----
     pa_cutoff$suitable_habitat <- lapply(names(models_suitable_habitat), function(sp) {
       pa_optimal_cutoff(
@@ -385,7 +388,25 @@ glossa_analysis <- function(
     names(pa_cutoff$suitable_habitat) <- names(models_suitable_habitat)
 
     pa_cutoff_sh_time <- Sys.time()
-    print(paste("P/A cutoff execution time:", difftime(pa_cutoff_sh_time, var_imp_sh_time, units = "mins"), "mins"))
+    print(paste("P/A cutoff execution time:", difftime(pa_cutoff_sh_time, fit_sh_time, units = "mins"), "mins"))
+
+    # * Variable importance ----
+    if ("variable_importance" %in% other_analysis){
+      other_results$variable_importance$suitable_habitat <- lapply(names(models_suitable_habitat), function(sp) {
+        variable_importance(
+          models_suitable_habitat[[sp]],
+          cutoff = pa_cutoff$suitable_habitat[[sp]],
+          seed = seed
+        )
+      })
+      names(other_results$variable_importance$suitable_habitat) <- names(models_suitable_habitat)
+
+      var_imp_sh_time <- Sys.time()
+      print(paste("Variable importance execution time:", difftime(var_imp_sh_time, pa_cutoff_sh_time, units = "mins"), "mins"))
+
+    } else {
+      var_imp_sh_time <- Sys.time()
+    }
 
     # * fit_layers projections ----
     if (!is.null(waiter)){waiter$update(html = tagList(img(src = "logo_glossa.gif", height = "200px"), h4("Loading..."), h4("Sit back, relax, and let us do the math!"),  h6("Predicting suitable habitat for fit layers")))}
@@ -550,32 +571,37 @@ glossa_analysis <- function(
   start_diag_time <- Sys.time()
 
   if (!is.null(native_range)){
-    other_results$model_diagnostic$native_range <- lapply(models_native_range, function(model){
+    other_results$model_diagnostic$native_range <- lapply(names(models_native_range), function(sp){
+      model <- models_native_range[[sp]]
       y <- model$fit$data@y
       x <- as.data.frame(model$fit$data@x)
       df <- data.frame(
         observed = y,
         probability = colMeans(predict.bart(model, x))
       )
-      temp_cutoff <- glossa::pa_optimal_cutoff(y, x, model)
+      temp_cutoff <- pa_cutoff$native_range[[sp]]
       df$predicted <- ifelse(df$probability >= temp_cutoff, 1, 0)
       return(df)
     })
+    names(other_results$model_diagnostic$native_range) <- names(models_native_range)
   }
 
   if (!is.null(suitable_habitat)){
-    other_results$model_diagnostic$suitable_habitat <- lapply(models_suitable_habitat, function(model){
+    other_results$model_diagnostic$suitable_habitat <- lapply(names(models_suitable_habitat), function(sp){
+      model <- models_suitable_habitat[[sp]]
       y <- model$fit$data@y
       x <- as.data.frame(model$fit$data@x)
       df <- data.frame(
         observed = y,
         probability = colMeans(predict.bart(model, x))
       )
-      temp_cutoff <- glossa::pa_optimal_cutoff(y, x, model)
+      temp_cutoff <- pa_cutoff$suitable_habitat[[sp]]
       df$predicted <- ifelse(df$probability >= temp_cutoff, 1, 0)
       return(df)
     })
+    names(other_results$model_diagnostic$suitable_habitat) <- names(models_suitable_habitat)
   }
+
   end_diag_time <- Sys.time()
   print(paste("Model summary execution time:", difftime(end_diag_time, start_diag_time, units = "mins"), "mins"))
 

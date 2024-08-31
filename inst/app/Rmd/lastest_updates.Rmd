@@ -8,18 +8,20 @@ body {
 text-align: justify}
 </style>
 
+Stay tuned for updates on our progress!
+
+For real-time updates and to report any issues, please visit our <a href="https://github.com/jmestret/glossa" target="_blank">GitHub repository</a>.
+
 ## **Latest updates**
 
 **Current Version (Pre-Release):** **0.1.0**
 
 ### Updates, Patches, and Releases
 
-#### **Version 0.1.0 (Upcoming Initial Development Release)**
+#### **glossa (development version)**
 
-We have not yet published our official release. We are currently working on the upcoming initial development release, version 0.1.0.
+#### **glossa 0.1.0**
 
-Stay tuned for updates on our progress!
+* Initial CRAN submission.
 
-For real-time updates and to report any issues, please visit our <a href="https://github.com/jmestret/glossa" target="_blank">GitHub repository</a>.
 
-Thank you for your patience and support!

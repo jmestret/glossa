@@ -132,13 +132,6 @@ sidebar <- bs4Dash::bs4DashSidebar(
       text = "Lastest updates"
     ),
 
-    # FAQs tab
-    bs4Dash::menuItem(
-      tabName = "faqs",
-      icon = icon("circle-question", class = "fa-solid"),
-      text = "FAQs"
-    ),
-
     # Contact tab
     bs4Dash::menuItem(
       tabName = "contact",
@@ -423,7 +416,7 @@ body <- bs4Dash::bs4DashBody(
                 background = "#6c757d",
                 icon = NULL,
 
-                strong("Ocurrences thinning"),
+                strong("Occurrences thinning"),
 
                 tags$head(tags$style(HTML(".not_bold label {font-weight:normal !important;;}"))),
                 div(numericInput(
@@ -469,7 +462,7 @@ body <- bs4Dash::bs4DashBody(
                   width = 3,
                   glossa::file_input_area_ui(
                     "pa_files",
-                    label = "Ocurrences",
+                    label = "Occurrences",
                     button_label = "Add CSV files",
                     multiple = TRUE,
                     accept = c(".csv", ".txt", ".tsv"),
@@ -549,8 +542,8 @@ body <- bs4Dash::bs4DashBody(
                   prettyCheckboxGroup(
                     inputId = "analysis_options_other",
                     label = tags$span("Others", shiny::actionButton("analysis_options_others_info", label = NULL, icon = icon("circle-info", class = "fa-solid fa-circle-info", style = "color:#007bff;"), class = "btn btn-default action-button btn-xs", style="background-color:transparent;border-radius:0px;border-width:0px")),
-                    choiceNames = c("Functional responses", "Cross-validation"),
-                    choiceValues = c("functional_responses", "cross_validation"),
+                    choiceNames = c("Functional responses", "Variable importance", "Cross-validation"),
+                    choiceValues = c("functional_responses", "variable_importance", "cross_validation"),
                     selected = NULL,
                     status = "primary",
                     shape = "curve"
@@ -1144,6 +1137,13 @@ body <- bs4Dash::bs4DashBody(
                        ),
 
                        shinyWidgets::prettySwitch(
+                         inputId = "export_mod_summary",
+                         label = "Confusion matrix",
+                         status = "primary",
+                         fill = TRUE
+                       ),
+
+                       shinyWidgets::prettySwitch(
                          inputId = "export_var_imp",
                          label = "Variable importance",
                          status = "primary",
@@ -1253,29 +1253,6 @@ body <- bs4Dash::bs4DashBody(
       ) # End fluidRow
     ),
 
-    # * FAQs tab ----
-    bs4Dash::tabItem(
-      tabName = "faqs",
-
-      fluidRow(
-        bs4Dash::column(
-          width = 8, offset = 2,
-          bs4Dash::box(title = NULL,
-                       status = NULL,
-                       width = 12,
-                       solidHeader = FALSE,
-                       background = NULL,
-                       collapsible = FALSE,
-                       headerBorder = FALSE,
-                       elevation = 2,
-                       label = NULL,
-
-                       shiny::includeMarkdown("Rmd/faqs.Rmd")
-          ) # End box
-        ) # End column
-      ) # End fluidRow
-    ),
-
     # * Contact us tab ----
     bs4Dash::tabItem(
       tabName = "contact",
@@ -1321,9 +1298,7 @@ bs4Dash::bs4DashPage(
     fixed = FALSE,
     left = span(
       "Developed by ",
-      a(href = "https://github.com/jmestret", target = "_blank", "@jmestret"),
-      " and ",
-      a(href = "https://github.com/AlbaFuster", target = "_blank", "@AlbaFuster")
+      a(href = "https://imares.science/", target = "_blank", "@iMARES")
     ),
     right = tagList(
       img(src = "logo_csic.png", height="25px", align="center"),

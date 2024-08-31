@@ -32,7 +32,8 @@ fit_bart_model <- function(y, x, seed = NULL) {
   # Fit the BART model
   bart_model <- dbarts::bart(x.train = x,
                              y.train = y,
-                             keeptrees = TRUE)
+                             keeptrees = TRUE,
+                             verbose = FALSE)
 
   # Make the model fit state invisible so we can export it and use it to predict
   invisible(bart_model$fit$state)
@@ -164,20 +165,69 @@ response_curve_bart <- function(bart_model, data, predictor_names) {
   return(data_var)
 }
 
-
 #' Variable Importance in BART Model
 #'
-#' Calculate variable importance, measured as the proportion of total branches used for a given variable.
+#' This function computes the variable importance scores for a fitted BART (Bayesian Additive Regression Trees) model
+#' using a permutation-based approach. It measures the impact of each predictor variable on the model's performance
+#' by permuting the values of that variable and evaluating the change in performance (F-score is the performance metric).
 #'
 #' @param bart_model A BART model object.
-#' @return A numeric vector containing the name of the variable and its corresponding importance value. The variables are sorted such that the first variable listed is the one that has the greatest influence.
+#' @param cutoff A numeric threshold for converting predicted probabilities into presence-absence.
+#' @param n_repeats An integer indicating the number of times to repeat the permutation for each variable.
+#' @param seed An optional seed for random number generation.
 #'
 #' @export
-variable_importance <- function(bart_model) {
-  importance <- colMeans(bart_model$varcount / rowSums(bart_model$varcount))
-  importance <- sort(importance, decreasing = TRUE)
-  return(importance)
+variable_importance <- function(bart_model, cutoff = 0, n_repeats = 10, seed = NULL) {
+  predict.bart <- utils::getFromNamespace("predict.bart", "dbarts")
+  set.seed(seed)
+
+  # Get presence-absence data
+  y <- bart_model$fit$data@y
+  x <- as.data.frame(bart_model$fit$data@x) # TODO: CHECK IF THIS KEEPS VARIABLE NAME
+
+  # Calculate baseline performance metric
+  prob <- colMeans(predict.bart(bart_model, x))
+  pred <- ifelse(prob >= cutoff, 1, 0)
+
+  TP <- sum(y == 1 & pred == 1)
+  FP <- sum(y == 0 & pred == 1)
+  FN <- sum(y == 1 & pred == 0)
+  pr <- TP/(TP + FP)
+  sn <- TP/(TP + FN)
+  baseline_f_score <- 2 * ((pr * sn) / (pr + sn))
+
+  # Preallocate a matrix
+  importance_scores <- matrix(NA, nrow = n_repeats, ncol = ncol(x))
+  colnames(importance_scores) <- colnames(x)
+
+  for (i in seq_len(n_repeats)){
+    for (j in seq_len(ncol(x))){
+      x_permuted <- x
+      x_permuted[, j] <- sample(x[, j])  # Permute the j-th column
+
+      # Predict with the permuted data
+      prob <- colMeans(predict.bart(bart_model, x_permuted))
+      pred <- ifelse(prob >= cutoff, 1, 0)
+
+      # Calculate the performance metric after permutation
+      TP <- sum(y == 1 & pred == 1)
+      FP <- sum(y == 0 & pred == 1)
+      FN <- sum(y == 1 & pred == 0)
+      pr <- TP/(TP + FP)
+      sn <- TP/(TP + FN)
+      permuted_f_score <- 2 * ((pr * sn) / (pr + sn))
+
+      # Calculate the importance score as the decrease in accuracy
+      importance_scores[i, j] <- baseline_f_score - permuted_f_score
+    }
+  }
+
+  # Convert the matrix to a data frame
+  importance_scores <- as.data.frame(importance_scores, stringsAsFactors = FALSE)
+
+  return(importance_scores)
 }
+
 
 #' Optimal Cutoff for Presence-Absence Prediction
 #'
@@ -204,6 +254,7 @@ pa_optimal_cutoff <- function(y, x, model, seed = NULL) {
 
   return(pa_cutoff)
 }
+
 
 #' Cross-Validation for BART Model
 #'

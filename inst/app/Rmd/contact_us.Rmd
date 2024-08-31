@@ -8,6 +8,7 @@ body {
 text-align: justify}
 </style>
 
+
 ## **Contact us**
 
 We value your feedback and are here to help you with any questions, support needs or collaboration requests. Please use the following means to get in touch with us:
@@ -15,16 +16,19 @@ We value your feedback and are here to help you with any questions, support need
 ####  **GitHub**
 
 For issues, feature requests, questions, or general feedback, please use the Issues tab on our GitHub repository:
-- <a href="https://github.com/jmestret/glossa/issues" target="_blank">GLOSSA GitHub issues</a>
 
-### **Email**
+- [GLOSSA GitHub](https://github.com/jmestret/glossa/issues)
 
-For special support or collaboration requests, please contact us via email:
-- [who@csic.com](mailto:who@csic.com)
+### **Contact form**
+
+For special support or collaboration requests, please contact us via the contact form at the end of the iMARES website:
+
+- [iMARES](https://imares.science/)
 
 ### **X (Twitter)**
 
 Follow our research group on Twitter for the latest news and updates:
-- Twitter: <a href="https://x.com/iMARES_group" target="_blank">@iMARES_group</a>
 
-Thank you for your support!
+-   [\@iMARES_group](https://x.com/iMARES_group)
+
+Thank you for your support! If you want to know more about the group go and visit our website: [iMARES](https://imares.science/)

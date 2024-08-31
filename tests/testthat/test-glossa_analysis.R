@@ -47,7 +47,7 @@ test_that("GLOSSA analysis", {
   expect_s3_class(glossa_results$presence_absence_list$model_pa[[1]], "data.frame")
   expect_s4_class(glossa_results$covariate_list$fit_layers, "SpatRaster")
   expect_s4_class(glossa_results$projections_results$fit_layers$suitable_habitat[[1]], "SpatRaster")
-  expect_type(glossa_results$other_results$variable_importance$suitable_habitat[[1]], "double")
+  expect_s3_class(glossa_results$other_results$variable_importance$suitable_habitat[[1]], "data.frame")
   expect_s3_class(glossa_results$other_results$cross_validation$suitable_habitat[[1]], "data.frame")
   expect_type(glossa_results$pa_cutoff$suitable_habitat[[1]], "double")
   expect_type(glossa_results$habitat_suitability$fit_layers$covered_area[[1]], "double")

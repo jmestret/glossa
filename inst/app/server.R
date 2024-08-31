@@ -94,7 +94,6 @@ function(input, output, session) {
           tags$li(tags$strong("Export: "), "Once you're satisfied with the results, head over to the Export tab to save your findings."),
           tags$li(tags$strong("Documentation: "), "Access detailed documentation and user guides in the Documentation tab."),
           tags$li(tags$strong("How to Cite: "), "Find information on how to cite GLOSSA in your publications in the How to Cite tab."),
-          tags$li(tags$strong("FAQs: "), "Have questions? Check out the FAQs tab for answers to commonly asked questions."),
         ),
         tags$p("Need more help? Feel free to reach out to us directly via the Contact tab."),
         tags$p("Happy modeling!")
@@ -380,7 +379,8 @@ function(input, output, session) {
       id = "analysis_options_others_info",
       options = list(
         content = "1) Functional Responses: Estimate the response curve of the probability for each value of the environmental variable.
-        2) Cross-validation: Perform k-fold cross-validation. Warning: It may take some time.",
+        2) Variable importance: Computes the variable importance using permutatoin method.
+        3) Cross-validation: Perform k-fold cross-validation. Warning: It may take some time.",
         title = "Others",
         placement = "bottom",
         trigger = "hover"
@@ -669,6 +669,7 @@ function(input, output, session) {
     updateSelectInput(session, "export_models", selected = unique(as.vector((unlist((sapply(projections_results()[export_layer_results], names)))))))
     updateSelectInput(session, "export_values", selected = c("mean", "median", "sd", "q0.025", "q0.975", "diff", "potential_presences"))
     shinyWidgets::updatePrettySwitch(inputId = "export_model_data", value = TRUE)
+    shinyWidgets::updatePrettySwitch(inputId = "export_mod_summary", value = TRUE)
     shinyWidgets::updatePrettySwitch(inputId = "export_var_imp", value = TRUE)
     shinyWidgets::updatePrettySwitch(inputId = "export_fr", value = TRUE)
     shinyWidgets::updatePrettySwitch(inputId = "export_cv", value = TRUE)
@@ -1005,13 +1006,15 @@ function(input, output, session) {
     p <- ggplot2::ggplot(data.frame(x = paste("var", 1:3), y = c(0, 0, 0)), ggplot2::aes(x = x, y = y))
 
     if (!is.null(input$varimp_plot_mode)) {
-      x <- other_results()[["variable_importance"]][[input$varimp_plot_mode]][[input$sp]]
-      p <- ggplot2::ggplot(data.frame(x = factor(names(x), levels = names(x)), y = x), ggplot2::aes(x = x, y = y))
+      data <- other_results()[["variable_importance"]][[input$varimp_plot_mode]][[input$sp]]
+      data <- utils::stack(data)
+      data$ind <- reorder(data$ind, data$values, median, na.rm = TRUE, decreasing = TRUE)
+      p <- ggplot2::ggplot(data, ggplot2::aes(x = as.factor(ind), y = values))
     }
 
     p +
-      geom_bar(stat = "identity", fill="#007bff") +
-      ylab("Variable importance") +
+      geom_boxplot(fill="#007bff") +
+      ylab("F-score decrease") +
       xlab("") +
       theme_minimal() +
       theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1))
@@ -1025,7 +1028,7 @@ function(input, output, session) {
     if (!is.null(input$cv_plot_mode)){
       x <- other_results()[["cross_validation"]][[input$cv_plot_mode]][[input$sp]]
     } else {
-      x <- data.frame(PREC = 0, SEN = 0, SPC = 0, FDR = 0, NPV = 0, FNR = 0, FPR = 0, Fscore = 0, ACC = 0, BA = 0)
+      x <- data.frame(PREC = 0, SEN = 0, SPC = 0, FDR = 0, NPV = 0, FNR = 0, FPR = 0, Fscore = 0, ACC = 0, TSS = 0)
     }
     glossa::generate_cv_plot(x)
   })
@@ -1089,18 +1092,18 @@ function(input, output, session) {
 
       x <- pROC::roc(x$observed, x$probability, )
       auc <- round(pROC::auc(x) ,4)
+      pr <- TP/(TP + FP)
       sn <- TP/(TP + FN)
       sp <- TN/(TN + FP)
       tss <- sn + sp - 1
       tss <- round(tss, 4)
-      kappa <- (2 * (TP * TN - FN * FP)) / ((TP + FP) * (FP + TN) + (TP + FN) * (FN + TN))
-      kappa <- round(kappa, 4)
+      f_score <- 2 * ((pr * sn) / (pr + sn))
 
       p <- pROC::ggroc(x, colour = "#007bff", linewidth = 1.5)
     } else {
       auc <- 0
       tss <- 0
-      kappa <- 0
+      f_score <- 0
       p <- ggplot() + xlim(c(1, 0)) + ylim(c(0, 1))
     }
     p +
@@ -1111,7 +1114,7 @@ function(input, output, session) {
                color = "black", vjust = -1, size = 4) +
       annotate("text", x = 0.25, y = 0.25, label = paste("TSS =", tss),
                color = "black", vjust = -1, size = 4) +
-      annotate("text", x = 0.25, y = 0.15, label = paste("k =", kappa),
+      annotate("text", x = 0.25, y = 0.15, label = paste("F-score =", f_score),
                color = "black", vjust = -1, size = 4) +
       theme_minimal(base_size = 15)
   })
@@ -1124,16 +1127,15 @@ function(input, output, session) {
   #=========================================================#
 
   # * Export plots ----
-  glossa::export_plot_server("export_previsualization_plot", prediction_plot())
-  glossa::export_plot_server("export_pred_plot", prediction_plot())
-  glossa::export_plot_server("export_layers_plot", cov_layers_plot())
-  glossa::export_plot_server("export_observations_plot", observations_plot())
-  glossa::export_plot_server("export_fr_plot", fr_plot())
-  glossa::export_plot_server("export_varimp_plot", varimp_plot())
-  glossa::export_plot_server("export_cv_plot", cv_plot())
-  glossa::export_plot_server("export_fv_plot", fv_plot())
-  glossa::export_plot_server("export_class_val_plot", class_val_plot())
-  glossa::export_plot_server("export_roc_plot", roc_plot())
+  glossa::export_plot_server("export_pred_plot", prediction_plot)
+  glossa::export_plot_server("export_layers_plot", cov_layers_plot)
+  glossa::export_plot_server("export_observations_plot", observations_plot)
+  glossa::export_plot_server("export_fr_plot", fr_plot)
+  glossa::export_plot_server("export_varimp_plot", varimp_plot)
+  glossa::export_plot_server("export_cv_plot", cv_plot)
+  glossa::export_plot_server("export_fv_plot", fv_plot)
+  glossa::export_plot_server("export_class_val_plot", class_val_plot)
+  glossa::export_plot_server("export_roc_plot", roc_plot)
 
   # * Export results downloadHandler ----
   output$export_button <- downloadHandler(
@@ -1147,7 +1149,7 @@ function(input, output, session) {
       w$show()
       export_files <- glossa_export(species = input$export_sp, models = input$export_models,
                                     layer_results = input$export_results, fields = input$export_values,
-                                    model_data = input$export_model_data, fr = input$export_fr,
+                                    model_data = input$export_model_data, model_summary = input$export_mod_summary, fr = input$export_fr,
                                     prob_cut = input$export_pa_cutoff, varimp = input$export_var_imp,
                                     cross_val = input$export_cv, layer_format = input$export_layer_format,
                                     projections_results = projections_results(),

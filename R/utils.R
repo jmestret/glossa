@@ -111,7 +111,7 @@ create_coords_layer <- function(layers, study_area = NULL, scale_layers = FALSE)
 #'
 #' @keywords internal
 glossa_export <- function(species = NULL, models = NULL, layer_results = NULL, fields = NULL,
-                          model_data = FALSE, fr = FALSE, prob_cut = FALSE,
+                          model_data = FALSE, model_summary = FALSE, fr = FALSE, prob_cut = FALSE,
                           varimp = FALSE, cross_val = FALSE, layer_format = "tif",
                           projections_results = NULL, presence_absence_list = NULL,
                           other_results = NULL, pa_cutoff = NULL) {
@@ -210,7 +210,19 @@ glossa_export <- function(species = NULL, models = NULL, layer_results = NULL, f
       } else {
         warning(paste("Unable to download model data for", sp, "as it has not been computed."))
       }
+    }
 
+    # Export model summary if requested
+    if (model_summary){
+      if (!is.null(other_results[["model_diagnostic"]])){
+        tmp_model_summary <- file.path(tmp_sp, "confusion_matrix")
+        dir.create(tmp_model_summary)
+        for (mode in names(other_results[["model_diagnostic"]])){
+          write.table(other_results[["model_diagnostic"]][[mode]][[sp]], file = file.path(tmp_model_summary, paste(gsub(" ", "_", sp), "_confusion_matrix_", mode, ".csv", sep = "")), quote = FALSE, sep = "\t", dec = ".", row.names = FALSE, col.names = TRUE)
+        }
+      } else {
+        warning(paste("Unable to download confusion matrix for", sp, "as they have not been computed."))
+      }
     }
 
     # Export variable importance if requested
@@ -219,8 +231,7 @@ glossa_export <- function(species = NULL, models = NULL, layer_results = NULL, f
         tmp_var_imp <- file.path(tmp_sp, "variable_importance")
         dir.create(tmp_var_imp)
         for (mod in names(other_results[["variable_importance"]])){
-          sp_values <- other_results[["variable_importance"]][[mod]][[sp]]
-          df <- data.frame(covariates = names(sp_values), variable_importance = sp_values, row.names = NULL)
+          df <- other_results[["variable_importance"]][[mod]][[sp]]
           write.table(df, file = file.path(tmp_var_imp, paste(gsub(" ", "_", sp), "_variable_importance_", mod, ".csv", sep = "")), quote = FALSE, sep = "\t", dec = ".", row.names = FALSE, col.names = TRUE)
         }
       } else {
@@ -620,7 +631,7 @@ generate_prediction_plot <- function(prediction_layer, pa_points, legend_label, 
 #'
 #' @keywords internal
 generate_cv_plot <- function(data){
-  data <- data[, c("PREC", "SEN", "SPC", "FDR", "NPV", "FNR", "FPR", "Fscore", "ACC", "BA")]
+  data <- data[, c("PREC", "SEN", "SPC", "FDR", "NPV", "FNR", "FPR", "Fscore", "ACC", "TSS")]
   data_mean <- colMeans(data, na.rm = TRUE)
   data_median <- apply(data, 2, function(x) median(x, na.rm = TRUE))
   data <- data.frame(id = seq_len(ncol(data)), metric = colnames(data), mean_value = data_mean, median_value = data_median)

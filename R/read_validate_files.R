@@ -404,7 +404,9 @@ validate_pa_fit_time <- function(pa_data, fit_layers_path, show_modal = FALSE) {
 
   # Calculate the length of the time period in the fit layers
   zip_contents <- utils::unzip(fit_layers_path, list = TRUE)
-  fit_layers_time_period_length <- sum(zip_contents$Length > 0) / sum(zip_contents$Length == 0)
+  files <- zip_contents$Name[!grepl("/$", zip_contents$Name)]
+  covariates <- unique(dirname(files))
+  fit_layers_time_period_length <- length(files) / length(covariates)
 
   # Validate the match between time periods
   if (pa_time_period_length > fit_layers_time_period_length) {
@@ -414,3 +416,7 @@ validate_pa_fit_time <- function(pa_data, fit_layers_path, show_modal = FALSE) {
 
   return(TRUE)
 }
+
+
+
+
