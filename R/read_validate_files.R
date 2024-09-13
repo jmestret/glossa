@@ -112,7 +112,7 @@ read_layers_zip <- function(file_path, extend = TRUE, first_layer = FALSE, show_
 
   # Extract contents of the zip file
   tmpdir <- tempdir()
-  zip_contents <- utils::unzip(file_path, unzip = getOption("unzip"), exdir = tmpdir)
+  zip_contents <- utils::unzip(file_path, exdir = tmpdir)
   covariates <- unique(dirname(zip_contents))
 
   # Verify if each covariate has the same number of files
@@ -286,7 +286,7 @@ validate_layers_zip <- function(file_path, show_modal = FALSE) {
 
   # Extract contents of the ZIP file
   tmpdir <- tempdir()
-  zip_contents <- utils::unzip(file_path, unzip = getOption("unzip"), exdir = tmpdir)
+  zip_contents <- utils::unzip(file_path, exdir = tmpdir)
 
   # Get unique covariate directories
   covariate_dirs <- unique(dirname(zip_contents))
@@ -363,8 +363,8 @@ validate_fit_projection_layers <- function(fit_layers_path, proj_layers_path, sh
   # Extract contents of the ZIP files
   tmpdir_fit <- tempdir()
   tmpdir_proj <- tempdir()
-  fit_layers_content <- utils::unzip(fit_layers_path, unzip = getOption("unzip"), exdir = tmpdir_fit)
-  proj_contents <- utils::unzip(proj_layers_path, unzip = getOption("unzip"), exdir = tmpdir_proj)
+  fit_layers_content <- utils::unzip(fit_layers_path, exdir = tmpdir_fit)
+  proj_contents <- utils::unzip(proj_layers_path, exdir = tmpdir_proj)
 
   # Get unique covariate directories
   fit_covariates <- basename(unique(dirname(fit_layers_content)))

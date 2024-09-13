@@ -1,6 +1,6 @@
 Type: Package
 Package: glossa
-Title: GLobal Ocean Species Spatiotemporal Analysis
+Title: Global Ocean Species Spatiotemporal Analysis
 Version: 0.1.0
 Authors@R: c(
     person("Alba", "Fuster-Alonso", role = "aut",
@@ -21,27 +21,27 @@ Imports:
     dbarts,
     dplyr,
     DT,
+    GeoThinneR,
     ggplot2,
     htmltools,
     jsonlite,
     leaflet,
-    matrixStats,
+    markdown,
     mcp,
     pROC,
     sf,
     shinyWidgets,
     sparkline,
     svglite,
-    terra,
     tidyr,
     tidyterra,
     waiter,
     zip
 Suggests:
-    GeoThinneR,
     knitr,
-    markdown,
+    matrixStats,
     rmarkdown,
+    terra,
     testthat (>= 3.0.0),
     tidyverse
 VignetteBuilder: 

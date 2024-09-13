@@ -14,7 +14,7 @@
 get_covariate_names <- function(file_path){
   # Extract contents of the zip file
   tmpdir <- tempdir()
-  zip_contents <- utils::unzip(file_path, unzip = getOption("unzip"), exdir = tmpdir)
+  zip_contents <- utils::unzip(file_path, exdir = tmpdir)
 
   # Get unique covariate directories
   covariates <- basename(unique(dirname(zip_contents)))
