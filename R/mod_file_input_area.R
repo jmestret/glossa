@@ -1,3 +1,5 @@
+# nocov start
+
 #' Custom File Input UI
 #'
 #' Creates a customized file input area in a Shiny application. The file input is designed to be visually distinct and supports features such as multiple file selection and file type restrictions.
@@ -105,3 +107,5 @@ file_input_area_server <- function(id) {
     return(uploaded_data)
   })
 }
+
+# nocov end

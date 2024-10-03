@@ -16,7 +16,7 @@ Thank you for using GLOSSA! Tu cite our app, please use the following references
 
 The GLOSSA paper is currently in progress. Meanwhile, you can reference the GitHub repository as follows:
 
-> Mestre-Tomás, J., Fuster-Alonso, A., & Coll, M. (2024) GLOSSA: A user-friendly Shiny app for global spatiotemporal analysis of species with BART machine learning model. R package version 0.1.0, <https://github.com/jmestret/glossa>
+> Mestre-Tomás, J., Fuster-Alonso, A., Bellido, J. M., & Coll, M. (2024). GLOSSA: a user-friendly R Shiny application for Bayesian machine learning analysis of marine species distribution. R package version 0.1.0, <https://github.com/iMARES-group/glossa>
 
 #### BART model references
 

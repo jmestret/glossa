@@ -67,3 +67,21 @@ test_that("clean_coordinates is reproducible with seed", {
   expect_equal(cleaned_data1, cleaned_data2) # Results should be the same
 })
 
+test_that("remove_duplicate_points wrongly formated input", {
+  expect_error(remove_duplicate_points(df = matrix(1:9, nrow = 3)), "must be a data frame")
+  expect_error(remove_duplicate_points(df = data.frame(lat = 1:3, long = 1:3), coords = 1), "character vector")
+  expect_error(remove_duplicate_points(df = data.frame(lat = 1:3, long = 1:3), coords = c("a", "b")), "not found")
+})
+
+test_that("remove_points_polygon wrongly formated input", {
+  expect_error(remove_points_polygon(df = matrix(1:9, nrow = 3)), "must be a data frame")
+  expect_error(remove_points_polygon(df = data.frame(lat = 1:3, long = 1:3), coords = 1), "character vector")
+  expect_error(remove_points_polygon(df = data.frame(lat = 1:3, long = 1:3), coords = c("a", "b")), "not found")
+})
+
+test_that("clean_coordinates without timestamp", {
+  expect_s3_class(clean_coordinates(df = data.frame(lat = 1:3, long = 1:3), coords = c("lat", "long"), by_timestamp = FALSE, study_area = NULL)
+, "data.frame")
+})
+
+

@@ -1,21 +1,31 @@
 Type: Package
 Package: glossa
-Title: Global Ocean Species Spatiotemporal Analysis
+Title: User-Friendly Shiny App for Bayesian Species Distribution Models
 Version: 0.1.0
 Authors@R: c(
     person("Alba", "Fuster-Alonso", role = "aut",
-           comment = c(ORCID = "0000-0002-8983-3417")),
+           comment = c(ORCID = "0000-0002-7283-291X")),
     person("Jorge", "Mestre-Tomás", , "jorge.mestre.tomas@csic.es", role = c("aut", "cre"),
            comment = c(ORCID = "0000-0002-8983-3417"))
   )
-Description: A user-friendly R shiny app for machine learning analysis of
-    marine species distribution.
-License: GPL (>=3) + file LICENSE
-URL: https://github.com/jmestret/glossa
-BugReports: https://github.com/jmestret/glossa/issues
+Description: A user-friendly 'shiny' application for Bayesian
+    machine learning analysis of marine species distribution. GLOSSA
+    (Global Species Spatiotemporal Analysis) uses Bayesian Additive
+    Regression Trees (BART) to model species distributions with intuitive
+    workflows for data upload, processing, model fitting, and result
+    visualization. It supports presence-absence and presence-only data,
+    pseudo-absence generation, spatial thinning, cross-validation, and
+    scenario-based projections.  GLOSSA is designed to facilitate
+    ecological research by providing easy-to-use tools for analyzing and
+    visualizing marine species distributions across different spatial and
+    temporal scales.
+License: MIT + file LICENSE
+URL: https://github.com/iMARES-group/glossa,
+    https://iMARES-group.github.io/glossa/
+BugReports: https://github.com/iMARES-group/glossa/issues
 Depends:
     bs4Dash,
-    R (>= 3.5.0),
+    R (>= 4.0.0),
     shiny
 Imports:
     dbarts,
@@ -33,7 +43,7 @@ Imports:
     shinyWidgets,
     sparkline,
     svglite,
-    tidyr,
+    terra,
     tidyterra,
     waiter,
     zip
@@ -41,12 +51,9 @@ Suggests:
     knitr,
     matrixStats,
     rmarkdown,
-    terra,
     testthat (>= 3.0.0),
+    tidyr,
     tidyverse
-VignetteBuilder: 
-    knitr
-BuildVignettes: true
 Config/testthat/edition: 3
 Encoding: UTF-8
 Language: en-US

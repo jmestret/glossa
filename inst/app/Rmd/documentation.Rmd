@@ -54,4 +54,4 @@ text-align: justify}
 
 ### Need More Help?
 
-For more detailed guidance, visit the <a href="https://jmestret.github.io/glossa-web/" target="_blank">full documentation</a>.
+For more detailed guidance, visit the <a href="https://iMARES-group.github.io/glossa/" target="_blank">full documentation</a>.

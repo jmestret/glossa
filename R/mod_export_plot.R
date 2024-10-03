@@ -1,3 +1,5 @@
+# nocov start
+
 #' Create UI for Export Plot Button
 #'
 #' This function generates a UI element (action button) for exporting plots.
@@ -72,3 +74,5 @@ export_plot_server <- function(id, exported_plot) {
     )
   })
 }
+
+# nocov end

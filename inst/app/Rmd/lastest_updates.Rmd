@@ -10,7 +10,7 @@ text-align: justify}
 
 Stay tuned for updates on our progress!
 
-For real-time updates and to report any issues, please visit our <a href="https://github.com/jmestret/glossa" target="_blank">GitHub repository</a>.
+For real-time updates and to report any issues, please visit our <a href="https://github.com/iMARES-group/glossa" target="_blank">GitHub repository</a>.
 
 ## **Latest updates**
 

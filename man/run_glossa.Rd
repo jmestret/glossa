@@ -24,7 +24,7 @@ This function launches the GLOSSA Shiny web application.
 The GLOSSA Shiny app provides an interactive interface for users to access GLOSSA functionalities.
 }
 \examples{
-\dontrun{
+if(interactive()) {
 run_glossa()
 }
 }

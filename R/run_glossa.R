@@ -11,7 +11,7 @@
 #' @return NULL
 #' @export
 #' @examples
-#' \dontrun{
+#' if(interactive()) {
 #' run_glossa()
 #' }
 run_glossa <- function(request_size_mb = 2000, launch.browser = TRUE, port = getOption("shiny.port")) {

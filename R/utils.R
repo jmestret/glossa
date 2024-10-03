@@ -90,6 +90,109 @@ create_coords_layer <- function(layers, study_area = NULL, scale_layers = FALSE)
   return(coords_layer)
 }
 
+#=========================================================#
+# cutoff functions----
+# Functions obtained from https://github.com/selva86/InformationValue
+#=========================================================#
+
+#' Compute specificity and sensitivity
+#'
+#' @details This function was obtained from the InformationValue R package (\url{https://github.com/selva86/InformationValue}).
+#' @keywords internal
+getFprTpr<- function(actuals, predictedScores, threshold=0.5){
+  return(list(1-specificity(actuals=actuals, predictedScores=predictedScores, threshold=threshold),
+              sensitivity(actuals=actuals, predictedScores=predictedScores, threshold=threshold)))
+}
+
+#' Calculate the specificity for a given logit model
+#'
+#' @details This function was obtained from the InformationValue R package (\url{https://github.com/selva86/InformationValue}).
+#' @keywords internal
+specificity <- function(actuals, predictedScores, threshold=0.5){
+  predicted_dir <- ifelse(predictedScores < threshold, 0, 1)
+  actual_dir <- actuals
+  no_without_and_predicted_to_not_have_event <- sum(actual_dir != 1 & predicted_dir != 1, na.rm=TRUE)
+  no_without_event <- sum(actual_dir != 1, na.rm=TRUE)
+  return(no_without_and_predicted_to_not_have_event/no_without_event)
+}
+
+#' Calculate the sensitivity for a given logit model
+#'
+#' @details This function was obtained from the InformationValue R package (\url{https://github.com/selva86/InformationValue}).
+#' @keywords internal
+sensitivity <- function(actuals, predictedScores, threshold=0.5){
+  predicted_dir <- ifelse(predictedScores < threshold, 0, 1)
+  actual_dir <- actuals
+  no_with_and_predicted_to_have_event <- sum(actual_dir == 1 & predicted_dir == 1, na.rm=TRUE)
+  no_with_event <- sum(actual_dir == 1, na.rm=TRUE)
+  return(no_with_and_predicted_to_have_event/no_with_event)
+}
+
+#' Calculate Youden's index
+#'
+#' @details This function was obtained from the InformationValue R package (\url{https://github.com/selva86/InformationValue}).
+#' @keywords internal
+youdensIndex <- function(actuals, predictedScores, threshold=0.5){
+  Sensitivity <- sensitivity(actuals, predictedScores, threshold = threshold)
+  Specificity <- specificity(actuals, predictedScores, threshold = threshold)
+  return(Sensitivity + Specificity - 1)
+}
+
+#' Misclassification Error
+#'
+#' @details This function was obtained from the InformationValue R package (\url{https://github.com/selva86/InformationValue}).
+#' @keywords internal
+misClassError <- function(actuals, predictedScores, threshold=0.5){
+  predicted_dir <- ifelse(predictedScores < threshold, 0, 1)
+  actual_dir <- actuals
+  return(round(sum(predicted_dir != actual_dir, na.rm=TRUE)/length(actual_dir), 4))
+}
+
+#' Compute the optimal probability cutoff score
+#'
+#' @details This function was obtained from the InformationValue R package (\url{https://github.com/selva86/InformationValue}).
+#' @keywords internal
+optimalCutoff <- function(actuals, predictedScores, optimiseFor="misclasserror", returnDiagnostics=FALSE){
+  # initialise the diagnostics dataframe to study the effect of various cutoff values.
+  sequence <- seq(max(predictedScores), min(predictedScores), -0.01)
+  sensMat <- data.frame(CUTOFF=sequence, FPR= numeric(length(sequence)),TPR= numeric(length(sequence)), YOUDENSINDEX=numeric(length(sequence)))
+  sensMat[, c(2:3)] <- as.data.frame(t(mapply(getFprTpr, threshold=sequence, MoreArgs=list(actuals=actuals, predictedScores=predictedScores))))
+  sensMat$YOUDENSINDEX <- mapply(youdensIndex, threshold=sequence, MoreArgs=list(actuals=actuals, predictedScores=predictedScores))
+  sensMat$SPECIFICITY <- (1 - as.numeric(sensMat$FPR))
+  sensMat$MISCLASSERROR <- mapply(misClassError, threshold=sequence, MoreArgs=list(actuals=actuals, predictedScores=predictedScores))
+
+  # Select the cutoff
+  if(optimiseFor=="Both"){
+    rowIndex <- which(sensMat$YOUDENSINDEX == max(as.numeric(sensMat$YOUDENSINDEX)))[1]  # choose the maximum cutoff
+  }else if(optimiseFor=="Ones"){
+    rowIndex <- which(sensMat$TPR == max(as.numeric(sensMat$TPR)))[1]  # choose the maximum cutoff
+  }else if(optimiseFor=="Zeros"){
+    rowIndex <- tail(which(sensMat$SPECIFICITY == max(as.numeric(sensMat$SPECIFICITY))), 1)  # choose the minimum cutoff
+  }else if(optimiseFor=="misclasserror"){
+    rowIndex <- tail(which(sensMat$MISCLASSERROR == min(as.numeric(sensMat$MISCLASSERROR))), 1)  # choose the minimum cutoff
+  }
+
+  # what should the function return
+  if(!returnDiagnostics){
+    return(sensMat$CUTOFF[rowIndex])
+  } else {
+    output <- vector(length=6, mode="list")  # initialise diagnostics output
+    names(output) <- c("optimalCutoff", "sensitivityTable", "misclassificationError", "TPR", "FPR", "Specificity")  # give names
+    output$optimalCutoff <- sensMat$CUTOFF[rowIndex]
+    output$sensitivityTable <- sensMat
+    output$misclassificationError <- misClassError(actuals, predictedScores, threshold=sensMat$CUTOFF[rowIndex])
+    output$TPR <- getFprTpr(actuals, predictedScores, threshold=sensMat$CUTOFF[rowIndex])[[2]]
+    output$FPR <- getFprTpr(actuals, predictedScores, threshold=sensMat$CUTOFF[rowIndex])[[1]]
+    output$Specificity <- sensMat$SPECIFICITY[rowIndex]
+    return(output)
+  }
+}
+
+#=========================================================#
+# shiny utils ----
+#=========================================================#
+# nocov start
+
 #' Export Glossa Model Results
 #'
 #' This function exports various types of Glossa model results, including native range predictions, suitable habitat predictions, model data, variable importance, functional response results, and presence/absence probability cutoffs. It generates raster files for prediction results, CSV files for model data and variable importance, and CSV files for functional response results. Additionally, it creates a CSV file for presence/absence probability cutoffs if provided.
@@ -291,108 +394,6 @@ glossa_export <- function(species = NULL, models = NULL, layer_results = NULL, f
 
   return(export_files)
 }
-
-#=========================================================#
-# cutoff functions----
-# Functions obtained from https://github.com/selva86/InformationValue
-#=========================================================#
-
-#' Compute specificity and sensitivity
-#'
-#' @details This function was obtained from the InformationValue R package (\url{https://github.com/selva86/InformationValue}).
-#' @keywords internal
-getFprTpr<- function(actuals, predictedScores, threshold=0.5){
-  return(list(1-specificity(actuals=actuals, predictedScores=predictedScores, threshold=threshold),
-              sensitivity(actuals=actuals, predictedScores=predictedScores, threshold=threshold)))
-}
-
-#' Calculate the specificity for a given logit model
-#'
-#' @details This function was obtained from the InformationValue R package (\url{https://github.com/selva86/InformationValue}).
-#' @keywords internal
-specificity <- function(actuals, predictedScores, threshold=0.5){
-  predicted_dir <- ifelse(predictedScores < threshold, 0, 1)
-  actual_dir <- actuals
-  no_without_and_predicted_to_not_have_event <- sum(actual_dir != 1 & predicted_dir != 1, na.rm=TRUE)
-  no_without_event <- sum(actual_dir != 1, na.rm=TRUE)
-  return(no_without_and_predicted_to_not_have_event/no_without_event)
-}
-
-#' Calculate the sensitivity for a given logit model
-#'
-#' @details This function was obtained from the InformationValue R package (\url{https://github.com/selva86/InformationValue}).
-#' @keywords internal
-sensitivity <- function(actuals, predictedScores, threshold=0.5){
-  predicted_dir <- ifelse(predictedScores < threshold, 0, 1)
-  actual_dir <- actuals
-  no_with_and_predicted_to_have_event <- sum(actual_dir == 1 & predicted_dir == 1, na.rm=TRUE)
-  no_with_event <- sum(actual_dir == 1, na.rm=TRUE)
-  return(no_with_and_predicted_to_have_event/no_with_event)
-}
-
-#' Calculate Youden's index
-#'
-#' @details This function was obtained from the InformationValue R package (\url{https://github.com/selva86/InformationValue}).
-#' @keywords internal
-youdensIndex <- function(actuals, predictedScores, threshold=0.5){
-  Sensitivity <- sensitivity(actuals, predictedScores, threshold = threshold)
-  Specificity <- specificity(actuals, predictedScores, threshold = threshold)
-  return(Sensitivity + Specificity - 1)
-}
-
-#' Misclassification Error
-#'
-#' @details This function was obtained from the InformationValue R package (\url{https://github.com/selva86/InformationValue}).
-#' @keywords internal
-misClassError <- function(actuals, predictedScores, threshold=0.5){
-  predicted_dir <- ifelse(predictedScores < threshold, 0, 1)
-  actual_dir <- actuals
-  return(round(sum(predicted_dir != actual_dir, na.rm=TRUE)/length(actual_dir), 4))
-}
-
-#' Compute the optimal probability cutoff score
-#'
-#' @details This function was obtained from the InformationValue R package (\url{https://github.com/selva86/InformationValue}).
-#' @keywords internal
-optimalCutoff <- function(actuals, predictedScores, optimiseFor="misclasserror", returnDiagnostics=FALSE){
-  # initialise the diagnostics dataframe to study the effect of various cutoff values.
-  sequence <- seq(max(predictedScores), min(predictedScores), -0.01)
-  sensMat <- data.frame(CUTOFF=sequence, FPR= numeric(length(sequence)),TPR= numeric(length(sequence)), YOUDENSINDEX=numeric(length(sequence)))
-  sensMat[, c(2:3)] <- as.data.frame(t(mapply(getFprTpr, threshold=sequence, MoreArgs=list(actuals=actuals, predictedScores=predictedScores))))
-  sensMat$YOUDENSINDEX <- mapply(youdensIndex, threshold=sequence, MoreArgs=list(actuals=actuals, predictedScores=predictedScores))
-  sensMat$SPECIFICITY <- (1 - as.numeric(sensMat$FPR))
-  sensMat$MISCLASSERROR <- mapply(misClassError, threshold=sequence, MoreArgs=list(actuals=actuals, predictedScores=predictedScores))
-
-  # Select the cutoff
-  if(optimiseFor=="Both"){
-    rowIndex <- which(sensMat$YOUDENSINDEX == max(as.numeric(sensMat$YOUDENSINDEX)))[1]  # choose the maximum cutoff
-  }else if(optimiseFor=="Ones"){
-    rowIndex <- which(sensMat$TPR == max(as.numeric(sensMat$TPR)))[1]  # choose the maximum cutoff
-  }else if(optimiseFor=="Zeros"){
-    rowIndex <- tail(which(sensMat$SPECIFICITY == max(as.numeric(sensMat$SPECIFICITY))), 1)  # choose the minimum cutoff
-  }else if(optimiseFor=="misclasserror"){
-    rowIndex <- tail(which(sensMat$MISCLASSERROR == min(as.numeric(sensMat$MISCLASSERROR))), 1)  # choose the minimum cutoff
-  }
-
-  # what should the function return
-  if(!returnDiagnostics){
-    return(sensMat$CUTOFF[rowIndex])
-  } else {
-    output <- vector(length=6, mode="list")  # initialise diagnostics output
-    names(output) <- c("optimalCutoff", "sensitivityTable", "misclassificationError", "TPR", "FPR", "Specificity")  # give names
-    output$optimalCutoff <- sensMat$CUTOFF[rowIndex]
-    output$sensitivityTable <- sensMat
-    output$misclassificationError <- misClassError(actuals, predictedScores, threshold=sensMat$CUTOFF[rowIndex])
-    output$TPR <- getFprTpr(actuals, predictedScores, threshold=sensMat$CUTOFF[rowIndex])[[2]]
-    output$FPR <- getFprTpr(actuals, predictedScores, threshold=sensMat$CUTOFF[rowIndex])[[1]]
-    output$Specificity <- sensMat$SPECIFICITY[rowIndex]
-    return(output)
-  }
-}
-
-#=========================================================#
-# UI utils ----
-#=========================================================#
 
 #' Create a Sparkline Value Box
 #'
@@ -703,3 +704,5 @@ generate_cv_plot <- function(data){
     ) +
     guides(color=guide_legend(override.aes=list(fill=NA)))
 }
+
+# nocov end

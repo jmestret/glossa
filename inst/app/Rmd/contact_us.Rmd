@@ -17,7 +17,7 @@ We value your feedback and are here to help you with any questions, support need
 
 For issues, feature requests, questions, or general feedback, please use the Issues tab on our GitHub repository:
 
-- [GLOSSA GitHub](https://github.com/jmestret/glossa/issues)
+- [GLOSSA GitHub](https://github.com/iMARES-group/glossa/issues)
 
 ### **Contact form**
 
