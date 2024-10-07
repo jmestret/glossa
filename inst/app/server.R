@@ -88,12 +88,12 @@ function(input, output, session) {
       title = "Welcome to the GLOSSA App!",
       tags$div(
         tags$ol(
-          tags$li(tags$strong("Explore the Demo: "), "If you're new, start by watching our quick demo video to see how GLOSSA works. Click the 'Watch Demo' button to get started."),
-          tags$li(tags$strong("New Analysis: "), "Start by uploading your species occurrences and environmental layers. Then, tune the analysis options to customize your model."),
+          tags$li(tags$strong("Get started: "), "If you're new, start by reading our quickstart guide to see how GLOSSA works. Click the 'Get started' button to beggin."),
+          tags$li(tags$strong("New analysis: "), "Start by uploading your species occurrences and environmental layers. Then, tune the analysis options to customize your model."),
           tags$li(tags$strong("Reports: "), "After running the analysis, view the results in the Reports tab. Here, you can explore predictions of species suitable habitat and other insights."),
           tags$li(tags$strong("Export: "), "Once you're satisfied with the results, head over to the Export tab to save your findings."),
           tags$li(tags$strong("Documentation: "), "Access detailed documentation and user guides in the Documentation tab."),
-          tags$li(tags$strong("How to Cite: "), "Find information on how to cite GLOSSA in your publications in the How to Cite tab."),
+          tags$li(tags$strong("How to cite: "), "Find information on how to cite GLOSSA in your publications in the How to cite tab."),
         ),
         tags$p("Need more help? Feel free to reach out to us directly via the Contact tab."),
         tags$p("Happy modeling!")

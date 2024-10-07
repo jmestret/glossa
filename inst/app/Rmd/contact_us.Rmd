@@ -17,18 +17,18 @@ We value your feedback and are here to help you with any questions, support need
 
 For issues, feature requests, questions, or general feedback, please use the Issues tab on our GitHub repository:
 
-- [GLOSSA GitHub](https://github.com/iMARES-group/glossa/issues)
+- <a href="https://github.com/iMARES-group/glossa/issues" target="_blank">GLOSSA GitHub</a>
 
 ### **Contact form**
 
 For special support or collaboration requests, please contact us via the contact form at the end of the iMARES website:
 
-- [iMARES](https://imares.science/)
+- <a href="https://imares.science/" target="_blank">iMARES</a>
 
 ### **X (Twitter)**
 
 Follow our research group on Twitter for the latest news and updates:
 
--   [\@iMARES_group](https://x.com/iMARES_group)
+- <a href="https://x.com/iMARES_group" target="_blank">\@iMARES_group</a>
 
-Thank you for your support! If you want to know more about the group go and visit our website: [iMARES](https://imares.science/)
+Thank you for your support! If you want to know more about the group go and visit our website: <a href="https://imares.science/" target="_blank">iMARES</a>.

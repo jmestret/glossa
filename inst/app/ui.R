@@ -29,7 +29,7 @@ header <- bs4Dash::bs4DashNavbar(
       class = 'dropdown',
       bs4Dash::actionButton(
         inputId = "new_analysis_header",
-        label = "New Analysis",
+        label = "New analysis",
         icon = icon("circle-plus"),
         status = "primary",
         outline = FALSE
@@ -93,7 +93,7 @@ sidebar <- bs4Dash::bs4DashSidebar(
     bs4Dash::menuItem(
       tabName = "new_analysis",
       icon = icon("circle-plus", class = "fa-solid"),
-      text = "New Analysis"
+      text = "New analysis"
     ),
 
     # Results tab
@@ -168,7 +168,7 @@ body <- bs4Dash::bs4DashBody(
             # welcome text
             bs4Dash::column(
               width = 6,
-              "Welcome to GLOSSA (GLObal Species Spatiotemporal Analysis). Explore species distributions worldwide, from past to future, across diverse climate scenarios."
+              "Welcome to GLOSSA (Global Species Spatiotemporal Analysis). Explore species distributions worldwide, from past to future, across diverse climate scenarios."
             ),
             # welcome figure
             bs4Dash::column(
@@ -186,7 +186,7 @@ body <- bs4Dash::bs4DashBody(
                 align = "center",
                 bs4Dash::actionButton(
                   inputId = "new_analysis_home",
-                  label = "New Analysis",
+                  label = "New analysis",
                   icon = icon("circle-plus"),
                   status = "primary",
                   outline = TRUE,
@@ -199,7 +199,7 @@ body <- bs4Dash::bs4DashBody(
 
         # ** Demo box ----
         bs4Dash::box(
-          title = strong("Getting Started with GLOSSA"),
+          title = strong("Getting started with GLOSSA"),
           status = NULL,
           width = 3,
           height = 250,
@@ -213,7 +213,7 @@ body <- bs4Dash::bs4DashBody(
           fluidRow(
             bs4Dash::column(
               width = 12,
-              "New to GLOSSA? Check out our quick demo video to see GLOSSA in action. Watch how easily you can model species distribution in just a few minutes."
+              "New to GLOSSA? Visit our Getting Started page for a quick and easy introduction. Learn how to model species distribution with GLOSSA in just a few steps!"
             )
           ),
 
@@ -225,7 +225,7 @@ body <- bs4Dash::bs4DashBody(
                 align = "center",
                 bs4Dash::actionButton(
                   inputId = "try_demo",
-                  label = "Watch Demo",
+                  label = "Get started",
                   icon = NULL,
                   status = "secondary",
                   outline = FALSE,
@@ -239,7 +239,7 @@ body <- bs4Dash::bs4DashBody(
 
         # ** Group box ----
         bs4Dash::box(
-          title = strong("Meet Our Research Team"),
+          title = strong("Meet our research team"),
           status = NULL,
           width = 3,
           height = 250,
@@ -253,7 +253,7 @@ body <- bs4Dash::bs4DashBody(
           fluidRow(
             bs4Dash::column(
               width = 12,
-              "Discover the team behind GLOSSA at the iMARES group, ICM-CSIC, Barcelona, Spain. Get to know the developers on GitHub. Click below to explore our research group."
+              "Discover the team behind GLOSSA at the iMARES group, ICM-CSIC in Barcelona, Spain. Learn more about our research, and connect with our team. Click below to discover more about our group."
             )
           ),
 
@@ -265,7 +265,7 @@ body <- bs4Dash::bs4DashBody(
                 align = "center",
                 bs4Dash::actionButton(
                   inputId = "know_the_group",
-                  label = "About Us",
+                  label = "About us",
                   icon = NULL,
                   status = "secondary",
                   outline = FALSE,
@@ -282,7 +282,7 @@ body <- bs4Dash::bs4DashBody(
       fluidRow(
         # ** Documentation and guidelines ----
         bs4Dash::box(
-          title = strong("Documentation and Guidelines"),
+          title = strong("Documentation and guidelines"),
           status = NULL,
           width = 6,
           height = 180,
@@ -296,7 +296,7 @@ body <- bs4Dash::bs4DashBody(
           fluidRow(
             bs4Dash::column(
               width = 12,
-              "Curious about data preparation, result exportation, and our modeling procedure? Dive into our comprehensive GLOSSA documentation. Discover step-by-step tutorials, example datasets, and FAQs for optimized utilization. Begin your journey now to unleash GLOSSA's full potential!"
+              "Curious about data preparation, result exportation, and our modeling process? Explore our comprehensive GLOSSA documentation. Discover step-by-step tutorials and example datasets to make the most of it. Here, you’ll find the most updated reference to GLOSSA."
             )
           ),
 
@@ -308,7 +308,7 @@ body <- bs4Dash::bs4DashBody(
                 align = "center",
                 bs4Dash::actionButton(
                   inputId = "documentation_and_guidelines",
-                  label = "Explore Documentation",
+                  label = "Explore documentation",
                   icon = NULL,
                   status = "primary",
                   outline = TRUE,
@@ -322,7 +322,7 @@ body <- bs4Dash::bs4DashBody(
 
         # ** Download data tutorials ----
         bs4Dash::box(
-          title = strong("Download and Process Data: GBIF and ISIMIP"),
+          title = strong("Preparing your data"),
           status = NULL,
           width = 6,
           height = 180,
@@ -336,7 +336,7 @@ body <- bs4Dash::bs4DashBody(
           fluidRow(
             bs4Dash::column(
               width = 12,
-              "Prepare your data effectively for GLOSSA with our guide. Learn how to download GBIF presence data and environmental layers from ISIMIP. Follow our simplified processing guidelines for smooth integration with the GLOSSA modeling framework."
+              "Prepare your data in the correct format for GLOSSA. We provide examples using GBIF for occurrence data and ISIMIP for environmental layers. Follow our guidelines to ensure smooth integration with the GLOSSA modeling framework."
             )
           ),
 
@@ -351,7 +351,7 @@ body <- bs4Dash::bs4DashBody(
                     width = 6,
                     bs4Dash::actionButton(
                       inputId = "tutorial_1",
-                      label = "Download GBIF Occurrences",
+                      label = "Prepare species occurrences",
                       icon = NULL,
                       status = "primary",
                       outline = TRUE,
@@ -363,7 +363,7 @@ body <- bs4Dash::bs4DashBody(
                     width = 6,
                     bs4Dash::actionButton(
                       inputId = "tutorial_2",
-                      label = "Download ISIMIP Variables",
+                      label = "Prepare environmental data",
                       icon = NULL,
                       status = "primary",
                       outline = TRUE,

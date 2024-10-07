@@ -14,13 +14,11 @@ For real-time updates and to report any issues, please visit our <a href="https:
 
 ## **Latest updates**
 
-**Current Version (Pre-Release):** **0.1.0**
+**Current Version:** **1.0.0**
 
 ### Updates, Patches, and Releases
 
-#### **glossa (development version)**
-
-#### **glossa 0.1.0**
+#### **glossa 1.0.0**
 
 * Initial CRAN submission.
 

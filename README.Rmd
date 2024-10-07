@@ -25,7 +25,7 @@ knitr::opts_chunk$set(
 
 **GLOSSA** (Global Species Spatiotemporal Analysis) is an open-source, user-friendly R Shiny application designed for modeling marine species distribution. Written in R, GLOSSA uses the Shiny and bs4Dash libraries to provide an intuitive interface for fitting species distribution models using presence/absence or presence-only (pseudo-absences will be generated) data. The app uses flexible machine learning techniques like Bayesian Additive Regression Trees (BART), enabling users to model species distributions across different temporal and spatial scales and forecast future scenarios based on environmental data. With GLOSSA, users can explore current and future suitable habitats and visualize results with minimal coding expertise.
 
-![short_workflow](https://github.com/iMARES-group/glossa/blob/main/inst/app/www/img/glossa_short_flowchart.png)
+![](https://github.com/iMARES-group/glossa/blob/main/inst/app/www/img/glossa_short_flowchart.png)
 
 ## Getting started
 
@@ -60,4 +60,4 @@ For detailed documentation, tutorials, and examples on how to use GLOSSA, visit 
 
 The GLOSSA manuscript is currently in progress. In the meantime, you can cite the GitHub repository as follows:
 
-Mestre-Tomás, J., Fuster-Alonso, A., Bellido, J. M., & Coll, M. (2024). GLOSSA: a user-friendly R Shiny application for Bayesian machine learning analysis of marine species distribution. R package version 0.1.0, https://github.com/iMARES-group/glossa
+Mestre-Tomás, J., Fuster-Alonso, A., Bellido, J. M., & Coll, M. (2024). GLOSSA: a user-friendly R Shiny application for Bayesian machine learning analysis of marine species distribution. R package version 1.0.0, https://github.com/iMARES-group/glossa

@@ -26,12 +26,7 @@ forecast future scenarios based on environmental data. With GLOSSA,
 users can explore current and future suitable habitats and visualize
 results with minimal coding expertise.
 
-<figure>
-<img
-src="https://github.com/iMARES-group/glossa/blob/main/inst/app/www/img/glossa_short_flowchart.png"
-alt="short_workflow" />
-<figcaption aria-hidden="true">short_workflow</figcaption>
-</figure>
+![](https://github.com/iMARES-group/glossa/blob/main/inst/app/www/img/glossa_short_flowchart.png)
 
 ## Getting started
 
@@ -73,4 +68,4 @@ cite the GitHub repository as follows:
 Mestre-Tomás, J., Fuster-Alonso, A., Bellido, J. M., & Coll, M. (2024).
 GLOSSA: a user-friendly R Shiny application for Bayesian machine
 learning analysis of marine species distribution. R package version
-0.1.0, <https://github.com/iMARES-group/glossa>
+1.0.0, <https://github.com/iMARES-group/glossa>

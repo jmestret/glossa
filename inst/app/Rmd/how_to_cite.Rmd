@@ -10,20 +10,4 @@ text-align: justify}
 
 ## **How to cite GLOSSA**
 
-Thank you for using GLOSSA! Tu cite our app, please use the following references.
-
-#### GLOSSA GitHub repository
-
-The GLOSSA paper is currently in progress. Meanwhile, you can reference the GitHub repository as follows:
-
-> Mestre-Tomás, J., Fuster-Alonso, A., Bellido, J. M., & Coll, M. (2024). GLOSSA: a user-friendly R Shiny application for Bayesian machine learning analysis of marine species distribution. R package version 0.1.0, <https://github.com/iMARES-group/glossa>
-
-#### BART model references
-
-If you use the BART model in your work, please also cite the original paper:
-
-> Chipman, H. A., George, E. I., & McCulloch, R. E. (2010). BART: Bayesian Additive Regression Trees. *The Annals of Applied Statistics*, 4(1), 266–298. doi: <https://doi.org/10.1214/09-AOAS285>
-
-and if use BART on a global-scale, please include this citation:
-
-> Fuster-Alonso, A., Mestre-Tomás, J., Baez, J. C., Pennino, M. G., Barber, X., Bellido, J. M., ... & Coll, M. (2024). Machine learning applied to global scale species distribution models (SDMs). PREPRINT (Version 1) available at *Research Square^*. doi: <https://doi.org/10.21203/rs.3.rs-4411399/v1>.
+Thank you for using GLOSSA! You can find how to cite our app here: <a href="https://imares-group.github.io/glossa/how_to_cite.html/" target="_blank">citation guidelines</a>.

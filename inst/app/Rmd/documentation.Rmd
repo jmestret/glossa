@@ -10,48 +10,51 @@ text-align: justify}
 
 ## **Quick reference guide**
 
+For more detailed guidance, visit the <a href="https://iMARES-group.github.io/glossa/" target="_blank">full documentation</a>.
+
 ### Key Tabs Overview
 
-- **Home**: Start here to access tutorials, documentation, and the demo video.
-- **New Analysis**: Set up your species distribution model. Upload data, select options, and run the analysis.
+- **Home**: Start here to access tutorials, documentation, and the quickstart guide.
+- **New analysis**: Set up your species distribution model. Upload data, select options, and run the analysis.
 - **Reports**: View and explore analysis results with visualizations and metrics.
 - **Exports**: Download your analysis results, including predictions and model data.
 
 ### Data Requirements
 
 1. **Occurrences**: Upload a CSV file with columns `decimalLongitude`, `decimalLatitude`, `pa`, and `timestamp`.
-2. **Environmental Data**: Upload a ZIP file containing raster files, organized by variable and time period.
-3. **Optional Files**:
-   - **Projection Layers**: ZIP files matching the structure of your environmental data for predictions.
-   - **Study Area**: A polygon file to define your study area and filter data.
+2. **Environmental data**: Upload a ZIP file containing raster files, organized by variable and time period.
+3. **Optional files**:
+   - **Projection layers**: ZIP files matching the structure of your environmental data for predictions.
+   - **Study area**: A polygon file to define your study area and filter data.
 
-### Analysis Options
+### Analysis options
 
-- **Model Types**:
-  - **Native Range**: Includes environmental variables + spatial smoother.
-  - **Suitable Habitat**: Includes only environmental variables.
-- **Functional Responses**: Check to generate response curves.
-- **Cross-Validation**: Perform 5-fold cross-validation.
+- **Model types**:
+  - **Native range**: Includes environmental variables + spatial smoother.
+  - **Suitable habitat**: Includes only environmental variables.
+- **Functional responses**: Computes response curves.
+- **Variable importance**: Computed using a permutation-based approach.
+- **Cross-validation**: Perform 5-fold cross-validation.
 
-### Advanced Options
+### Advanced options
 
-- **Occurrences Thinning**: Round coordinates to apply spatial thinning.
-- **Standardize Covariates**: Normalize data by subtracting the mean and dividing by the standard deviation.
-- **Enlarge Polygon**: Apply a buffer to expand the polygon if needed.
-- **Model Selection**: Currently, only BART is available.
-- **Set a Seed**: For reproducibility.
+- **Occurrences thinning**: Apply spatial thinning based on coordinate precision (number of decimal digits).
+- **Standardize covariates**: Z-score standardization is applied by subtracting the mean and dividing by the standard deviation.
+- **Enlarge polygon**: Apply a buffer to expand the polygon if needed.
+- **Model selection**: Currently, only BART is available.
+- **Set a seed**: For reproducibility.
 
-### Viewing Results
+### Viewing results
 
-- **Species Selector**: Choose the species to view results for.
-- **Key Metrics**: View suitable habitat area, mean probability, and number of points used.
-- **Prediction Maps**: Toggle between fitting layers and projection layers.
-- **Response Curves & Variable Importance**: Analyze the relationship between variables and species presence.
+- **Species selector**: Choose the species to view results for.
+- **Key metrics**: View suitable habitat area, mean probability, and number of points used.
+- **Prediction maps**: Toggle between fitting layers and projection layers.
+- **Response curves and variable importance**: Analyze the relationship between variables and species presence.
 
-### Exporting Results
+### Exporting results
 
-- **Exports Tab**: Download prediction maps, model data, variable importance, and cross-validation results.
+- **Exports tab**: Download prediction maps, model data, variable importance, and cross-validation results.
 
-### Need More Help?
+### Need more help?
 
-For more detailed guidance, visit the <a href="https://iMARES-group.github.io/glossa/" target="_blank">full documentation</a>.
+Visit the <a href="https://iMARES-group.github.io/glossa/" target="_blank">full documentation</a>.
