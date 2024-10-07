@@ -1,11 +1,14 @@
 ^.*\.Rproj$
 ^\.Rproj\.user$
 img
+^README\.Rmd$
 README.md
+^cran-comments\.md$
 cran-comments.md
 LICENSE.md
-^cran-comments\.md$
+^LICENSE$
+^NEWS\.md$
 ^CRAN-SUBMISSION$
-^README\.Rmd$
 ^codecov\.yml$
 ^\.github$
+^\.github/workflows/R-CMD-check\.yaml$

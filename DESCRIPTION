@@ -19,7 +19,7 @@ Description: A user-friendly 'shiny' application for Bayesian machine
     ecological research by providing easy-to-use tools for analyzing and
     visualizing marine species distributions across different spatial and
     temporal scales.
-License: GPL-3 + file LICENSE
+License: GPL-3
 URL: https://github.com/iMARES-group/glossa,
     https://iMARES-group.github.io/glossa/
 BugReports: https://github.com/iMARES-group/glossa/issues
