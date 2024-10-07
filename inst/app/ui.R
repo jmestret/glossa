@@ -313,7 +313,7 @@ body <- bs4Dash::bs4DashBody(
                   status = "primary",
                   outline = TRUE,
                   width = "100%",
-                  onclick ="window.open('https://iMARES-group.github.io/glossa/', '_blank')"
+                  onclick ="window.open('https://imares-group.github.io/pages/documentation/', '_blank')"
                 )
               )
             )
@@ -356,7 +356,7 @@ body <- bs4Dash::bs4DashBody(
                       status = "primary",
                       outline = TRUE,
                       width = "100%",
-                      onclick ="window.open('https://iMARES-group.github.io/glossa/', '_blank')"
+                      onclick ="window.open('https://imares-group.github.io/glossa/pages/tutorials_examples/', '_blank')"
                     )
                   ),
                   bs4Dash::column(
@@ -368,7 +368,7 @@ body <- bs4Dash::bs4DashBody(
                       status = "primary",
                       outline = TRUE,
                       width = "100%",
-                      onclick ="window.open('https://iMARES-group.github.io/glossa/', '_blank')"
+                      onclick ="window.open('https://imares-group.github.io/glossa/pages/tutorials_examples/', '_blank')"
                     )
                   )
                 )

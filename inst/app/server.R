@@ -326,10 +326,10 @@ function(input, output, session) {
     bs4Dash::addPopover(
       id = "data_upload_info",
       options = list(
-        content = "1) Presence/Absence Data: Upload a CSV file containing latitude and longitude columns for species occurrences, with an optional column 'pa' indicating presence (1) or absence (0).
-        2) Environmental Layers: Upload a ZIP file containing raster layers of environmental variables.
-        3) Projection Layers: Upload a ZIP file containing layers for projecting species distribution.
-        4) Study Area: Upload a polygon defining the study area if you want to delimit the extent.",
+        content = "1) Occurrences: Upload a CSV file containing latitude and longitude columns for species occurrences, with an optional column 'pa' indicating presence (1) or absence (0), and 'timestamp' with an index of the time period.
+        2) Environmental data: Upload a ZIP file containing raster layers of environmental variables.
+        3) Projection layers: Upload a ZIP file containing layers for projecting species distribution. Multiple ZIP files can be uploaded.
+        4) Study area: Upload a polygon defining the study area if you want to delimit the extent (GPKG, KML or GeoJSON).",
         title = "Data upload",
         placement = "bottom",
         trigger = "hover"
@@ -341,8 +341,8 @@ function(input, output, session) {
     bs4Dash::addPopover(
       id = "analysis_options_options_info",
       options = list(
-        content = "1) fit_layers: Fit the model and perform spatial prediction in the model fitting layers.
-        2) projections: Predict in new layers (projection layers).",
+        content = "1) Model fitting: Fit the model and perform spatial prediction in the model fitting layers.
+        2) Model projection: Predict in new layers (projection layers).",
         title = "Model options",
         placement = "bottom",
         trigger = "hover"
@@ -378,7 +378,7 @@ function(input, output, session) {
     bs4Dash::addPopover(
       id = "analysis_options_others_info",
       options = list(
-        content = "1) Functional Responses: Estimate the response curve of the probability for each value of the environmental variable.
+        content = "1) Functional responses: Estimate the response curve of the probability for each value of the environmental variable.
         2) Variable importance: Computes the variable importance using permutatoin method.
         3) Cross-validation: Perform k-fold cross-validation. Warning: It may take some time.",
         title = "Others",
