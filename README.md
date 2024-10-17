@@ -1,15 +1,15 @@
-# This repository is no longer active
+# Repository archived - No longer maintained :warning:
 
-## For the latest updates for this software please use the official GLOSSA repository: https://github.com/iMARES-group/glossa
+**This repository is no longer active and has been archived.**  
+For the latest updates, ongoing development, and support for this software, please refer to the official GLOSSA repository:
+
+:arrow_right: https://github.com/iMARES-group/glossa
 
 <!-- README.md is generated from README.Rmd. Please edit that file -->
 
 # GLOSSA - Global Species Spatiotemporal Analysis <a href="https://iMARES-group.github.io/glossa/"><img src="inst/app/www/logo_glossa.png" align="right" height="138" /></a>
 
 <!-- badges: start -->
-
-[![CRAN
-status](https://www.r-pkg.org/badges/version/glossa)](https://CRAN.R-project.org/package=glossa)
 [![License: GPL
 v3](https://img.shields.io/badge/License-GPL%20v3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 [![R-CMD-check](https://github.com/iMARES-group/glossa/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/iMARES-group/glossa/actions/workflows/R-CMD-check.yaml)
