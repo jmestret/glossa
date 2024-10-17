@@ -1,3 +1,6 @@
+# This repository is no longer active
+
+## For the latest updates for this software please use the official GLOSSA repository: https://github.com/iMARES-group/glossa
 
 <!-- README.md is generated from README.Rmd. Please edit that file -->
 
